@@ -1,4 +1,4 @@
-import PDFDocument from 'pdfkit'
+import { PDFDocument, rgb } from 'pdf-lib'
 import { Invoice, StoreSettings } from './types'
 
 function formatCurrency(amount: number): string {
@@ -7,6 +7,17 @@ function formatCurrency(amount: number): string {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(amount)
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result
+    ? {
+        r: parseInt(result[1], 16) / 255,
+        g: parseInt(result[2], 16) / 255,
+        b: parseInt(result[3], 16) / 255,
+      }
+    : { r: 0.839, g: 0.686, b: 0.216 } // Default gold color
 }
 
 export async function generatePDFFromHTML(html: string): Promise<Buffer> {
@@ -21,106 +32,90 @@ export async function generatePDFFromInvoice(
     console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber)
 
     const brandColor = storeSettings?.brandColor || '#d4af37'
-    const doc = new PDFDocument({ size: 'A4', margin: 40 })
+    const brandColorRgb = hexToRgb(brandColor)
 
-    const chunks: Buffer[] = []
+    const pdfDoc = await PDFDocument.create()
+    const page = pdfDoc.addPage([595, 842]) // A4 size
+    const { height } = page.getSize()
 
-    return new Promise((resolve, reject) => {
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk))
-      doc.on('end', () => {
-        const pdfBuffer = Buffer.concat(chunks)
-        console.log('✅ PDF generated successfully')
-        resolve(pdfBuffer)
-      })
-      doc.on('error', reject)
+    let y = height - 50
 
-      try {
-        // Title
-        doc.fontSize(32).font('Helvetica-Bold').fillColor(brandColor).text('INVOICE', { align: 'center' })
-        doc.moveDown(0.5)
-
-        // Invoice details
-        doc.fontSize(10).fillColor('black').font('Helvetica-Bold').text('Invoice #')
-        doc.font('Helvetica').text(invoice.invoiceNumber)
-        doc.moveDown(0.3)
-
-        doc.font('Helvetica-Bold').text('Date')
-        doc.font('Helvetica').text(new Date(invoice.invoiceDate).toLocaleDateString('id-ID'))
-        doc.moveDown(0.8)
-
-        // Bill to
-        doc.font('Helvetica-Bold').text('Bill To')
-        doc.font('Helvetica').text(invoice.customer.name)
-        if (invoice.customer.email) {
-          doc.fontSize(9).text(invoice.customer.email)
-        }
-        doc.moveDown(0.8)
-
-        // Items table
-        const tableTop = doc.y
-        const col1 = 50
-        const col2 = 400
-        const col3 = 470
-        const col4 = 540
-        const rowHeight = 20
-
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('white')
-
-        // Header row
-        doc.rect(col1 - 10, tableTop, 510, rowHeight).fill(brandColor)
-        doc.fillColor('white').text('Description', col1, tableTop + 5, { width: col2 - col1 })
-        doc.text('Qty', col2, tableTop + 5, { width: col3 - col2, align: 'center' })
-        doc.text('Price', col3, tableTop + 5, { width: col4 - col3, align: 'right' })
-        doc.text('Total', col4, tableTop + 5, { width: 50, align: 'right' })
-
-        // Item rows
-        let y = tableTop + rowHeight
-        doc.fillColor('black').font('Helvetica').fontSize(9)
-
-        invoice.items.forEach((item, index) => {
-          if (index % 2 === 0) {
-            doc.rect(col1 - 10, y, 510, rowHeight).fillAndStroke('#f5f5f5', '#f5f5f5')
-          }
-
-          doc.fillColor('black').text(item.description, col1, y + 5, { width: col2 - col1 })
-          doc.text(item.quantity.toString(), col2, y + 5, { width: col3 - col2, align: 'center' })
-          doc.text(formatCurrency(item.price), col3, y + 5, { width: col4 - col3, align: 'right' })
-          doc.text(formatCurrency(item.subtotal), col4, y + 5, { width: 50, align: 'right' })
-
-          y += rowHeight
-        })
-
-        doc.moveDown(1)
-
-        // Totals
-        const totalsX = 400
-        doc.fontSize(10).font('Helvetica').fillColor('black')
-        doc.text('Subtotal:', totalsX, doc.y, { width: 80 }).text(formatCurrency(invoice.subtotal), totalsX + 80, doc.y - 12, {
-          width: 80,
-          align: 'right',
-        })
-        doc.moveDown(0.5)
-
-        if (invoice.shippingCost > 0) {
-          doc.text('Shipping:', totalsX, doc.y, { width: 80 }).text(formatCurrency(invoice.shippingCost), totalsX + 80, doc.y - 12, {
-            width: 80,
-            align: 'right',
-          })
-          doc.moveDown(0.5)
-        }
-
-        doc.font('Helvetica-Bold').fontSize(14).fillColor(brandColor)
-        doc.text('Total:', totalsX, doc.y, { width: 80 }).text(formatCurrency(invoice.total), totalsX + 80, doc.y - 16, {
-          width: 80,
-          align: 'right',
-        })
-
-        doc.end()
-      } catch (error) {
-        doc.end()
-        reject(error)
-      }
+    // Title
+    page.drawText('INVOICE', {
+      x: 50,
+      y,
+      size: 32,
+      color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b),
     })
+    y -= 40
+
+    // Invoice details
+    page.drawText('Invoice #', { x: 50, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 15
+    page.drawText(invoice.invoiceNumber, { x: 50, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 20
+
+    page.drawText('Date', { x: 50, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 15
+    page.drawText(new Date(invoice.invoiceDate).toLocaleDateString('id-ID'), { x: 50, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 30
+
+    // Bill to
+    page.drawText('Bill To', { x: 50, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 15
+    page.drawText(invoice.customer.name, { x: 50, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 15
+    if (invoice.customer.email) {
+      page.drawText(invoice.customer.email, { x: 50, y, size: 9, color: rgb(0, 0, 0) })
+    }
+    y -= 30
+
+    // Items table
+    const col1 = 50
+    const col2 = 350
+    const col3 = 450
+    const col4 = 520
+    const rowHeight = 20
+
+    // Header row
+    page.drawText('Description', { x: col1 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+    page.drawText('Qty', { x: col2 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+    page.drawText('Price', { x: col3 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+    page.drawText('Total', { x: col4 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+
+    y -= rowHeight + 5
+
+    // Item rows
+    invoice.items.forEach((item, index) => {
+      page.drawText(item.description.substring(0, 25), { x: col1 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
+      page.drawText(item.quantity.toString(), { x: col2 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
+      page.drawText(formatCurrency(item.price), { x: col3 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
+      page.drawText(formatCurrency(item.subtotal), { x: col4 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
+
+      y -= rowHeight
+    })
+
+    y -= 20
+
+    // Totals
+    const totalsX = 380
+    page.drawText('Subtotal:', { x: totalsX, y, size: 10, color: rgb(0, 0, 0) })
+    page.drawText(formatCurrency(invoice.subtotal), { x: totalsX + 120, y, size: 10, color: rgb(0, 0, 0) })
+    y -= 20
+
+    if (invoice.shippingCost > 0) {
+      page.drawText('Shipping:', { x: totalsX, y, size: 10, color: rgb(0, 0, 0) })
+      page.drawText(formatCurrency(invoice.shippingCost), { x: totalsX + 120, y, size: 10, color: rgb(0, 0, 0) })
+      y -= 20
+    }
+
+    page.drawText('Total:', { x: totalsX, y, size: 12, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+    page.drawText(formatCurrency(invoice.total), { x: totalsX + 120, y, size: 12, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+
+    const pdfBytes = await pdfDoc.save()
+    console.log('✅ PDF generated successfully')
+
+    return Buffer.from(pdfBytes)
   } catch (error) {
     console.error('❌ PDF generation error:', error)
     throw error
