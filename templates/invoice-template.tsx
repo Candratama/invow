@@ -245,14 +245,12 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
       top: -20px;
       left: 20px;
       transform: rotate(-12deg);
-      border: 4px solid ${brandColor};
-      border-radius: 8px;
-      padding: 8px 24px;
       font-size: 36px;
       font-weight: bold;
       color: ${brandColor};
-      letter-spacing: 4px;
-      opacity: 0.9;
+      letter-spacing: 3px;
+      opacity: 0.5;
+      white-space: nowrap;
     }
     
     @media print {
@@ -339,7 +337,7 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
         </div>
       </div>
       <!-- LUNAS Stamp -->
-      <div class="lunas-stamp">LUNAS</div>
+      <div class="lunas-stamp">[LUNAS]</div>
     </div>
 
     <!-- Footer with Signature -->
