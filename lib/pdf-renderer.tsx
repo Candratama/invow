@@ -175,13 +175,12 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
     },
     lunasStamp: {
       position: 'absolute',
-      top: -15,
-      left: 15,
-      transform: 'rotate(-12deg)',
-      fontSize: 32,
+      top: -10,
+      left: 20,
+      fontSize: 28,
       fontWeight: 'bold',
       color: brandColor,
-      letterSpacing: 3,
+      letterSpacing: 4,
       opacity: 0.5,
     },
     footer: {

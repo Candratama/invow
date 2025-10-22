@@ -244,11 +244,10 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
       position: absolute;
       top: -20px;
       left: 20px;
-      transform: rotate(-12deg);
       font-size: 36px;
       font-weight: bold;
       color: ${brandColor};
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       opacity: 0.5;
       white-space: nowrap;
     }
