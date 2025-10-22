@@ -7,7 +7,7 @@ interface InvoiceTemplateProps {
 }
 
 export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateProps): string {
-  const { customer, items, subtotal, shippingCost, total, invoiceNumber, invoiceDate, dueDate } = invoice
+  const { customer, items, subtotal, shippingCost, total, invoiceNumber, invoiceDate } = invoice
   const brandColor = storeSettings?.brandColor || '#d4af37'
 
   return `
@@ -17,11 +17,7 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice ${invoiceNumber}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Windsong:wght@400;500&display=block" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Windsong:wght@400;500&display=block');
     * {
       margin: 0;
       padding: 0;
@@ -116,28 +112,12 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
     }
     
     .signature-name {
-      font-family: 'Brush Script MT', 'Windsong', cursive !important;
+      font-family: 'Brush Script MT', cursive, 'Comic Sans MS', sans-serif;
       font-size: 48px;
       font-weight: 500;
       color: ${brandColor};
       margin-bottom: 10px;
-      font-style: normal;
-    }
-    
-    @font-face {
-      font-family: 'Windsong';
-      font-style: normal;
-      font-weight: 400;
-      src: url('https://fonts.gstatic.com/s/windsong/v5/KR1WBsyu-P-GFEW57r95HdG6vjH3.woff2') format('woff2');
-      font-display: block;
-    }
-    
-    @font-face {
-      font-family: 'Windsong';
-      font-style: normal;
-      font-weight: 500;
-      src: url('https://fonts.gstatic.com/s/windsong/v5/KR1RBsyu-P-GFEW57oeNNPWylS3-jVXm.woff2') format('woff2');
-      font-display: block;
+      font-style: italic;
     }
     
     .customer-section {

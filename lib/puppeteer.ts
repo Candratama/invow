@@ -1,50 +1,84 @@
 import puppeteer from 'puppeteer'
 import chromium from '@sparticuz/chromium'
 
+const RETRY_ATTEMPTS = 3
+const RETRY_DELAY = 1000
+
+async function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export async function getBrowser() {
-  if (process.env.NODE_ENV === 'production') {
-    // Production: Use @sparticuz/chromium
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    })
-    return browser
-  } else {
-    // Development: Use local Puppeteer
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
-    return browser
+  let lastError: Error | null = null
+
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
+    try {
+      console.log(`🚀 Browser launch attempt ${attempt}/${RETRY_ATTEMPTS}...`)
+
+      if (process.env.NODE_ENV === 'production') {
+        // Production: Use @sparticuz/chromium
+        const browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+        })
+        console.log('✅ Browser launched successfully (production)')
+        return browser
+      } else {
+        // Development: Use local Puppeteer with stable args
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--disable-software-rasterizer',
+            '--disable-extensions',
+          ],
+        })
+        console.log('✅ Browser launched successfully (development)')
+        return browser
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      console.error(`❌ Browser launch attempt ${attempt} failed:`, lastError.message)
+
+      if (attempt < RETRY_ATTEMPTS) {
+        const waitTime = RETRY_DELAY * attempt
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+        await delay(waitTime)
+      }
+    }
   }
+
+  throw new Error(
+    `Failed to launch browser after ${RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
+  )
 }
 
 export async function generatePDFFromHTML(html: string): Promise<Buffer> {
-  const browser = await getBrowser()
-  
+  let browser: any = null
+  let page: any = null
+
   try {
-    const page = await browser.newPage()
-    
-    // Set viewport for A4 size
-    await page.setViewport({
-      width: 794, // A4 width in pixels at 96 DPI
-      height: 1123, // A4 height in pixels at 96 DPI
-    })
-    
-    // Set content
+    browser = await getBrowser()
+
+    page = await browser.newPage()
+    console.log('✅ New page created')
+
+    // Set viewport for consistent rendering
+    await page.setViewport({ width: 1200, height: 1600 })
+
+    console.log('📝 Setting HTML content...')
     await page.setContent(html, {
       waitUntil: 'networkidle0',
+      timeout: 30000,
     })
-    
-    // Wait for fonts to load
-    await page.evaluateHandle('document.fonts.ready')
-    
-    // Additional wait to ensure fonts are rendered
-    await page.waitForTimeout(1000)
-    
-    // Generate PDF
+    console.log('✅ HTML content set')
+
+    console.log('📄 Generating PDF...')
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -54,10 +88,30 @@ export async function generatePDFFromHTML(html: string): Promise<Buffer> {
         bottom: '15mm',
         left: '15mm',
       },
+      timeout: 30000,
     })
-    
+    console.log('✅ PDF generated successfully')
+
     return Buffer.from(pdf)
+  } catch (error) {
+    console.error('❌ PDF generation error:', error)
+    throw error
   } finally {
-    await browser.close()
+    if (page) {
+      try {
+        await page.close()
+        console.log('✅ Page closed')
+      } catch (e) {
+        console.warn('⚠️ Error closing page:', e)
+      }
+    }
+    if (browser) {
+      try {
+        await browser.close()
+        console.log('✅ Browser closed')
+      } catch (e) {
+        console.warn('⚠️ Error closing browser:', e)
+      }
+    }
   }
 }
