@@ -260,7 +260,20 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
       color: ${brandColor};
     }
     
-
+    .lunas-stamp {
+      position: absolute;
+      top: -20px;
+      left: 20px;
+      transform: rotate(-12deg);
+      border: 4px solid ${brandColor};
+      border-radius: 8px;
+      padding: 8px 24px;
+      font-size: 36px;
+      font-weight: bold;
+      color: ${brandColor};
+      letter-spacing: 4px;
+      opacity: 0.9;
+    }
     
     @media print {
       body {
@@ -289,7 +302,6 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
         <div class="invoice-meta">
           <div><strong>Invoice #:</strong> ${invoiceNumber}</div>
           <div><strong>Date:</strong> ${formatDate(new Date(invoiceDate))}</div>
-          <div><strong>Due Date:</strong> ${formatDate(new Date(dueDate))}</div>
         </div>
       </div>
     </div>
@@ -301,6 +313,7 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
         <div class="customer-name">${customer.name}</div>
         <div class="customer-details">
           ${customer.address || 'No address provided'}
+          ${customer.status ? `<br/>Status: ${customer.status}` : ''}
         </div>
       </div>
     </div>
@@ -330,7 +343,7 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
     </table>
 
     <!-- Totals -->
-    <div class="totals-section">
+    <div class="totals-section" style="position: relative;">
       <div class="totals-table">
         <div class="totals-row subtotal">
           <span>Subtotal:</span>
@@ -345,6 +358,8 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
           <span class="amount">${formatCurrency(total)}</span>
         </div>
       </div>
+      <!-- LUNAS Stamp -->
+      <div class="lunas-stamp">LUNAS</div>
     </div>
 
     <!-- Footer with Signature -->

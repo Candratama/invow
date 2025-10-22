@@ -1,7 +1,7 @@
 'use client'
 44
 import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Plus, Save, Eye } from 'lucide-react'
@@ -9,6 +9,7 @@ import { useInvoiceStore } from '@/lib/store'
 import { InvoiceItem } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -18,9 +19,9 @@ import { BottomSheet } from './bottom-sheet'
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, 'Invoice number is required'),
   invoiceDate: z.string(),
-  dueDate: z.string(),
   customerName: z.string().min(3, 'Customer name must be at least 3 characters'),
   customerAddress: z.string().optional(),
+  customerStatus: z.enum(['Distributor', 'Reseller', 'Customer']),
   shippingCost: z.number().min(0),
 })
 
@@ -65,9 +66,9 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
     defaultValues: {
       invoiceNumber: currentInvoice?.invoiceNumber || '',
       invoiceDate: currentInvoice?.invoiceDate ? new Date(currentInvoice.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      dueDate: currentInvoice?.dueDate ? new Date(currentInvoice.dueDate).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       customerName: currentInvoice?.customer?.name || '',
       customerAddress: currentInvoice?.customer?.address || '',
+      customerStatus: currentInvoice?.customer?.status || 'Customer',
       shippingCost: currentInvoice?.shippingCost || 0,
     },
   })
@@ -78,7 +79,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
     defaultValues: {
       description: '',
       quantity: 1,
-      price: 0,
+      price: undefined,
     },
   })
 
@@ -93,16 +94,17 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
   }, [currentInvoice, saveDraft])
 
   const handleFormChange = (field: keyof InvoiceFormData, value: any) => {
-    if (field === 'customerName' || field === 'customerAddress') {
+    if (field === 'customerName' || field === 'customerAddress' || field === 'customerStatus') {
       updateCurrentInvoice({
         customer: {
           ...currentInvoice?.customer,
           name: field === 'customerName' ? value : currentInvoice?.customer?.name || '',
           email: '', // Email removed
           address: field === 'customerAddress' ? value : currentInvoice?.customer?.address,
+          status: field === 'customerStatus' ? value : currentInvoice?.customer?.status,
         }
       })
-    } else if (field === 'invoiceDate' || field === 'dueDate') {
+    } else if (field === 'invoiceDate') {
       updateCurrentInvoice({
         [field]: new Date(value)
       })
@@ -127,9 +129,11 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
   const handleEditItem = (item: InvoiceItem) => {
     setEditingItem(item)
-    itemForm.setValue('description', item.description)
-    itemForm.setValue('quantity', item.quantity)
-    itemForm.setValue('price', item.price)
+    itemForm.reset({
+      description: item.description,
+      quantity: item.quantity,
+      price: item.price,
+    })
     setShowItemModal(true)
   }
 
@@ -168,25 +172,14 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="invoiceDate">Invoice Date</Label>
-                <Input
-                  id="invoiceDate"
-                  type="date"
-                  {...form.register('invoiceDate')}
-                  onChange={(e) => handleFormChange('invoiceDate', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  {...form.register('dueDate')}
-                  onChange={(e) => handleFormChange('dueDate', e.target.value)}
-                />
-              </div>
+            <div>
+              <Label htmlFor="invoiceDate">Invoice Date</Label>
+              <Input
+                id="invoiceDate"
+                type="date"
+                {...form.register('invoiceDate')}
+                onChange={(e) => handleFormChange('invoiceDate', e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -217,6 +210,20 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
                 placeholder="Enter customer address"
                 rows={3}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="customerStatus">Customer Status</Label>
+              <select
+                id="customerStatus"
+                {...form.register('customerStatus')}
+                onChange={(e) => handleFormChange('customerStatus', e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="Customer">Customer</option>
+                <option value="Reseller">Reseller</option>
+                <option value="Distributor">Distributor</option>
+              </select>
             </div>
           </div>
         </div>
@@ -269,12 +276,10 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
               <div className="flex justify-between items-center text-base">
                 <span className="text-gray-600">Ongkos Kirim</span>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  {...form.register('shippingCost', { valueAsNumber: true })}
-                  onChange={(e) => {
-                    handleFormChange('shippingCost', parseFloat(e.target.value) || 0)
+                <CurrencyInput
+                  value={currentInvoice.shippingCost || 0}
+                  onChange={(value) => {
+                    handleFormChange('shippingCost', value)
                     calculateTotals()
                   }}
                   className="w-32 h-8 text-sm text-right"
@@ -358,13 +363,17 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
             <div>
               <Label htmlFor="price">Price *</Label>
-              <Input
-                id="price"
-                type="number"
-                inputMode="decimal"
-                {...itemForm.register('price', { valueAsNumber: true })}
-                min="0"
-                step="0.01"
+              <Controller
+                name="price"
+                control={itemForm.control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    id="price"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
+                  />
+                )}
               />
               {itemForm.formState.errors.price && (
                 <p className="text-sm text-red-500 mt-1">{itemForm.formState.errors.price.message}</p>

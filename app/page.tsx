@@ -58,7 +58,7 @@ function PreviewView({ onBack, onComplete }: { onBack: () => void; onComplete: (
       let filename = `Invoice-${currentInvoice.invoiceNumber}.pdf`
       
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/)
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/)
         if (filenameMatch) {
           filename = filenameMatch[1]
         }

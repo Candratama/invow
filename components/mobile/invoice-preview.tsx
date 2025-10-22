@@ -14,7 +14,7 @@ interface InvoicePreviewProps {
 }
 
 export function InvoicePreview({ invoice, storeSettings, onDownload, isGenerating }: InvoicePreviewProps) {
-  const { customer, items, subtotal, shippingCost, total, invoiceNumber, invoiceDate, dueDate } = invoice
+  const { customer, items, subtotal, shippingCost, total, invoiceNumber, invoiceDate } = invoice
   const brandColor = storeSettings?.brandColor || '#d4af37'
 
   return (
@@ -49,7 +49,6 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
                 <div className="text-sm text-gray-600 space-y-0">
                   <p><strong className="text-gray-900">Invoice #:</strong> {invoiceNumber}</p>
                   <p><strong className="text-gray-900">Date:</strong> {formatDate(new Date(invoiceDate))}</p>
-                  <p><strong className="text-gray-900">Due Date:</strong> {formatDate(new Date(dueDate))}</p>
                 </div>
               </div>
             </div>
@@ -61,9 +60,11 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
               </h3>
               <div className="bg-gray-50 p-4 rounded-lg border-l-4" style={{ borderLeftColor: brandColor }}>
                 <p className="font-semibold text-gray-900 mb-1">{customer.name}</p>
-                <p className="text-sm text-gray-600">{customer.email}</p>
                 {customer.address && (
                   <p className="text-sm text-gray-600 mt-1">{customer.address}</p>
+                )}
+                {customer.status && (
+                  <p className="text-sm text-gray-600 mt-1">Status: {customer.status}</p>
                 )}
               </div>
             </div>
@@ -100,7 +101,7 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
             </div>
 
             {/* Totals */}
-            <div className="flex justify-end mb-8 px-2">
+            <div className="flex justify-end mb-8 px-2 relative">
               <div className="w-full sm:w-80 space-y-2">
                 <div className="flex justify-between py-2 border-b border-gray-200">
                   <span className="text-gray-600">Subtotal:</span>
@@ -113,6 +114,12 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
                 <div className="flex justify-between py-3 border-t-2" style={{ borderColor: brandColor }}>
                   <span className="text-xl font-bold">Total:</span>
                   <span className="text-xl font-bold" style={{ color: brandColor }}>{formatCurrency(total)}</span>
+                </div>
+              </div>
+              {/* LUNAS Stamp */}
+              <div className="absolute -top-4 left-4 transform -rotate-12 pointer-events-none">
+                <div className="border-4 rounded-lg px-6 py-2" style={{ borderColor: brandColor }}>
+                  <span className="text-4xl font-bold tracking-wider" style={{ color: brandColor }}>LUNAS</span>
                 </div>
               </div>
             </div>

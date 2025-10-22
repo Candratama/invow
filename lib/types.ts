@@ -18,6 +18,7 @@ export interface Customer {
   name: string
   email?: string // Optional, not used in form
   address?: string
+  status?: 'Distributor' | 'Reseller' | 'Customer'
 }
 
 export interface InvoiceItem {

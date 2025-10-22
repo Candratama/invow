@@ -165,7 +165,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           subtotal: current.subtotal || 0,
           shippingCost: current.shippingCost || 0,
           total: current.total || 0,
-          status: 'completed',
+          status: 'synced',
           createdAt: current.createdAt || new Date(),
           updatedAt: new Date(),
         } as Invoice

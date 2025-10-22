@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     console.log('✅ PDF generated successfully:', invoice.invoiceNumber)
 
     // Format filename: Invoice_CustomerName_DDMMYY.pdf
-    const customerName = invoice.customer.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')
+    const customerName = invoice.customer.name
+      .trim()
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'Customer' // Remove leading/trailing underscores, fallback to 'Customer'
     const date = new Date(invoice.invoiceDate)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
