@@ -51,12 +51,13 @@ export function InvoicePreview({
             style={{
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: "20px",
               paddingBottom: "15px",
               borderBottom: `2px solid ${brandColor}`,
             }}
           >
-            <div style={{ display: "flex", width: "60%" }}>
+            <div style={{ display: "flex", width: "60%", alignItems: "center" }}>
               {storeSettings?.logo && (
                 <img
                   src={storeSettings.logo}
@@ -66,6 +67,7 @@ export function InvoicePreview({
                     height: "60px",
                     objectFit: "contain",
                     marginRight: "12px",
+                    flexShrink: 0,
                   }}
                 />
               )}
@@ -99,6 +101,9 @@ export function InvoicePreview({
                 width: "40%",
                 textAlign: "right",
                 paddingRight: "10px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
               }}
             >
               <div
@@ -154,6 +159,9 @@ export function InvoicePreview({
                 padding: "12px",
                 borderRadius: "6px",
                 borderLeft: `3px solid ${brandColor}`,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
               }}
             >
               <div
