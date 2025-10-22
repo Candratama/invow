@@ -1,27 +1,46 @@
 {
-  "name": "simple-invoice-local",
-  "version": "0.1.0",
+  "name": "invoice-generator-mobile",
+  "version": "1.0.0",
+  "description": "Mobile-first Invoice Generator PWA for Indonesian UMKM",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.6"
+    "@hookform/resolvers": "^3.10.0",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@sparticuz/chromium": "^121.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.0.0",
+    "idb": "^8.0.0",
+    "lucide-react": "^0.300.0",
+    "next": "^15.0.0",
+    "next-pwa": "^5.6.0",
+    "puppeteer-core": "^21.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-hook-form": "^7.49.0",
+    "sharp": "^0.33.0",
+    "tailwind-merge": "^2.0.0",
+    "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.22.0",
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.6",
-    "@eslint/eslintrc": "^3"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8.4.0",
+    "puppeteer": "^21.0.0",
+    "typescript": "^5.3.0"
   }
 }
