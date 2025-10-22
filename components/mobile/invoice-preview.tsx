@@ -116,10 +116,6 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
                   <span className="text-xl font-bold" style={{ color: brandColor }}>{formatCurrency(total)}</span>
                 </div>
               </div>
-              {/* LUNAS Stamp */}
-              <div className="absolute -top-4 left-5 pointer-events-none">
-                <span className="text-3xl font-bold tracking-wider opacity-50" style={{ color: brandColor }}>[LUNAS]</span>
-              </div>
             </div>
 
             {/* Footer with Signature */}

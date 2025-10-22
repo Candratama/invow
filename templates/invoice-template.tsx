@@ -240,18 +240,6 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
       color: ${brandColor};
     }
     
-    .lunas-stamp {
-      position: absolute;
-      top: -20px;
-      left: 20px;
-      font-size: 36px;
-      font-weight: bold;
-      color: ${brandColor};
-      letter-spacing: 4px;
-      opacity: 0.5;
-      white-space: nowrap;
-    }
-    
     @media print {
       body {
         print-color-adjust: exact;
@@ -335,8 +323,6 @@ export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateP
           <span class="amount">${formatCurrency(total)}</span>
         </div>
       </div>
-      <!-- LUNAS Stamp -->
-      <div class="lunas-stamp">[LUNAS]</div>
     </div>
 
     <!-- Footer with Signature -->

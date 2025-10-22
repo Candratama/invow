@@ -173,16 +173,6 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       color: brandColor,
       fontWeight: 'bold',
     },
-    lunasStamp: {
-      position: 'absolute',
-      top: -10,
-      left: 20,
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: brandColor,
-      letterSpacing: 4,
-      opacity: 0.5,
-    },
     footer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -310,8 +300,6 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
               <Text style={styles.totalsAmount}>{formatCurrency(total)}</Text>
             </View>
           </View>
-          {/* LUNAS Stamp */}
-          <Text style={styles.lunasStamp}>[LUNAS]</Text>
         </View>
 
         {/* Footer */}
