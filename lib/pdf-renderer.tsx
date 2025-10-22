@@ -1,13 +1,7 @@
 import React from 'react'
-import { Document, Page, Text, View, Image, StyleSheet, pdf, Font } from '@react-pdf/renderer'
+import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer'
 import { Invoice, StoreSettings } from './types'
 import { formatCurrency, formatDate } from './utils'
-
-// Register cursive font for signature
-Font.register({
-  family: 'Dancing Script',
-  src: 'https://fonts.gstatic.com/s/dancingscript/v24/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Sup8.ttf',
-})
 
 interface InvoiceDocumentProps {
   invoice: Invoice
@@ -212,9 +206,8 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       marginBottom: 18,
     },
     signatureName: {
-      fontFamily: 'Dancing Script',
-      fontSize: 32,
-      fontWeight: 'bold',
+      fontFamily: 'Times-Italic',
+      fontSize: 36,
       color: brandColor,
       marginBottom: 8,
     },
