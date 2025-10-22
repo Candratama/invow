@@ -1,4 +1,7 @@
-import { PDFDocument, rgb } from 'pdf-lib'
+'use client'
+
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 import { Invoice, StoreSettings } from './types'
 
 function formatCurrency(amount: number): string {
@@ -9,113 +12,97 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  return result
-    ? {
-        r: parseInt(result[1], 16) / 255,
-        g: parseInt(result[2], 16) / 255,
-        b: parseInt(result[3], 16) / 255,
-      }
-    : { r: 0.839, g: 0.686, b: 0.216 } // Default gold color
-}
-
-export async function generatePDFFromHTML(html: string): Promise<Buffer> {
-  throw new Error('HTML rendering not supported. Use generatePDFFromInvoice instead.')
-}
-
 export async function generatePDFFromInvoice(
   invoice: Invoice,
   storeSettings: StoreSettings | null
-): Promise<Buffer> {
+): Promise<void> {
   try {
     console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber)
 
     const brandColor = storeSettings?.brandColor || '#d4af37'
-    const brandColorRgb = hexToRgb(brandColor)
 
-    const pdfDoc = await PDFDocument.create()
-    const page = pdfDoc.addPage([595, 842]) // A4 size
-    const { height } = page.getSize()
-
-    let y = height - 50
+    const doc = new jsPDF()
+    let y = 20
 
     // Title
-    page.drawText('INVOICE', {
-      x: 50,
-      y,
-      size: 32,
-      color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b),
-    })
-    y -= 40
+    doc.setFontSize(24)
+    doc.setTextColor(brandColor)
+    doc.text('INVOICE', 20, y)
 
-    // Invoice details
-    page.drawText('Invoice #', { x: 50, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 15
-    page.drawText(invoice.invoiceNumber, { x: 50, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 20
-
-    page.drawText('Date', { x: 50, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 15
-    page.drawText(new Date(invoice.invoiceDate).toLocaleDateString('id-ID'), { x: 50, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 30
+    // Invoice number and date
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    doc.text(`#${invoice.invoiceNumber}`, 150, y)
+    y += 8
+    doc.text(`Date: ${new Date(invoice.invoiceDate).toLocaleDateString('id-ID')}`, 150, y)
+    y += 15
 
     // Bill to
-    page.drawText('Bill To', { x: 50, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 15
-    page.drawText(invoice.customer.name, { x: 50, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 15
+    doc.setFontSize(12)
+    doc.setTextColor(brandColor)
+    doc.text('Bill To:', 20, y)
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    y += 7
+    doc.text(invoice.customer.name, 20, y)
     if (invoice.customer.email) {
-      page.drawText(invoice.customer.email, { x: 50, y, size: 9, color: rgb(0, 0, 0) })
+      y += 6
+      doc.text(invoice.customer.email, 20, y)
     }
-    y -= 30
+    y += 15
 
-    // Items table
-    const col1 = 50
-    const col2 = 350
-    const col3 = 450
-    const col4 = 520
-    const rowHeight = 20
+    // Items table headers
+    doc.setFontSize(10)
+    doc.setTextColor(brandColor)
+    doc.text('Description', 20, y)
+    doc.text('Qty', 120, y)
+    doc.text('Price', 140, y)
+    doc.text('Amount', 160, y)
 
-    // Header row
-    page.drawText('Description', { x: col1 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
-    page.drawText('Qty', { x: col2 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
-    page.drawText('Price', { x: col3 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
-    page.drawText('Total', { x: col4 + 5, y: y - 12, size: 9, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+    y += 5
+    doc.setDrawColor(200, 200, 200)
+    doc.line(20, y, 190, y)
+    y += 8
 
-    y -= rowHeight + 5
-
-    // Item rows
-    invoice.items.forEach((item, index) => {
-      page.drawText(item.description.substring(0, 25), { x: col1 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
-      page.drawText(item.quantity.toString(), { x: col2 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
-      page.drawText(formatCurrency(item.price), { x: col3 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
-      page.drawText(formatCurrency(item.subtotal), { x: col4 + 5, y: y - 15, size: 8, color: rgb(0, 0, 0) })
-
-      y -= rowHeight
+    // Items
+    doc.setFontSize(9)
+    doc.setTextColor(0, 0, 0)
+    invoice.items.forEach((item) => {
+      doc.text(item.description.substring(0, 40), 20, y)
+      doc.text(item.quantity.toString(), 120, y)
+      doc.text(formatCurrency(item.price), 140, y)
+      doc.text(formatCurrency(item.subtotal), 160, y)
+      y += 7
     })
 
-    y -= 20
+    y += 5
+    doc.setDrawColor(200, 200, 200)
+    doc.line(140, y, 190, y)
+    y += 10
 
     // Totals
-    const totalsX = 380
-    page.drawText('Subtotal:', { x: totalsX, y, size: 10, color: rgb(0, 0, 0) })
-    page.drawText(formatCurrency(invoice.subtotal), { x: totalsX + 120, y, size: 10, color: rgb(0, 0, 0) })
-    y -= 20
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    doc.text('Subtotal:', 140, y)
+    doc.text(formatCurrency(invoice.subtotal), 160, y)
+    y += 7
 
     if (invoice.shippingCost > 0) {
-      page.drawText('Shipping:', { x: totalsX, y, size: 10, color: rgb(0, 0, 0) })
-      page.drawText(formatCurrency(invoice.shippingCost), { x: totalsX + 120, y, size: 10, color: rgb(0, 0, 0) })
-      y -= 20
+      doc.text('Shipping:', 140, y)
+      doc.text(formatCurrency(invoice.shippingCost), 160, y)
+      y += 7
     }
 
-    page.drawText('Total:', { x: totalsX, y, size: 12, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
-    page.drawText(formatCurrency(invoice.total), { x: totalsX + 120, y, size: 12, color: rgb(brandColorRgb.r, brandColorRgb.g, brandColorRgb.b) })
+    doc.setFontSize(12)
+    doc.setTextColor(brandColor)
+    doc.text('Total:', 140, y)
+    doc.text(formatCurrency(invoice.total), 160, y)
 
-    const pdfBytes = await pdfDoc.save()
-    console.log('✅ PDF generated successfully')
+    // Download
+    const filename = `Invoice_${invoice.customer.name.replace(/\s+/g, '_')}_${new Date(invoice.invoiceDate).toLocaleDateString('id-ID').replace(/\//g, '')}.pdf`
+    doc.save(filename)
 
-    return Buffer.from(pdfBytes)
+    console.log('✅ PDF generated and downloaded successfully')
   } catch (error) {
     console.error('❌ PDF generation error:', error)
     throw error

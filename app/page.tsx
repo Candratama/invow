@@ -12,6 +12,7 @@ import { useOnlineStatus } from '@/hooks/use-online-status'
 import { addPendingRequest } from '@/lib/offline'
 import { Invoice } from '@/lib/types'
 import { formatDate, generateUUID } from '@/lib/utils'
+import { generatePDFFromInvoice } from '@/lib/puppeteer'
 
 function PreviewView({ onBack, onComplete }: { onBack: () => void; onComplete: () => void }) {
   const { currentInvoice, storeSettings, isOffline, setPendingSync, deleteDraft, saveCompleted } = useInvoiceStore()
@@ -23,72 +24,7 @@ function PreviewView({ onBack, onComplete }: { onBack: () => void; onComplete: (
     setIsGenerating(true)
 
     try {
-      if (isOffline) {
-        // Queue for later when online
-        await addPendingRequest({
-          id: generateUUID(),
-          url: '/api/generate-pdf',
-          method: 'POST',
-          body: { invoice: currentInvoice as Invoice, storeSettings },
-          timestamp: new Date(),
-          retryCount: 0,
-        })
-        setPendingSync(1)
-        alert('You are offline. PDF will be generated when you are back online.')
-        return
-      }
-
-      const response = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          invoice: currentInvoice as Invoice,
-          storeSettings,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF')
-      }
-
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition')
-      let filename = `Invoice-${currentInvoice.invoiceNumber}.pdf`
-      
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/)
-        if (filenameMatch) {
-          filename = filenameMatch[1]
-        }
-      }
-
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-
-      // Try to share on mobile
-      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
-        try {
-          const file = new File([blob], filename, {
-            type: 'application/pdf',
-          })
-          await navigator.share({
-            files: [file],
-            title: `Invoice ${currentInvoice.invoiceNumber}`,
-          })
-        } catch (shareError) {
-          // Share cancelled or not supported, file already downloaded
-          console.log('Share cancelled or not supported')
-        }
-      }
+      await generatePDFFromInvoice(currentInvoice as Invoice, storeSettings)
 
       // Save as completed invoice and remove from drafts
       if (currentInvoice.id) {
