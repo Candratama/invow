@@ -14,7 +14,7 @@ export async function getBrowser() {
   } else {
     // Development: Use local Puppeteer
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
     return browser
