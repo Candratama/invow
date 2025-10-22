@@ -50,12 +50,21 @@ export async function generateJPEGFromInvoice(
       throw new Error('Invoice content element not found')
     }
 
-    // Capture the element as canvas with high quality
+    // Wait a bit for fonts and images to load
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Capture the element as canvas with optimized settings
     const canvas = await html2canvas(element, {
-      scale: 3, // Higher quality
+      scale: 2, // Good balance between quality and performance
       useCORS: true,
+      allowTaint: false,
       logging: false,
       backgroundColor: '#ffffff',
+      imageTimeout: 0,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
     })
 
     // Convert to JPEG blob
