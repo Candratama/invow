@@ -1,7 +1,13 @@
 import React from 'react'
-import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer'
+import { Document, Page, Text, View, Image, StyleSheet, pdf, Font } from '@react-pdf/renderer'
 import { Invoice, StoreSettings } from './types'
 import { formatCurrency, formatDate } from './utils'
+
+// Register cursive font for signature
+Font.register({
+  family: 'Dancing Script',
+  src: 'https://fonts.gstatic.com/s/dancingscript/v24/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Sup8.ttf',
+})
 
 interface InvoiceDocumentProps {
   invoice: Invoice
@@ -171,14 +177,11 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       top: -15,
       left: 15,
       transform: 'rotate(-12deg)',
-      border: `3pt solid ${brandColor}`,
-      borderRadius: 6,
-      padding: '6pt 18pt',
       fontSize: 24,
       fontWeight: 'bold',
       color: brandColor,
-      letterSpacing: 3,
-      opacity: 0.9,
+      letterSpacing: 2,
+      opacity: 0.5,
     },
     footer: {
       flexDirection: 'row',
@@ -209,11 +212,11 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       marginBottom: 18,
     },
     signatureName: {
+      fontFamily: 'Dancing Script',
       fontSize: 32,
       fontWeight: 'bold',
       color: brandColor,
       marginBottom: 8,
-      fontStyle: 'italic',
     },
     signatureLine: {
       borderTop: '2pt solid #111827',
@@ -309,7 +312,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
           </View>
           {/* LUNAS Stamp */}
           <View style={styles.lunasStamp}>
-            <Text>LUNAS</Text>
+            <Text>[LUNAS]</Text>
           </View>
         </View>
 
