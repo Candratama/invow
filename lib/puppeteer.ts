@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
 
 const RETRY_ATTEMPTS = 3
@@ -16,12 +16,22 @@ export async function getBrowser() {
       console.log(`🚀 Browser launch attempt ${attempt}/${RETRY_ATTEMPTS}...`)
 
       if (process.env.NODE_ENV === 'production') {
-        // Production: Use @sparticuz/chromium
+        // Production: Use @sparticuz/chromium for Vercel
+        const execPath = await chromium.executablePath()
+        console.log(`📍 Chromium executable path: ${execPath}`)
+
         const browser = await puppeteer.launch({
-          args: chromium.args,
+          args: [
+            ...chromium.args,
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--disable-software-rasterizer',
+          ],
           defaultViewport: chromium.defaultViewport,
-          executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
+          executablePath: execPath,
+          headless: true,
         })
         console.log('✅ Browser launched successfully (production)')
         return browser
