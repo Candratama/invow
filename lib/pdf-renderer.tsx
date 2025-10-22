@@ -51,6 +51,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       width: 60,
       height: 60,
       marginRight: 12,
+      objectFit: 'contain',
     },
     storeText: {
       flex: 1,
@@ -203,7 +204,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
     },
     signatureName: {
       fontFamily: 'Satisfy',
-      fontSize: 40,
+      fontSize: 32,
       color: brandColor,
       marginBottom: 8,
       fontWeight: 400,

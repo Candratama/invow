@@ -135,7 +135,7 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
                 {storeSettings?.adminName && (
                   <div className="text-center mr-4">
                     <p className="text-sm text-gray-700 mb-6">Hormat Kami</p>
-                    <p className="text-5xl font-medium mb-3" style={{ fontFamily: "'Brush Script MT', 'Windsong', cursive", color: brandColor }} >
+                    <p className="text-4xl font-medium mb-3" style={{ fontFamily: "'Brush Script MT', 'Windsong', cursive", color: brandColor }} >
                       {storeSettings.adminName}
                     </p>
                     <div className="border-t-2 border-gray-900 w-48"></div>
