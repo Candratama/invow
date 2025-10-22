@@ -21,7 +21,7 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
     <div className="min-h-screen bg-gray-100">
       {/* Preview Container */}
       <div className="max-w-4xl mx-auto p-4 pb-20">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div id="invoice-content" className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Invoice Content */}
           <div className="p-6 md:p-8">
             {/* Header */}
