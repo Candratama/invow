@@ -1,8 +1,7 @@
 'use client'
 
-import { jsPDF } from 'jspdf'
-import html2canvas from 'html2canvas'
 import { Invoice, StoreSettings } from './types'
+import { generateInvoicePDF } from './pdf-renderer'
 
 export async function generatePDFFromInvoice(
   invoice: Invoice,
@@ -11,51 +10,24 @@ export async function generatePDFFromInvoice(
   try {
     console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber)
 
-    // Get the invoice content element
-    const element = document.getElementById('invoice-content')
-    if (!element) {
-      throw new Error('Invoice content element not found')
-    }
+    // Generate PDF blob using @react-pdf/renderer
+    const blob = await generateInvoicePDF(invoice, storeSettings)
 
-    // Capture the element as canvas with high quality
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    })
-
-    // Calculate PDF dimensions
-    const imgWidth = 210 // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
-    const pageHeight = 297 // A4 height in mm
-
-    // Create PDF document
-    const doc = new jsPDF({
-      orientation: imgHeight > imgWidth ? 'portrait' : 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    })
-
-    let heightLeft = imgHeight
-    let position = 0
-
-    // Add image to PDF, handling multiple pages if needed
-    const imgData = canvas.toDataURL('image/png')
-
-    while (heightLeft >= 0) {
-      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-      position -= pageHeight
-
-      if (heightLeft > 0) {
-        doc.addPage()
-      }
-    }
-
-    // Download
+    // Create download link
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
     const filename = `Invoice_${invoice.customer.name.replace(/\s+/g, '_')}_${new Date(invoice.invoiceDate).toLocaleDateString('id-ID').replace(/\//g, '')}.pdf`
-    doc.save(filename)
+    link.download = filename
+    
+    // Trigger download
+    document.body.appendChild(link)
+    link.click()
+    
+    // Cleanup
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 
     console.log('✅ PDF generated and downloaded successfully')
   } catch (error) {
