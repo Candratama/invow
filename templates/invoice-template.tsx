@@ -7,7 +7,7 @@ interface InvoiceTemplateProps {
 }
 
 export function generateInvoiceHTML({ invoice, storeSettings }: InvoiceTemplateProps): string {
-  const { customer, items, subtotal, shippingCost, total, invoiceNumber, invoiceDate, dueDate } = invoice
+  const { customer, items, subtotal, shippingCost, total, invoiceNumber, invoiceDate } = invoice
   const brandColor = storeSettings?.brandColor || '#d4af37'
 
   return `
