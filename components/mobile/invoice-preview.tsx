@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 interface InvoicePreviewProps {
   invoice: Invoice;
   storeSettings: StoreSettings | null;
-  onDownloadPDF: () => void;
   onDownloadJPEG: () => void;
   isGenerating: boolean;
 }
@@ -16,7 +15,6 @@ interface InvoicePreviewProps {
 export function InvoicePreview({
   invoice,
   storeSettings,
-  onDownloadPDF,
   onDownloadJPEG,
   isGenerating,
 }: InvoicePreviewProps) {
@@ -375,41 +373,22 @@ export function InvoicePreview({
 
       {/* Fixed Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-3">
-          <Button
-            onClick={onDownloadPDF}
-            disabled={isGenerating}
-            className="gap-2"
-            size="lg"
-            variant="outline"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                PDF...
-              </>
-            ) : (
-              <>
-                <Download size={20} />
-                PDF
-              </>
-            )}
-          </Button>
+        <div className="max-w-2xl mx-auto">
           <Button
             onClick={onDownloadJPEG}
             disabled={isGenerating}
-            className="gap-2"
+            className="w-full gap-2"
             size="lg"
           >
             {isGenerating ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                JPEG...
+                Downloading...
               </>
             ) : (
               <>
                 <Download size={20} />
-                JPEG
+                Download JPEG
               </>
             )}
           </Button>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Plus, Save, Eye, Download, Loader2 } from 'lucide-react'
+import { Plus, Save, Download, Loader2 } from 'lucide-react'
 import { useInvoiceStore } from '@/lib/store'
 import { InvoiceItem, Invoice } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
@@ -330,7 +330,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
       {/* Fixed Bottom Actions - Green Zone */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-        <div className="max-w-2xl mx-auto grid grid-cols-3 gap-3">
+        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-3">
           <Button
             type="button"
             variant="outline"
@@ -339,18 +339,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
             size="lg"
           >
             <Save size={20} />
-            <span className="hidden sm:inline">Save</span>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onPreview}
-            disabled={!currentInvoice.items || currentInvoice.items.length === 0}
-            className="gap-2"
-            size="lg"
-          >
-            <Eye size={20} />
-            <span className="hidden sm:inline">Preview</span>
+            Save Draft
           </Button>
           <Button
             type="button"
@@ -362,12 +351,12 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
             {isDownloading ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                <span className="hidden sm:inline">...</span>
+                Downloading...
               </>
             ) : (
               <>
                 <Download size={20} />
-                <span className="hidden sm:inline">JPEG</span>
+                Download JPEG
               </>
             )}
           </Button>
