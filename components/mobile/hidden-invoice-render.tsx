@@ -77,7 +77,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             style={{
               width: "40%",
               textAlign: "right",
-              paddingRight: "10px",
+              paddingRight: "5px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
@@ -166,6 +166,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           <div
             style={{
               display: "flex",
+              alignItems: "center",
               backgroundColor: brandColor,
               padding: "8px",
               color: "#ffffff",
@@ -185,6 +186,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               key={item.id}
               style={{
                 display: "flex",
+                alignItems: "center",
                 borderBottom: "1px solid #e5e7eb",
                 padding: "8px",
                 fontSize: "9pt",

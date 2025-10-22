@@ -192,6 +192,7 @@ export function InvoicePreview({
             <div
               style={{
                 display: "flex",
+                alignItems: "center",
                 backgroundColor: brandColor,
                 padding: "8px",
                 color: "#ffffff",
@@ -211,6 +212,7 @@ export function InvoicePreview({
                 key={item.id}
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   borderBottom: "1px solid #e5e7eb",
                   padding: "8px",
                   fontSize: "9pt",
