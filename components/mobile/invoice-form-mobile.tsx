@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { ItemRow } from './item-row'
 import { BottomSheet } from './bottom-sheet'
 import { generateJPEGFromInvoice } from '@/lib/puppeteer'
+import { HiddenInvoiceRender } from './hidden-invoice-render'
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, 'Invoice number is required'),
@@ -459,40 +460,10 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
       {/* Hidden Invoice Preview for Quick Download */}
       {currentInvoice && currentInvoice.items && currentInvoice.items.length > 0 && (
-        <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
-          <div
-            id="invoice-content"
-            style={{
-              width: "794px",
-              padding: "40px",
-              fontSize: "10pt",
-              fontFamily: "Helvetica, Arial, sans-serif",
-              backgroundColor: "#ffffff",
-            }}
-          >
-            <div style={{ borderBottom: `2px solid ${useInvoiceStore.getState().storeSettings?.brandColor || '#d4af37'}`, paddingBottom: '15px', marginBottom: '20px', fontSize: '28pt', fontWeight: 'bold', color: useInvoiceStore.getState().storeSettings?.brandColor || '#d4af37' }}>
-              INVOICE #{currentInvoice.invoiceNumber}
-            </div>
-            <div style={{ marginBottom: '20px', backgroundColor: '#f9fafb', padding: '12px', borderRadius: '6px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{currentInvoice.customer?.name || 'Customer'}</div>
-              <div style={{ fontSize: '9pt', color: '#6b7280' }}>{currentInvoice.customer?.address || ''}</div>
-            </div>
-            <div>
-              {currentInvoice.items?.map((item, index) => (
-                <div key={item.id} style={{ display: 'flex', padding: '8px', borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 1 ? '#f9fafb' : '#fff' }}>
-                  <div style={{ width: '8%' }}>{index + 1}</div>
-                  <div style={{ width: '44%', fontWeight: 'bold' }}>{item.description}</div>
-                  <div style={{ width: '12%', textAlign: 'right' }}>{item.quantity}</div>
-                  <div style={{ width: '18%', textAlign: 'right' }}>{formatCurrency(item.price)}</div>
-                  <div style={{ width: '18%', textAlign: 'right' }}>{formatCurrency(item.subtotal)}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: '20px', textAlign: 'right', fontSize: '14pt', fontWeight: 'bold' }}>
-              Total: {formatCurrency(currentInvoice.total || 0)}
-            </div>
-          </div>
-        </div>
+        <HiddenInvoiceRender 
+          invoice={currentInvoice as Invoice}
+          storeSettings={useInvoiceStore.getState().storeSettings}
+        />
       )}
     </div>
   )
