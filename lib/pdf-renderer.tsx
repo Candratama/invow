@@ -178,11 +178,12 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       top: -15,
       left: 15,
       transform: 'rotate(-12deg)',
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: 'bold',
       color: brandColor,
       letterSpacing: 2,
       opacity: 0.5,
+      width: 120,
     },
     footer: {
       flexDirection: 'row',

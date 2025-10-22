@@ -118,9 +118,7 @@ export function InvoicePreview({ invoice, storeSettings, onDownload, isGeneratin
               </div>
               {/* LUNAS Stamp */}
               <div className="absolute -top-4 left-4 transform -rotate-12 pointer-events-none">
-                <div className="border-4 rounded-lg px-6 py-2" style={{ borderColor: brandColor }}>
-                  <span className="text-4xl font-bold tracking-wider" style={{ color: brandColor }}>LUNAS</span>
-                </div>
+                <span className="text-4xl font-bold tracking-wide opacity-50" style={{ color: brandColor }}>[LUNAS]</span>
               </div>
             </div>
 
