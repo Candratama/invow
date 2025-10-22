@@ -102,7 +102,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             >
               <div>
                 <span style={{ color: "#111827", fontWeight: "bold" }}>
-                  Invoice #:
+                  Invoice:
                 </span>{" "}
                 {invoiceNumber}
               </div>
@@ -157,6 +157,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             >
               <div>{customer.address || "No address provided"}</div>
               {customer.status && <div>Status: {customer.status}</div>}
+              <br />
             </div>
           </div>
         </div>
@@ -168,7 +169,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               display: "flex",
               alignItems: "center",
               backgroundColor: brandColor,
-              padding: "8px",
+              padding: "8px 8px 16px 8px",
               color: "#ffffff",
               fontWeight: "bold",
               fontSize: "9pt",
@@ -188,7 +189,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 display: "flex",
                 alignItems: "center",
                 borderBottom: "1px solid #e5e7eb",
-                padding: "8px",
+                padding: "8px 8px 16px 8px",
                 fontSize: "9pt",
                 backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
               }}
@@ -230,7 +231,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "6px",
-                paddingBottom: "6px",
+                paddingBottom: "16px",
                 fontSize: "10pt",
                 color: "#6b7280",
                 borderBottom: "1px solid #e5e7eb",
@@ -244,7 +245,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "6px",
-                paddingBottom: "6px",
+                paddingBottom: "16px",
                 fontSize: "10pt",
                 color: "#6b7280",
                 borderBottom: "1px solid #e5e7eb",
@@ -293,15 +294,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               <div>Terus berinvestasi untuk masa depan,</div>
               <div>Terima kasih!</div>
             </div>
-            <div
-              style={{
-                fontSize: "8pt",
-                color: "#6b7280",
-                marginTop: "8px",
-              }}
-            >
-              Generated on {formatDate(new Date())}
-            </div>
+            
           </div>
 
           {storeSettings?.adminName && (
@@ -316,7 +309,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 style={{
                   fontSize: "9pt",
                   color: "#374151",
-                  marginBottom: "18px",
+                  marginBottom: "8px",
                 }}
               >
                 Hormat Kami
@@ -326,7 +319,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                   fontFamily: "'Brush Script MT', cursive",
                   fontSize: "32pt",
                   color: brandColor,
-                  marginBottom: "8px",
+                  marginBottom: "16px",
                   fontWeight: 400,
                 }}
               >
