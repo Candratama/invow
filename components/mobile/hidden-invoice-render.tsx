@@ -17,8 +17,8 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
         id="invoice-content"
         style={{
           width: "794px",
-          padding: "40px",
-          fontSize: "10pt",
+          padding: "40px 40px 80px 40px",
+          fontSize: "12pt",
           fontFamily: "Helvetica, Arial, sans-serif",
           backgroundColor: "#ffffff",
         }}
@@ -51,7 +51,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: "16pt",
+                  fontSize: "19pt",
                   fontWeight: "bold",
                   color: "#111827",
                   marginBottom: "4px",
@@ -61,7 +61,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               </div>
               <div
                 style={{
-                  fontSize: "9pt",
+                  fontSize: "10pt",
                   color: "#6b7280",
                   lineHeight: "1.4",
                 }}
@@ -85,7 +85,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           >
             <div
               style={{
-                fontSize: "28pt",
+                fontSize: "31pt",
                 fontWeight: "bold",
                 color: brandColor,
                 marginBottom: "5px",
@@ -95,7 +95,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             </div>
             <div
               style={{
-                fontSize: "9pt",
+                fontSize: "10pt",
                 color: "#6b7280",
                 lineHeight: "1.5",
               }}
@@ -129,7 +129,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           >
             <div
             style={{
-              fontSize: "9pt",
+              fontSize: "10pt",
               fontWeight: "bold",
               color: "#6b7280",
               textTransform: "uppercase",
@@ -141,7 +141,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           </div>
             <div
               style={{
-                fontSize: "12pt",
+                fontSize: "15pt",
                 fontWeight: "bold",
                 color: "#111827",
                 marginBottom: "4px",
@@ -151,7 +151,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             </div>
             <div
               style={{
-                fontSize: "9pt",
+                fontSize: "10pt",
                 color: "#6b7280",
                 lineHeight: "1.4",
               }}
@@ -174,7 +174,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               borderRadius: "8px",
               color: "#ffffff",
               fontWeight: "bold",
-              fontSize: "9pt",
+              fontSize: "10pt",
               textTransform: "uppercase",
             }}
           >
@@ -192,7 +192,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 alignItems: "center",
                 borderBottom: "1px solid #e5e7eb",
                 padding: "8px 16px 16px 16px",
-                fontSize: "9pt",
+                fontSize: "11pt",
                 backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
               }}
             >
@@ -219,22 +219,58 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           ))}
         </div>
 
+        {/* Note Section */}
+        {invoice.note && (
+          <div
+            style={{
+              marginBottom: "20px",
+              padding: "12px",
+              backgroundColor: "#f9fafb",
+              borderRadius: "8px",
+              borderLeft: `3px solid ${brandColor}`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: "10pt",
+                fontWeight: "bold",
+                color: "#6b7280",
+                marginBottom: "6px",
+              }}
+            >
+              Note:
+            </div>
+            <div
+              style={{
+                fontSize: "10pt",
+                color: "#374151",
+                lineHeight: "1.6",
+                whiteSpace: "pre-wrap",
+                paddingBottom:"16"
+              }}
+            >
+              {invoice.note}
+            </div>
+          </div>
+        )}
+
         {/* Totals */}
         <div
           style={{
             display: "flex",
             justifyContent: "flex-end",
             marginBottom: "20px",
+            marginRight: "16px",
           }}
         >
-          <div style={{ width: "220px" }}>
+          <div style={{ width: "260px" }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "6px",
                 paddingBottom: "16px",
-                fontSize: "10pt",
+                fontSize: "12pt",
                 color: "#6b7280",
                 borderBottom: "1px solid #e5e7eb",
               }}
@@ -248,12 +284,12 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 justifyContent: "space-between",
                 paddingTop: "6px",
                 paddingBottom: "16px",
-                fontSize: "10pt",
+                fontSize: "12pt",
                 color: "#6b7280",
                 borderBottom: "1px solid #e5e7eb",
               }}
             >
-              <span>Ongkos Kirim:</span>
+              <span>Shipping:</span>
               <span>{formatCurrency(shippingCost)}</span>
             </div>
             <div
@@ -261,12 +297,13 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "16px",
-                fontSize: "14pt",
+                gap: "16px",
+                fontSize: "19pt",
                 fontWeight: "bold",
                 borderTop: `2px solid ${brandColor}`,
               }}
             >
-              <span>Total:</span>
+              <span>Total: </span>
               <span style={{ color: brandColor }}>
                 {formatCurrency(total)}
               </span>
@@ -287,7 +324,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           <div>
             <div
               style={{
-                fontSize: "10pt",
+                fontSize: "12pt",
                 fontWeight: "bold",
                 color: brandColor,
                 lineHeight: "1.5",
@@ -309,7 +346,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             >
               <div
                 style={{
-                  fontSize: "9pt",
+                  fontSize: "10pt",
                   color: "#374151",
                   marginBottom: "8px",
                 }}
@@ -318,11 +355,10 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               </div>
               <div
                 style={{
-                  fontFamily: "'Brush Script MT', cursive",
-                  fontSize: "32pt",
+                  fontSize: "24pt",
                   color: brandColor,
                   marginBottom: "16px",
-                  fontWeight: 400,
+                  fontWeight: "bold",
                 }}
               >
                 {storeSettings.adminName}

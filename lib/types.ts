@@ -8,6 +8,7 @@ export interface Invoice {
   subtotal: number
   shippingCost: number // Changed from taxPercentage/taxAmount
   total: number
+  note?: string // Optional note field
   status: 'draft' | 'pending' | 'synced'
   createdAt: Date
   updatedAt: Date

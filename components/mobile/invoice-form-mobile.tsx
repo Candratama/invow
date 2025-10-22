@@ -25,6 +25,7 @@ const invoiceSchema = z.object({
   customerAddress: z.string().optional(),
   customerStatus: z.enum(['Distributor', 'Reseller', 'Customer']),
   shippingCost: z.number().min(0),
+  note: z.string().optional(),
 })
 
 const itemSchema = z.object({
@@ -295,6 +296,19 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
               No items added yet. Tap "Add Item" to get started.
             </p>
           )}
+        </div>
+
+        {/* Note Section */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <Label htmlFor="note">Note (Optional)</Label>
+          <Textarea
+            id="note"
+            value={currentInvoice.note || ''}
+            onChange={(e) => handleFormChange('note', e.target.value)}
+            placeholder="Add any additional notes or instructions..."
+            rows={3}
+            className="mt-2"
+          />
         </div>
 
         {/* Totals Section */}

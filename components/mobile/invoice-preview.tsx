@@ -40,7 +40,7 @@ export function InvoicePreview({
             width: "794px", // A4 width in pixels at 96 DPI
             margin: "0 auto",
             padding: "40px",
-            fontSize: "10pt",
+            fontSize: "12pt",
             fontFamily: "Helvetica, Arial, sans-serif",
           }}
         >
@@ -72,7 +72,7 @@ export function InvoicePreview({
               <div style={{ flex: 1 }}>
                 <div
                   style={{
-                    fontSize: "16pt",
+                    fontSize: "19pt",
                     fontWeight: "bold",
                     color: "#111827",
                     marginBottom: "4px",
@@ -82,7 +82,7 @@ export function InvoicePreview({
                 </div>
                 <div
                   style={{
-                    fontSize: "9pt",
+                    fontSize: "10pt",
                     color: "#6b7280",
                     lineHeight: "1.4",
                   }}
@@ -106,7 +106,7 @@ export function InvoicePreview({
             >
               <div
                 style={{
-                  fontSize: "28pt",
+                  fontSize: "31pt",
                   fontWeight: "bold",
                   color: brandColor,
                   marginBottom: "5px",
@@ -116,7 +116,7 @@ export function InvoicePreview({
               </div>
               <div
                 style={{
-                  fontSize: "9pt",
+                  fontSize: "10pt",
                   color: "#6b7280",
                   lineHeight: "1.5",
                 }}
@@ -141,7 +141,7 @@ export function InvoicePreview({
           <div style={{ marginBottom: "20px" }}>
             <div
               style={{
-                fontSize: "9pt",
+                fontSize: "10pt",
                 fontWeight: "bold",
                 color: "#6b7280",
                 textTransform: "uppercase",
@@ -164,7 +164,7 @@ export function InvoicePreview({
             >
               <div
                 style={{
-                  fontSize: "12pt",
+                  fontSize: "15pt",
                   fontWeight: "bold",
                   color: "#111827",
                   marginBottom: "4px",
@@ -174,7 +174,7 @@ export function InvoicePreview({
               </div>
               <div
                 style={{
-                  fontSize: "9pt",
+                  fontSize: "10pt",
                   color: "#6b7280",
                   lineHeight: "1.4",
                 }}
@@ -195,7 +195,7 @@ export function InvoicePreview({
                 padding: "8px",
                 color: "#ffffff",
                 fontWeight: "bold",
-                fontSize: "9pt",
+                fontSize: "10pt",
                 textTransform: "uppercase",
               }}
             >
@@ -213,7 +213,7 @@ export function InvoicePreview({
                   alignItems: "center",
                   borderBottom: "1px solid #e5e7eb",
                   padding: "8px",
-                  fontSize: "9pt",
+                  fontSize: "11pt",
                   backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                 }}
               >
@@ -240,6 +240,40 @@ export function InvoicePreview({
             ))}
           </div>
 
+          {/* Note Section */}
+          {invoice.note && (
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "12px",
+                backgroundColor: "#f9fafb",
+                borderRadius: "6px",
+                borderLeft: `3px solid ${brandColor}`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "10pt",
+                  fontWeight: "bold",
+                  color: "#6b7280",
+                  marginBottom: "6px",
+                }}
+              >
+                Note:
+              </div>
+              <div
+                style={{
+                  fontSize: "10pt",
+                  color: "#374151",
+                  lineHeight: "1.6",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {invoice.note}
+              </div>
+            </div>
+          )}
+
           {/* Totals */}
           <div
             style={{
@@ -255,7 +289,7 @@ export function InvoicePreview({
                   justifyContent: "space-between",
                   paddingTop: "6px",
                   paddingBottom: "6px",
-                  fontSize: "10pt",
+                  fontSize: "12pt",
                   color: "#6b7280",
                   borderBottom: "1px solid #e5e7eb",
                 }}
@@ -281,8 +315,8 @@ export function InvoicePreview({
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  paddingTop: "16px",
-                  fontSize: "14pt",
+                  paddingTop: "16pt",
+                  fontSize: "19pt",
                   fontWeight: "bold",
                   borderTop: `2px solid ${brandColor}`,
                 }}
@@ -308,7 +342,7 @@ export function InvoicePreview({
             <div>
               <div
                 style={{
-                  fontSize: "10pt",
+                  fontSize: "12pt",
                   fontWeight: "bold",
                   color: brandColor,
                   lineHeight: "1.5",
@@ -319,7 +353,7 @@ export function InvoicePreview({
               </div>
               <div
                 style={{
-                  fontSize: "8pt",
+                  fontSize: "10pt",
                   color: "#6b7280",
                   marginTop: "8px",
                 }}
@@ -338,7 +372,7 @@ export function InvoicePreview({
               >
                 <div
                   style={{
-                    fontSize: "9pt",
+                    fontSize: "10pt",
                     color: "#374151",
                     marginBottom: "18px",
                   }}
@@ -348,7 +382,7 @@ export function InvoicePreview({
                 <div
                   style={{
                     fontFamily: "'Brush Script MT', cursive",
-                    fontSize: "32pt",
+                    fontSize: "38pt",
                     color: brandColor,
                     marginBottom: "8px",
                     fontWeight: 400,
