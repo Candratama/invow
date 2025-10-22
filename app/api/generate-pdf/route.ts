@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber)
+    console.log('📋 Invoice data:', JSON.stringify(invoice, null, 2))
 
     // Generate HTML from template
     const html = generateInvoiceHTML({ invoice, storeSettings })

@@ -124,7 +124,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           id: current.id || generateUUID(),
           invoiceNumber: current.invoiceNumber || generateInvoiceNumber(),
           invoiceDate: current.invoiceDate || new Date(),
-          dueDate: current.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          dueDate: new Date(), // Keep for backward compatibility
           customer: current.customer || { name: '', email: '' },
           items: current.items || [],
           subtotal: current.subtotal || 0,
@@ -159,7 +159,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           id: current.id || generateUUID(),
           invoiceNumber: current.invoiceNumber || generateInvoiceNumber(),
           invoiceDate: current.invoiceDate || new Date(),
-          dueDate: current.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          dueDate: new Date(), // Keep for backward compatibility
           customer: current.customer || { name: '', email: '' },
           items: current.items || [],
           subtotal: current.subtotal || 0,
@@ -194,7 +194,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           id: generateUUID(),
           invoiceNumber: generateInvoiceNumber(),
           invoiceDate: new Date(),
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+          dueDate: new Date(), // Keep for backward compatibility
           customer: { name: '', email: '' },
           items: [],
           subtotal: 0,
