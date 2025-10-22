@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Plus, Save, Eye } from 'lucide-react'
+import { Plus, Save, Eye, Download, Loader2 } from 'lucide-react'
 import { useInvoiceStore } from '@/lib/store'
-import { InvoiceItem } from '@/lib/types'
+import { InvoiceItem, Invoice } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { CurrencyInput } from '@/components/ui/currency-input'
@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ItemRow } from './item-row'
 import { BottomSheet } from './bottom-sheet'
+import { generateJPEGFromInvoice } from '@/lib/puppeteer'
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, 'Invoice number is required'),
@@ -52,6 +53,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
   const [showItemModal, setShowItemModal] = useState(false)
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // Initialize invoice if not exists
   useEffect(() => {
@@ -147,6 +149,35 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
   const handleSaveDraft = () => {
     saveDraft()
     alert('Draft saved!')
+  }
+
+  const handleQuickDownload = async () => {
+    if (!currentInvoice || !currentInvoice.items || currentInvoice.items.length === 0) {
+      alert('Please add at least one item to the invoice')
+      return
+    }
+
+    setIsDownloading(true)
+    try {
+      // Small delay to ensure DOM is ready
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      const { storeSettings, deleteDraft, saveCompleted } = useInvoiceStore.getState()
+      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings)
+      
+      // Save as completed and remove draft
+      if (currentInvoice.id) {
+        deleteDraft(currentInvoice.id)
+        saveCompleted()
+      }
+      
+      alert('Invoice downloaded successfully!')
+    } catch (error) {
+      console.error('Download error:', error)
+      alert('Failed to download invoice. Please try Preview instead.')
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   if (!currentInvoice) return null
@@ -298,26 +329,46 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
       {/* Fixed Bottom Actions - Green Zone */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-        <div className="max-w-2xl mx-auto flex gap-3">
+        <div className="max-w-2xl mx-auto grid grid-cols-3 gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={handleSaveDraft}
-            className="flex-1 gap-2"
+            className="gap-2"
             size="lg"
           >
             <Save size={20} />
-            Save Draft
+            <span className="hidden sm:inline">Save</span>
           </Button>
           <Button
             type="button"
+            variant="outline"
             onClick={onPreview}
             disabled={!currentInvoice.items || currentInvoice.items.length === 0}
-            className="flex-1 gap-2"
+            className="gap-2"
             size="lg"
           >
             <Eye size={20} />
-            Preview
+            <span className="hidden sm:inline">Preview</span>
+          </Button>
+          <Button
+            type="button"
+            onClick={handleQuickDownload}
+            disabled={!currentInvoice.items || currentInvoice.items.length === 0 || isDownloading}
+            className="gap-2"
+            size="lg"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                <span className="hidden sm:inline">...</span>
+              </>
+            ) : (
+              <>
+                <Download size={20} />
+                <span className="hidden sm:inline">JPEG</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -405,6 +456,44 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
           </div>
         </form>
       </BottomSheet>
+
+      {/* Hidden Invoice Preview for Quick Download */}
+      {currentInvoice && currentInvoice.items && currentInvoice.items.length > 0 && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+          <div
+            id="invoice-content"
+            style={{
+              width: "794px",
+              padding: "40px",
+              fontSize: "10pt",
+              fontFamily: "Helvetica, Arial, sans-serif",
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <div style={{ borderBottom: `2px solid ${useInvoiceStore.getState().storeSettings?.brandColor || '#d4af37'}`, paddingBottom: '15px', marginBottom: '20px', fontSize: '28pt', fontWeight: 'bold', color: useInvoiceStore.getState().storeSettings?.brandColor || '#d4af37' }}>
+              INVOICE #{currentInvoice.invoiceNumber}
+            </div>
+            <div style={{ marginBottom: '20px', backgroundColor: '#f9fafb', padding: '12px', borderRadius: '6px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{currentInvoice.customer?.name || 'Customer'}</div>
+              <div style={{ fontSize: '9pt', color: '#6b7280' }}>{currentInvoice.customer?.address || ''}</div>
+            </div>
+            <div>
+              {currentInvoice.items?.map((item, index) => (
+                <div key={item.id} style={{ display: 'flex', padding: '8px', borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 1 ? '#f9fafb' : '#fff' }}>
+                  <div style={{ width: '8%' }}>{index + 1}</div>
+                  <div style={{ width: '44%', fontWeight: 'bold' }}>{item.description}</div>
+                  <div style={{ width: '12%', textAlign: 'right' }}>{item.quantity}</div>
+                  <div style={{ width: '18%', textAlign: 'right' }}>{formatCurrency(item.price)}</div>
+                  <div style={{ width: '18%', textAlign: 'right' }}>{formatCurrency(item.subtotal)}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '20px', textAlign: 'right', fontSize: '14pt', fontWeight: 'bold' }}>
+              Total: {formatCurrency(currentInvoice.total || 0)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
