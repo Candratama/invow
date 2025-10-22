@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generatePDFFromHTML } from '@/lib/puppeteer'
-import { generateInvoiceHTML } from '@/templates/invoice-template'
+import { generatePDFFromInvoice } from '@/lib/puppeteer'
 import { Invoice, StoreSettings } from '@/lib/types'
 
 export async function POST(request: NextRequest) {
@@ -29,11 +28,8 @@ export async function POST(request: NextRequest) {
     console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber)
     console.log('📋 Invoice data:', JSON.stringify(invoice, null, 2))
 
-    // Generate HTML from template
-    const html = generateInvoiceHTML({ invoice, storeSettings })
-
-    // Generate PDF using Puppeteer
-    const pdfBuffer = await generatePDFFromHTML(html)
+    // Generate PDF using pdfmake
+    const pdfBuffer = await generatePDFFromInvoice(invoice, storeSettings)
 
     console.log('✅ PDF generated successfully:', invoice.invoiceNumber)
 
