@@ -178,12 +178,11 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       top: -15,
       left: 15,
       transform: 'rotate(-12deg)',
-      fontSize: 28,
+      fontSize: 32,
       fontWeight: 'bold',
       color: brandColor,
-      letterSpacing: 2,
+      letterSpacing: 3,
       opacity: 0.5,
-      width: 120,
     },
     footer: {
       flexDirection: 'row',
@@ -313,9 +312,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
             </View>
           </View>
           {/* LUNAS Stamp */}
-          <View style={styles.lunasStamp}>
-            <Text>[LUNAS]</Text>
-          </View>
+          <Text style={styles.lunasStamp}>[LUNAS]</Text>
         </View>
 
         {/* Footer */}
