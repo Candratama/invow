@@ -12,7 +12,7 @@ import { useOnlineStatus } from '@/hooks/use-online-status'
 import { addPendingRequest } from '@/lib/offline'
 import { Invoice } from '@/lib/types'
 import { formatDate, generateUUID } from '@/lib/utils'
-import { generatePDFFromInvoice } from '@/lib/puppeteer'
+import { generatePDFFromInvoice, generateJPEGFromInvoice } from '@/lib/puppeteer'
 
 function PreviewView({ onBack, onComplete }: { onBack: () => void; onComplete: () => void }) {
   const { currentInvoice, storeSettings, isOffline, setPendingSync, deleteDraft, saveCompleted } = useInvoiceStore()
@@ -38,6 +38,31 @@ function PreviewView({ onBack, onComplete }: { onBack: () => void; onComplete: (
     } catch (error) {
       console.error('Error generating PDF:', error)
       alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleDownloadJPEG = async () => {
+    if (!currentInvoice || !currentInvoice.id) return
+
+    setIsGenerating(true)
+
+    try {
+      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings)
+
+      // Save as completed invoice and remove from drafts
+      if (currentInvoice.id) {
+        deleteDraft(currentInvoice.id)
+        saveCompleted()
+      }
+      
+      // Notify completion
+      onComplete()
+      
+    } catch (error) {
+      console.error('Error generating JPEG:', error)
+      alert('Failed to generate JPEG. Please try again.')
     } finally {
       setIsGenerating(false)
     }
@@ -69,7 +94,8 @@ function PreviewView({ onBack, onComplete }: { onBack: () => void; onComplete: (
       <InvoicePreview
         invoice={currentInvoice as Invoice}
         storeSettings={storeSettings}
-        onDownload={handleDownloadPDF}
+        onDownloadPDF={handleDownloadPDF}
+        onDownloadJPEG={handleDownloadJPEG}
         isGenerating={isGenerating}
       />
     </>

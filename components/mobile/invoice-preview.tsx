@@ -9,14 +9,16 @@ import { Button } from "@/components/ui/button";
 interface InvoicePreviewProps {
   invoice: Invoice;
   storeSettings: StoreSettings | null;
-  onDownload: () => void;
+  onDownloadPDF: () => void;
+  onDownloadJPEG: () => void;
   isGenerating: boolean;
 }
 
 export function InvoicePreview({
   invoice,
   storeSettings,
-  onDownload,
+  onDownloadPDF,
+  onDownloadJPEG,
   isGenerating,
 }: InvoicePreviewProps) {
   const {
@@ -238,22 +240,41 @@ export function InvoicePreview({
 
       {/* Fixed Bottom Actions - Green Zone */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-3">
           <Button
-            onClick={onDownload}
+            onClick={onDownloadPDF}
             disabled={isGenerating}
-            className="w-full gap-2"
+            className="gap-2"
+            size="lg"
+            variant="outline"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                PDF...
+              </>
+            ) : (
+              <>
+                <Download size={20} />
+                PDF
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={onDownloadJPEG}
+            disabled={isGenerating}
+            className="gap-2"
             size="lg"
           >
             {isGenerating ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                Generating PDF...
+                JPEG...
               </>
             ) : (
               <>
                 <Download size={20} />
-                Download PDF
+                JPEG
               </>
             )}
           </Button>
