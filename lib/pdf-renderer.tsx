@@ -1,7 +1,14 @@
 import React from 'react'
-import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer'
+import { Document, Page, Text, View, Image, StyleSheet, pdf, Font } from '@react-pdf/renderer'
 import { Invoice, StoreSettings } from './types'
 import { formatCurrency, formatDate } from './utils'
+
+// Register cursive font for signature (similar to Brush Script MT)
+Font.register({
+  family: 'Satisfy',
+  src: 'https://fonts.gstatic.com/s/satisfy/v21/rP2Hp2yn6lkG50LoOZSCHBeHFl0.ttf',
+  fontWeight: 400,
+})
 
 interface InvoiceDocumentProps {
   invoice: Invoice
@@ -206,10 +213,11 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, store
       marginBottom: 18,
     },
     signatureName: {
-      fontFamily: 'Times-Italic',
-      fontSize: 36,
+      fontFamily: 'Satisfy',
+      fontSize: 40,
       color: brandColor,
       marginBottom: 8,
+      fontWeight: 400,
     },
     signatureLine: {
       borderTop: '2pt solid #111827',
