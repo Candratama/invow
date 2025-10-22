@@ -34,14 +34,14 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
             borderBottom: `2px solid ${brandColor}`,
           }}
         >
-          <div style={{ display: "flex", width: "60%", alignItems: "center" }}>
+          <div style={{ display: "flex", width: "60%", alignItems: "end" }}>
             {storeSettings?.logo && (
               <img
                 src={storeSettings.logo}
                 alt="Store Logo"
                 style={{
-                  width: "60px",
-                  height: "60px",
+                  width: "72px",
+                  height: "72px",
                   objectFit: "contain",
                   marginRight: "12px",
                   flexShrink: 0,
@@ -118,7 +118,16 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
 
         {/* Customer Section */}
         <div style={{ marginBottom: "20px" }}>
+          
           <div
+            style={{
+              backgroundColor: "#f9fafb",
+              padding: "12px",
+              borderRadius: "8px",
+              borderLeft: `3px solid ${brandColor}`,
+            }}
+          >
+            <div
             style={{
               fontSize: "9pt",
               fontWeight: "bold",
@@ -130,14 +139,6 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
           >
             Bill To:
           </div>
-          <div
-            style={{
-              backgroundColor: "#f9fafb",
-              padding: "12px",
-              borderRadius: "6px",
-              borderLeft: `3px solid ${brandColor}`,
-            }}
-          >
             <div
               style={{
                 fontSize: "12pt",
@@ -169,7 +170,8 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
               display: "flex",
               alignItems: "center",
               backgroundColor: brandColor,
-              padding: "8px 8px 16px 8px",
+              padding: "8px 16px 16px 16px",
+              borderRadius: "8px",
               color: "#ffffff",
               fontWeight: "bold",
               fontSize: "9pt",
@@ -189,7 +191,7 @@ export function HiddenInvoiceRender({ invoice, storeSettings }: HiddenInvoiceRen
                 display: "flex",
                 alignItems: "center",
                 borderBottom: "1px solid #e5e7eb",
-                padding: "8px 8px 16px 8px",
+                padding: "8px 16px 16px 16px",
                 fontSize: "9pt",
                 backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
               }}
