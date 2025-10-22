@@ -125,7 +125,12 @@ export const useInvoiceStore = create<InvoiceStore>()(
           invoiceNumber: current.invoiceNumber || generateInvoiceNumber(),
           invoiceDate: current.invoiceDate || new Date(),
           dueDate: new Date(), // Keep for backward compatibility
-          customer: current.customer || { name: '', email: '' },
+          customer: {
+            ...current.customer,
+            name: current.customer?.name || '',
+            email: current.customer?.email || '',
+            status: current.customer?.status || 'Customer',
+          },
           items: current.items || [],
           subtotal: current.subtotal || 0,
           shippingCost: current.shippingCost || 0,
@@ -160,7 +165,12 @@ export const useInvoiceStore = create<InvoiceStore>()(
           invoiceNumber: current.invoiceNumber || generateInvoiceNumber(),
           invoiceDate: current.invoiceDate || new Date(),
           dueDate: new Date(), // Keep for backward compatibility
-          customer: current.customer || { name: '', email: '' },
+          customer: {
+            ...current.customer,
+            name: current.customer?.name || '',
+            email: current.customer?.email || '',
+            status: current.customer?.status || 'Customer',
+          },
           items: current.items || [],
           subtotal: current.subtotal || 0,
           shippingCost: current.shippingCost || 0,
@@ -195,7 +205,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           invoiceNumber: generateInvoiceNumber(),
           invoiceDate: new Date(),
           dueDate: new Date(), // Keep for backward compatibility
-          customer: { name: '', email: '' },
+          customer: { name: '', email: '', status: 'Customer' },
           items: [],
           subtotal: 0,
           shippingCost: 0,
