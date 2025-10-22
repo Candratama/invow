@@ -1,165 +1,5 @@
+import PDFDocument from 'pdfkit'
 import { Invoice, StoreSettings } from './types'
-
-let printer: any = null
-
-async function getPrinter() {
-  if (!printer) {
-    const PdfPrinter = (await import('pdfmake')).default
-
-    const fonts = {
-      Roboto: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique',
-      },
-    }
-
-    printer = new PdfPrinter(fonts)
-  }
-  return printer
-}
-
-export async function generatePDFFromHTML(html: string): Promise<Buffer> {
-  // This function is kept for backward compatibility
-  // For Vercel, use generatePDFFromInvoice instead
-  return generatePDFFromInvoice({} as any, null)
-}
-
-export async function generatePDFFromInvoice(
-  invoice: Invoice,
-  storeSettings: StoreSettings | null
-): Promise<Buffer> {
-  try {
-    console.log('📄 Starting PDF generation for invoice:', invoice.invoiceNumber)
-
-    const pdfPrinter = await getPrinter()
-    const brandColor = storeSettings?.brandColor || '#d4af37'
-    const invoiceDate = new Date(invoice.invoiceDate).toLocaleDateString('id-ID')
-
-    const docDefinition: any = {
-      pageMargins: [40, 40, 40, 40],
-      content: [
-        {
-          text: 'INVOICE',
-          fontSize: 32,
-          bold: true,
-          color: brandColor,
-          alignment: 'center',
-          marginBottom: 30,
-        },
-        {
-          columns: [
-            {
-              stack: [
-                { text: 'Invoice #', bold: true },
-                { text: invoice.invoiceNumber, fontSize: 11 },
-                { text: 'Date', bold: true, marginTop: 10 },
-                { text: invoiceDate, fontSize: 11 },
-              ],
-              width: '50%',
-            },
-            {
-              stack: [
-                { text: 'Bill To', bold: true },
-                { text: invoice.customer.name, fontSize: 11 },
-                ...(invoice.customer.email
-                  ? [{ text: invoice.customer.email, fontSize: 10 }]
-                  : []),
-              ],
-              width: '50%',
-              alignment: 'right',
-            },
-          ],
-          marginBottom: 30,
-        },
-        {
-          table: {
-            headerRows: 1,
-            widths: ['50%', '12.5%', '18.75%', '18.75%'],
-            body: [
-              [
-                { text: 'Description', bold: true, color: 'white', fillColor: brandColor },
-                { text: 'Qty', bold: true, color: 'white', fillColor: brandColor, alignment: 'center' },
-                { text: 'Price', bold: true, color: 'white', fillColor: brandColor, alignment: 'right' },
-                { text: 'Total', bold: true, color: 'white', fillColor: brandColor, alignment: 'right' },
-              ],
-              ...invoice.items.map(item => [
-                item.description,
-                { text: item.quantity.toString(), alignment: 'center' },
-                { text: formatCurrency(item.price), alignment: 'right' },
-                { text: formatCurrency(item.subtotal), alignment: 'right' },
-              ]),
-            ],
-          },
-          marginBottom: 20,
-        },
-        {
-          columns: [
-            { text: '', width: '50%' },
-            {
-              stack: [
-                {
-                  columns: [
-                    { text: 'Subtotal:', width: '60%' },
-                    { text: formatCurrency(invoice.subtotal), alignment: 'right', width: '40%' },
-                  ],
-                },
-                ...(invoice.shippingCost > 0
-                  ? [
-                      {
-                        columns: [
-                          { text: 'Shipping:', width: '60%' },
-                          { text: formatCurrency(invoice.shippingCost), alignment: 'right', width: '40%' },
-                        ],
-                      },
-                    ]
-                  : []),
-                {
-                  columns: [
-                    { text: 'Total:', bold: true, fontSize: 14, width: '60%' },
-                    { text: formatCurrency(invoice.total), bold: true, fontSize: 14, alignment: 'right', width: '40%', color: brandColor },
-                  ],
-                  marginTop: 10,
-                },
-              ],
-              width: '50%',
-            },
-          ],
-        },
-      ],
-      defaultStyle: {
-        font: 'Roboto',
-        fontSize: 10,
-      },
-    }
-
-    const pdfDoc = pdfPrinter.createPdfKitDocument(docDefinition)
-    const chunks: Buffer[] = []
-
-    return new Promise((resolve, reject) => {
-      pdfDoc.on('data', (chunk: Buffer) => {
-        chunks.push(chunk)
-      })
-
-      pdfDoc.on('end', () => {
-        const pdfBuffer = Buffer.concat(chunks)
-        console.log('✅ PDF generated successfully')
-        resolve(pdfBuffer)
-      })
-
-      pdfDoc.on('error', (error: Error) => {
-        console.error('❌ PDF generation error:', error)
-        reject(error)
-      })
-
-      pdfDoc.end()
-    })
-  } catch (error) {
-    console.error('❌ PDF generation error:', error)
-    throw error
-  }
-}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -167,4 +7,122 @@ function formatCurrency(amount: number): string {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(amount)
+}
+
+export async function generatePDFFromHTML(html: string): Promise<Buffer> {
+  throw new Error('HTML rendering not supported. Use generatePDFFromInvoice instead.')
+}
+
+export async function generatePDFFromInvoice(
+  invoice: Invoice,
+  storeSettings: StoreSettings | null
+): Promise<Buffer> {
+  try {
+    console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber)
+
+    const brandColor = storeSettings?.brandColor || '#d4af37'
+    const doc = new PDFDocument({ size: 'A4', margin: 40 })
+
+    const chunks: Buffer[] = []
+
+    return new Promise((resolve, reject) => {
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk))
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks)
+        console.log('✅ PDF generated successfully')
+        resolve(pdfBuffer)
+      })
+      doc.on('error', reject)
+
+      try {
+        // Title
+        doc.fontSize(32).font('Helvetica-Bold').fillColor(brandColor).text('INVOICE', { align: 'center' })
+        doc.moveDown(0.5)
+
+        // Invoice details
+        doc.fontSize(10).fillColor('black').font('Helvetica-Bold').text('Invoice #')
+        doc.font('Helvetica').text(invoice.invoiceNumber)
+        doc.moveDown(0.3)
+
+        doc.font('Helvetica-Bold').text('Date')
+        doc.font('Helvetica').text(new Date(invoice.invoiceDate).toLocaleDateString('id-ID'))
+        doc.moveDown(0.8)
+
+        // Bill to
+        doc.font('Helvetica-Bold').text('Bill To')
+        doc.font('Helvetica').text(invoice.customer.name)
+        if (invoice.customer.email) {
+          doc.fontSize(9).text(invoice.customer.email)
+        }
+        doc.moveDown(0.8)
+
+        // Items table
+        const tableTop = doc.y
+        const col1 = 50
+        const col2 = 400
+        const col3 = 470
+        const col4 = 540
+        const rowHeight = 20
+
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('white')
+
+        // Header row
+        doc.rect(col1 - 10, tableTop, 510, rowHeight).fill(brandColor)
+        doc.fillColor('white').text('Description', col1, tableTop + 5, { width: col2 - col1 })
+        doc.text('Qty', col2, tableTop + 5, { width: col3 - col2, align: 'center' })
+        doc.text('Price', col3, tableTop + 5, { width: col4 - col3, align: 'right' })
+        doc.text('Total', col4, tableTop + 5, { width: 50, align: 'right' })
+
+        // Item rows
+        let y = tableTop + rowHeight
+        doc.fillColor('black').font('Helvetica').fontSize(9)
+
+        invoice.items.forEach((item, index) => {
+          if (index % 2 === 0) {
+            doc.rect(col1 - 10, y, 510, rowHeight).fillAndStroke('#f5f5f5', '#f5f5f5')
+          }
+
+          doc.fillColor('black').text(item.description, col1, y + 5, { width: col2 - col1 })
+          doc.text(item.quantity.toString(), col2, y + 5, { width: col3 - col2, align: 'center' })
+          doc.text(formatCurrency(item.price), col3, y + 5, { width: col4 - col3, align: 'right' })
+          doc.text(formatCurrency(item.subtotal), col4, y + 5, { width: 50, align: 'right' })
+
+          y += rowHeight
+        })
+
+        doc.moveDown(1)
+
+        // Totals
+        const totalsX = 400
+        doc.fontSize(10).font('Helvetica').fillColor('black')
+        doc.text('Subtotal:', totalsX, doc.y, { width: 80 }).text(formatCurrency(invoice.subtotal), totalsX + 80, doc.y - 12, {
+          width: 80,
+          align: 'right',
+        })
+        doc.moveDown(0.5)
+
+        if (invoice.shippingCost > 0) {
+          doc.text('Shipping:', totalsX, doc.y, { width: 80 }).text(formatCurrency(invoice.shippingCost), totalsX + 80, doc.y - 12, {
+            width: 80,
+            align: 'right',
+          })
+          doc.moveDown(0.5)
+        }
+
+        doc.font('Helvetica-Bold').fontSize(14).fillColor(brandColor)
+        doc.text('Total:', totalsX, doc.y, { width: 80 }).text(formatCurrency(invoice.total), totalsX + 80, doc.y - 16, {
+          width: 80,
+          align: 'right',
+        })
+
+        doc.end()
+      } catch (error) {
+        doc.end()
+        reject(error)
+      }
+    })
+  } catch (error) {
+    console.error('❌ PDF generation error:', error)
+    throw error
+  }
 }
