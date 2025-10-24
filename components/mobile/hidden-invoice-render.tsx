@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Invoice, StoreSettings } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -24,6 +26,10 @@ export function HiddenInvoiceRender({
   } = invoice;
   const brandColor = storeSettings?.brandColor || "#d4af37";
   const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
+  const contactLine = [storeSettings?.whatsapp, storeSettings?.email]
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter((entry) => entry.length > 0)
+    .join(" | ");
   const splitCurrency = (value: number) => {
     const normalized = formatCurrency(value)
       .replace(/\u00A0/g, " ")
@@ -95,29 +101,51 @@ export function HiddenInvoiceRender({
                 }}
               />
             )}
-            <div style={{ flex: 1 }}>
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+              }}
+            >
               <div
                 style={{
                   fontSize: "19pt",
                   fontWeight: "bold",
                   color: "#111827",
-                  marginBottom: "4px",
+                  marginBottom: "2px",
                 }}
               >
                 {storeSettings?.name || "Your Store Name"}
               </div>
-              <div
-                style={{
-                  fontSize: "10pt",
-                  color: "#6b7280",
-                  lineHeight: "1.4",
-                }}
-              >
-                <div>{storeSettings?.address || "Store Address"}</div>
-                <div>
-                  WhatsApp: {storeSettings?.whatsapp || "+62 XXX XXX XXX"}
+              {storeSettings?.storeDescription && (
+                <div
+                  style={{
+                    fontSize: "11pt",
+                    color: "#6b7280",
+                  }}
+                >
+                  {storeSettings.storeDescription}
                 </div>
-              </div>
+              )}
+              {storeSettings?.storeNumber && (
+                <div
+                  style={{
+                    fontSize: "10pt",
+                    color: "#111827",
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>No ID:</span>{" "}
+                  <span
+                    style={{
+                      color: "#6b7280",
+                    }}
+                  >
+                    {storeSettings.storeNumber}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div
@@ -306,51 +334,58 @@ export function HiddenInvoiceRender({
           })}
         </div>
 
-        {/* Note Section */}
-        {invoice.note && (
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "12px",
-              backgroundColor: "#f9fafb",
-              borderRadius: "8px",
-              borderLeft: `3px solid ${brandColor}`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: "10pt",
-                fontWeight: "bold",
-                color: "#6b7280",
-                marginBottom: "6px",
-              }}
-            >
-              Note:
-            </div>
-            <div
-              style={{
-                fontSize: "10pt",
-                color: "#374151",
-                lineHeight: "1.6",
-                whiteSpace: "pre-wrap",
-                paddingBottom: "16",
-              }}
-            >
-              {invoice.note}
-            </div>
-          </div>
-        )}
-
-        {/* Totals */}
+        {/* Note & Totals */}
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: "20px",
-            marginRight: "16px",
+            gap: "24px",
+            alignItems: "stretch",
+            marginBottom: "24px",
+            marginRight: invoice.note ? "0" : "16px",
           }}
         >
-          <div style={{ width: "260px" }}>
+          {invoice.note && (
+            <div
+              style={{
+                flex: 1,
+                padding: "12px",
+                backgroundColor: "#f9fafb",
+                borderRadius: "8px",
+                borderLeft: `3px solid ${brandColor}`,
+                minHeight: "100%",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "10pt",
+                  fontWeight: "bold",
+                  color: "#6b7280",
+                  marginBottom: "6px",
+                }}
+              >
+                Note:
+              </div>
+              <div
+                style={{
+                  fontSize: "10pt",
+                  color: "#374151",
+                  lineHeight: "1.6",
+                  whiteSpace: "pre-wrap",
+                  paddingBottom: "16px",
+                }}
+              >
+                {invoice.note}
+              </div>
+            </div>
+          )}
+
+          <div
+            style={{
+              width: "310px",
+              marginLeft: "auto",
+              padding: "0 16px 0 0",
+            }}
+          >
             <div
               style={{
                 display: "flex",
@@ -446,27 +481,103 @@ export function HiddenInvoiceRender({
             alignItems: "flex-end",
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: "12pt",
-                color: brandColor,
-                lineHeight: "1.5",
-              }}
-            >
-              <div style={{ fontWeight: "bold" }}>Terima kasih!</div>
-              <div>Semua bisa punya emas</div>
+          <div
+            style={{
+              maxWidth: "65%",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              color: "#374151",
+            }}
+          >
+            {storeSettings?.paymentMethod && (
+              <div>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    color: brandColor,
+                    marginBottom: "4px",
+                  }}
+                >
+                  Metode Pembayaran:
+                </div>
+                <div
+                  style={{
+                    fontSize: "10pt",
+                    color: "#6b7280",
+                  }}
+                >
+                  {storeSettings.paymentMethod}
+                </div>
+              </div>
+            )}
+            <div>
+              <div
+                style={{
+                  fontWeight: "bold",
+                  color: brandColor,
+                  marginBottom: "4px",
+                }}
+              >
+                Kontak:
+              </div>
+              <div
+                style={{
+                  fontSize: "10pt",
+                  display: "grid",
+                  gap: "4px",
+                  color: "#6b7280",
+                }}
+              >
+                <div>{storeSettings?.address || "Store Address"}</div>
+                <div>{contactLine || "-"}</div>
+              </div>
             </div>
+            {storeSettings?.tagline && (
+              <div
+                style={{
+                  fontStyle: "italic",
+                  color: brandColor,
+                  marginTop: "4px",
+                }}
+              >
+                {storeSettings.tagline}
+              </div>
+            )}
           </div>
 
           {storeSettings?.adminName && (
             <div
               style={{
-                textAlign: "center",
+                textAlign: "right",
                 minWidth: "150px",
                 marginRight: "10px",
               }}
             >
+              {storeSettings?.signature && (
+                <img
+                  src={storeSettings.signature}
+                  alt="Admin Signature"
+                  style={{
+                    width: "180px",
+                    height: "auto",
+                    objectFit: "contain",
+                    display: "block",
+                    marginLeft: "auto",
+                  }}
+                />
+              )}
+
+              <div
+                style={{
+                  fontSize: "14pt",
+                  marginBottom: "0px",
+                  fontWeight: "bold",
+                }}
+              >
+                {storeSettings.adminName}
+              </div>
+
               <div
                 style={{
                   fontSize: "10pt",
@@ -474,39 +585,8 @@ export function HiddenInvoiceRender({
                   marginBottom: "8px",
                 }}
               >
-                Hormat Kami
+                {adminTitle}
               </div>
-              <div
-                style={{
-                  fontSize: "24pt",
-                  color: brandColor,
-                  marginBottom: "0px",
-                  fontWeight: "bold",
-                }}
-              >
-                {storeSettings.adminName}
-              </div>
-              <div
-                style={{
-                  borderTop: "2px solid #111827",
-                  width: "150px",
-                  marginTop: "10px",
-                  marginBottom: "5px",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                }}
-              />
-              {adminTitle && (
-                <div
-                  style={{
-                    fontSize: "10pt",
-                    color: "#374151",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {adminTitle}
-                </div>
-              )}
             </div>
           )}
         </div>

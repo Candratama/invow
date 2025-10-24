@@ -28,7 +28,25 @@ export function InvoicePreview({
     invoiceDate,
   } = invoice;
   const brandColor = storeSettings?.brandColor || "#d4af37";
+  const splitCurrency = (value: number) => {
+    const normalized = formatCurrency(value)
+      .replace(/\u00A0/g, " ")
+      .trim();
+    const [symbol, ...rest] = normalized.split(" ");
+    const amount = rest.join(" ").trim();
+    return {
+      symbol: symbol || "Rp",
+      amount: amount || normalized.replace(symbol || "", "").trim(),
+    };
+  };
+  const subtotalCurrency = splitCurrency(subtotal);
+  const shippingCurrency = splitCurrency(shippingCost);
+  const totalCurrency = splitCurrency(total);
   const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
+  const contactLine = [storeSettings?.whatsapp, storeSettings?.email]
+    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+    .filter((entry) => entry.length > 0)
+    .join(" | ");
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -72,28 +90,60 @@ export function InvoicePreview({
                   }}
                 />
               )}
-              <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
                 <div
                   style={{
                     fontSize: "19pt",
                     fontWeight: "bold",
                     color: "#111827",
-                    marginBottom: "4px",
+                    marginBottom: "2px",
                   }}
                 >
                   {storeSettings?.name || "Your Store Name"}
                 </div>
+                {storeSettings?.storeDescription && (
+                  <div
+                    style={{
+                      fontSize: "11pt",
+                      color: "#374151",
+                    }}
+                  >
+                    {storeSettings.storeDescription}
+                  </div>
+                )}
+                {storeSettings?.storeNumber && (
+                  <div
+                    style={{
+                      fontSize: "10pt",
+                      color: "#111827",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>No ID:</span>{" "}
+                    {storeSettings.storeNumber}
+                  </div>
+                )}
                 <div
                   style={{
                     fontSize: "10pt",
                     color: "#6b7280",
-                    lineHeight: "1.4",
+                    display: "grid",
+                    gap: "4px",
                   }}
                 >
                   <div>{storeSettings?.address || "Store Address"}</div>
                   <div>
                     WhatsApp: {storeSettings?.whatsapp || "+62 XXX XXX XXX"}
                   </div>
+                  {storeSettings?.email && (
+                    <div>Email: {storeSettings.email}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -202,90 +252,129 @@ export function InvoicePreview({
                 textTransform: "uppercase",
               }}
             >
-              <div style={{ width: "8%" }}>No</div>
-              <div style={{ width: "44%" }}>Description</div>
-              <div style={{ width: "12%", textAlign: "right" }}>Qty</div>
+              <div style={{ width: "8%", textAlign: "center" }}>No</div>
+              <div style={{ width: "44%", textAlign: "left" }}>Description</div>
+              <div style={{ width: "12%", textAlign: "center" }}>Qty</div>
               <div style={{ width: "18%", textAlign: "right" }}>Price</div>
               <div style={{ width: "18%", textAlign: "right" }}>Subtotal</div>
             </div>
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  borderBottom: "1px solid #e5e7eb",
-                  padding: "8px",
-                  fontSize: "11pt",
-                  backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
-                }}
-              >
-                <div style={{ width: "8%" }}>{index + 1}</div>
+            {items.map((item, index) => {
+              const { symbol: priceSymbol, amount: priceAmount } =
+                splitCurrency(item.price);
+              const { symbol: subtotalSymbol, amount: subtotalAmount } =
+                splitCurrency(item.subtotal);
+
+              return (
                 <div
+                  key={item.id}
                   style={{
-                    width: "44%",
-                    fontWeight: "bold",
-                    color: "#111827",
+                    display: "flex",
+                    alignItems: "center",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px",
+                    fontSize: "11pt",
+                    backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                   }}
                 >
-                  {item.description}
+                  <div style={{ width: "8%", textAlign: "center" }}>
+                    {index + 1}
+                  </div>
+                  <div
+                    style={{
+                      width: "44%",
+                      fontWeight: "bold",
+                      color: "#111827",
+                    }}
+                  >
+                    {item.description}
+                  </div>
+                  <div style={{ width: "12%", textAlign: "center" }}>
+                    {item.quantity}
+                  </div>
+                  <div
+                    style={{
+                      width: "18%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "6px",
+                      paddingLeft: "8px",
+                      paddingRight: "8px",
+                    }}
+                  >
+                    <span>{priceSymbol}</span>
+                    <span style={{ flex: 1, textAlign: "right" }}>
+                      {priceAmount}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "18%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "6px",
+                      paddingLeft: "8px",
+                      paddingRight: "8px",
+                    }}
+                  >
+                    <span>{subtotalSymbol}</span>
+                    <span style={{ flex: 1, textAlign: "right" }}>
+                      {subtotalAmount}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ width: "12%", textAlign: "right" }}>
-                  {item.quantity}
-                </div>
-                <div style={{ width: "18%", textAlign: "right" }}>
-                  {formatCurrency(item.price)}
-                </div>
-                <div style={{ width: "18%", textAlign: "right" }}>
-                  {formatCurrency(item.subtotal)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Note Section */}
-          {invoice.note && (
-            <div
-              style={{
-                marginBottom: "20px",
-                padding: "12px",
-                backgroundColor: "#f9fafb",
-                borderRadius: "6px",
-                borderLeft: `3px solid ${brandColor}`,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "10pt",
-                  fontWeight: "bold",
-                  color: "#6b7280",
-                  marginBottom: "6px",
-                }}
-              >
-                Note:
-              </div>
-              <div
-                style={{
-                  fontSize: "10pt",
-                  color: "#374151",
-                  lineHeight: "1.6",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {invoice.note}
-              </div>
-            </div>
-          )}
-
-          {/* Totals */}
+          {/* Note & Totals */}
           <div
             style={{
               display: "flex",
-              justifyContent: "flex-end",
-              marginBottom: "20px",
+              gap: "24px",
+              alignItems: "stretch",
+              marginBottom: "24px",
+              marginRight: invoice.note ? "0" : "16px",
             }}
           >
-            <div style={{ width: "220px" }}>
+            {invoice.note && (
+              <div
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: "#f9fafb",
+                  borderRadius: "6px",
+                  borderLeft: `3px solid ${brandColor}`,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "10pt",
+                    fontWeight: "bold",
+                    color: "#6b7280",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Note:
+                </div>
+                <div
+                  style={{
+                    fontSize: "10pt",
+                    color: "#374151",
+                    lineHeight: "1.6",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {invoice.note}
+                </div>
+              </div>
+            )}
+
+            <div
+              style={{
+                width: "240px",
+                marginLeft: "auto",
+              }}
+            >
               <div
                 style={{
                   display: "flex",
@@ -298,7 +387,19 @@ export function InvoicePreview({
                 }}
               >
                 <span>Subtotal:</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    minWidth: "140px",
+                  }}
+                >
+                  <span>{subtotalCurrency.symbol}</span>
+                  <span style={{ flex: 1, textAlign: "right" }}>
+                    {subtotalCurrency.amount}
+                  </span>
+                </span>
               </div>
               <div
                 style={{
@@ -311,22 +412,45 @@ export function InvoicePreview({
                   borderBottom: "1px solid #e5e7eb",
                 }}
               >
-                <span>Ongkos Kirim:</span>
-                <span>{formatCurrency(shippingCost)}</span>
+                <span>Shipping:</span>
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    minWidth: "140px",
+                  }}
+                >
+                  <span>{shippingCurrency.symbol}</span>
+                  <span style={{ flex: 1, textAlign: "right" }}>
+                    {shippingCurrency.amount}
+                  </span>
+                </span>
               </div>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  paddingTop: "16pt",
+                  paddingTop: "16px",
                   fontSize: "19pt",
                   fontWeight: "bold",
                   borderTop: `2px solid ${brandColor}`,
                 }}
               >
                 <span>Total:</span>
-                <span style={{ color: brandColor }}>
-                  {formatCurrency(total)}
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    minWidth: "140px",
+                    color: brandColor,
+                  }}
+                >
+                  <span>{totalCurrency.symbol}</span>
+                  <span style={{ flex: 1, textAlign: "right" }}>
+                    {totalCurrency.amount}
+                  </span>
                 </span>
               </div>
             </div>
@@ -340,48 +464,78 @@ export function InvoicePreview({
               paddingTop: "20px",
               borderTop: "1px solid #e5e7eb",
               marginTop: "20px",
+              alignItems: "flex-end",
             }}
           >
-            <div>
-              <div
-                style={{
-                  fontSize: "12pt",
-                  fontWeight: "bold",
-                  color: brandColor,
-                  lineHeight: "1.5",
-                }}
-              >
-                <div>Terus berinvestasi untuk masa depan,</div>
-                <div>Terima kasih!</div>
+            <div
+              style={{
+                maxWidth: "65%",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                color: "#374151",
+              }}
+            >
+              {storeSettings?.paymentMethod && (
+                <div>
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      color: brandColor,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Metode Pembayaran:
+                  </div>
+                  <div>{storeSettings.paymentMethod}</div>
+                </div>
+              )}
+              <div>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    color: brandColor,
+                    marginBottom: "4px",
+                  }}
+                >
+                  Kontak:
+                </div>
+                <div>{storeSettings?.address || "Store Address"}</div>
+                <div>{contactLine || "-"}</div>
               </div>
-              <div
-                style={{
-                  fontSize: "10pt",
-                  color: "#6b7280",
-                  marginTop: "8px",
-                }}
-              >
-                Generated on {formatDate(new Date())}
-              </div>
+              {storeSettings?.tagline && (
+                <div
+                  style={{
+                    fontStyle: "italic",
+                    color: brandColor,
+                    marginTop: "4px",
+                  }}
+                >
+                  {storeSettings.tagline}
+                </div>
+              )}
             </div>
 
             {storeSettings?.adminName && (
               <div
                 style={{
-                  textAlign: "center",
+                  textAlign: "right",
                   minWidth: "150px",
                   marginRight: "10px",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: "10pt",
-                    color: "#374151",
-                    marginBottom: "18px",
-                  }}
-                >
-                  Hormat Kami
-                </div>
+                {storeSettings.signature && (
+                  <img
+                    src={storeSettings.signature}
+                    alt="Admin signature"
+                    style={{
+                      width: "180px",
+                      height: "80px",
+                      objectFit: "contain",
+                      margin: "0 auto 8px auto",
+                    }}
+                  />
+                )}
                 <div
                   style={{
                     fontFamily: "'Brush Script MT', cursive",
