@@ -137,7 +137,9 @@ export function InvoicePreview({
                     gap: "4px",
                   }}
                 >
-                  <div>{storeSettings?.address || "Store Address"}</div>
+                  <div style={{ whiteSpace: "pre-wrap" }}>
+                    {storeSettings?.address || "Store Address"}
+                  </div>
                   <div>
                     WhatsApp: {storeSettings?.whatsapp || "+62 XXX XXX XXX"}
                   </div>

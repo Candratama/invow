@@ -244,7 +244,7 @@ export function HiddenInvoiceRender({
               display: "flex",
               alignItems: "center",
               backgroundColor: brandColor,
-              padding: "8px 8px 16px 8px",
+              padding: "0px 8px 16px 8px",
               borderRadius: "8px",
               color: "#ffffff",
               fontWeight: "bold",
@@ -252,11 +252,11 @@ export function HiddenInvoiceRender({
               textTransform: "uppercase",
             }}
           >
-            <div style={{ width: "8%", textAlign: "center" }}>No</div>
-            <div style={{ width: "44%", textAlign: "left" }}>Description</div>
-            <div style={{ width: "12%", textAlign: "center" }}>Qty</div>
-            <div style={{ width: "18%", textAlign: "center" }}>Price</div>
-            <div style={{ width: "18%", textAlign: "center" }}>Subtotal</div>
+            <div style={{ width: "12%", textAlign: "center" }}>No</div>
+            <div style={{ width: "40%", textAlign: "left" }}>Items</div>
+            <div style={{ width: "8%", textAlign: "center" }}>Qty</div>
+            <div style={{ width: "20%", textAlign: "center" }}>Price</div>
+            <div style={{ width: "20%", textAlign: "center" }}>Subtotal</div>
           </div>
           {items.map((item, index) => {
             const { symbol: priceSymbol, amount: priceAmount } = splitCurrency(
@@ -271,17 +271,17 @@ export function HiddenInvoiceRender({
                   display: "flex",
                   alignItems: "center",
                   borderBottom: "1px solid #e5e7eb",
-                  padding: "8px 8px 16px 8px",
+                  padding: "0px 8px 16px 8px",
                   fontSize: "11pt",
                   backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                 }}
               >
-                <div style={{ width: "8%", textAlign: "center" }}>
+                <div style={{ width: "12%", textAlign: "center" }}>
                   {index + 1}
                 </div>
                 <div
                   style={{
-                    width: "44%",
+                    width: "40%",
                     fontWeight: "bold",
                     color: "#111827",
                     textAlign: "left",
@@ -289,12 +289,12 @@ export function HiddenInvoiceRender({
                 >
                   {item.description}
                 </div>
-                <div style={{ width: "12%", textAlign: "center" }}>
+                <div style={{ width: "8%", textAlign: "center" }}>
                   {item.quantity}
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
@@ -315,7 +315,7 @@ export function HiddenInvoiceRender({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
@@ -341,7 +341,7 @@ export function HiddenInvoiceRender({
             gap: "24px",
             alignItems: "stretch",
             marginBottom: "24px",
-            marginRight: invoice.note ? "0" : "16px",
+            marginRight: invoice.note ? "16px" : "16px",
           }}
         >
           {invoice.note && (
@@ -360,7 +360,7 @@ export function HiddenInvoiceRender({
                   fontSize: "10pt",
                   fontWeight: "bold",
                   color: "#6b7280",
-                  marginBottom: "6px",
+                  marginBottom: "0px",
                 }}
               >
                 Note:
@@ -383,7 +383,6 @@ export function HiddenInvoiceRender({
             style={{
               width: "310px",
               marginLeft: "auto",
-              padding: "0 16px 0 0",
             }}
           >
             <div
@@ -529,21 +528,12 @@ export function HiddenInvoiceRender({
                   color: "#6b7280",
                 }}
               >
-                <div>{storeSettings?.address || "Store Address"}</div>
+                <div style={{ whiteSpace: "pre-wrap" }}>
+                  {storeSettings?.address || "Store Address"}
+                </div>
                 <div>{contactLine || "-"}</div>
               </div>
             </div>
-            {storeSettings?.tagline && (
-              <div
-                style={{
-                  fontStyle: "italic",
-                  color: brandColor,
-                  marginTop: "4px",
-                }}
-              >
-                {storeSettings.tagline}
-              </div>
-            )}
           </div>
 
           {storeSettings?.adminName && (
@@ -570,7 +560,7 @@ export function HiddenInvoiceRender({
 
               <div
                 style={{
-                  fontSize: "14pt",
+                  fontSize: "11pt",
                   marginBottom: "0px",
                   fontWeight: "bold",
                 }}
@@ -590,6 +580,17 @@ export function HiddenInvoiceRender({
             </div>
           )}
         </div>
+        {storeSettings?.tagline && (
+          <div
+            style={{
+              marginTop: "16px",
+              fontStyle: "italic",
+              color: brandColor,
+            }}
+          >
+            {storeSettings.tagline}
+          </div>
+        )}
       </div>
     </div>
   );
