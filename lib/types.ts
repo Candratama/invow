@@ -1,57 +1,58 @@
 export interface Invoice {
-  id: string
-  invoiceNumber: string
-  invoiceDate: Date
-  dueDate: Date
-  customer: Customer
-  items: InvoiceItem[]
-  subtotal: number
-  shippingCost: number // Changed from taxPercentage/taxAmount
-  total: number
-  note?: string // Optional note field
-  status: 'draft' | 'pending' | 'synced'
-  createdAt: Date
-  updatedAt: Date
-  syncedAt?: Date
+  id: string;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  dueDate: Date;
+  customer: Customer;
+  items: InvoiceItem[];
+  subtotal: number;
+  shippingCost: number; // Changed from taxPercentage/taxAmount
+  total: number;
+  note?: string; // Optional note field
+  status: "draft" | "pending" | "synced";
+  createdAt: Date;
+  updatedAt: Date;
+  syncedAt?: Date;
 }
 
 export interface Customer {
-  name: string
-  email?: string // Optional, not used in form
-  address?: string
-  status?: 'Distributor' | 'Reseller' | 'Customer'
+  name: string;
+  email?: string; // Optional, not used in form
+  address?: string;
+  status?: "Distributor" | "Reseller" | "Customer";
 }
 
 export interface InvoiceItem {
-  id: string
-  description: string
-  quantity: number
-  price: number
-  subtotal: number
+  id: string;
+  description: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
 }
 
 export interface StoreSettings {
-  name: string
-  logo: string // base64 compressed (supports PNG transparency)
-  address: string
-  whatsapp: string
-  adminName: string // For signature on PDF
-  brandColor: string // Hex color for app and PDF theming
-  lastUpdated: Date | string // Can be Date or ISO string from localStorage
+  name: string;
+  logo: string; // base64 compressed (supports PNG transparency)
+  address: string;
+  whatsapp: string;
+  adminName: string; // For signature on PDF
+  adminTitle?: string; // Optional job title shown under signature
+  brandColor: string; // Hex color for app and PDF theming
+  lastUpdated: Date | string; // Can be Date or ISO string from localStorage
 }
 
 export interface PWAState {
-  version: string
-  cachedAssets: string[]
-  pendingRequests: PendingRequest[]
-  lastSync: Date
+  version: string;
+  cachedAssets: string[];
+  pendingRequests: PendingRequest[];
+  lastSync: Date;
 }
 
 export interface PendingRequest {
-  id: string
-  url: string
-  method: string
-  body: any
-  timestamp: Date
-  retryCount: number
+  id: string;
+  url: string;
+  method: string;
+  body: any;
+  timestamp: Date;
+  retryCount: number;
 }

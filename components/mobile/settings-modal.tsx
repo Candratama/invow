@@ -1,136 +1,152 @@
-'use client'
+"use client";
 
-import { useState, useRef, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Camera, Upload, X } from 'lucide-react'
-import { useInvoiceStore } from '@/lib/store'
-import { compressImage } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { BottomSheet } from './bottom-sheet'
+import { useState, useRef, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Camera, Upload, X } from "lucide-react";
+import { useInvoiceStore } from "@/lib/store";
+import { compressImage } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { BottomSheet } from "./bottom-sheet";
 
 const settingsSchema = z.object({
-  name: z.string().min(3, 'Store name must be at least 3 characters'),
-  address: z.string().min(5, 'Address must be at least 5 characters'),
-  whatsapp: z.string().min(10, 'WhatsApp number must be at least 10 digits'),
-  adminName: z.string().min(2, 'Admin name must be at least 2 characters'),
-  brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color (e.g., #10b981)'),
-})
+  name: z.string().min(3, "Store name must be at least 3 characters"),
+  address: z.string().min(5, "Address must be at least 5 characters"),
+  whatsapp: z.string().min(10, "WhatsApp number must be at least 10 digits"),
+  adminName: z.string().min(2, "Admin name must be at least 2 characters"),
+  adminTitle: z.string().optional(),
+  brandColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color (e.g., #10b981)"),
+});
 
-type SettingsFormData = z.infer<typeof settingsSchema>
+type SettingsFormData = z.infer<typeof settingsSchema>;
 
 interface SettingsModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { storeSettings, setStoreSettings } = useInvoiceStore()
-  const [logo, setLogo] = useState<string>(storeSettings?.logo || '')
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { storeSettings, setStoreSettings } = useInvoiceStore();
+  const [logo, setLogo] = useState<string>(storeSettings?.logo || "");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      name: storeSettings?.name || '',
-      address: storeSettings?.address || '',
-      whatsapp: storeSettings?.whatsapp?.replace('+62', '') || '',
-      adminName: storeSettings?.adminName || '',
-      brandColor: storeSettings?.brandColor || '#d4af37',
+      name: storeSettings?.name || "",
+      address: storeSettings?.address || "",
+      whatsapp: storeSettings?.whatsapp?.replace("+62", "") || "",
+      adminName: storeSettings?.adminName || "",
+      adminTitle: storeSettings?.adminTitle || "Admin Store",
+      brandColor: storeSettings?.brandColor || "#d4af37",
     },
-  })
+  });
 
   // Update form when settings change or modal opens
   useEffect(() => {
     if (isOpen && storeSettings) {
       form.reset({
-        name: storeSettings.name || '',
-        address: storeSettings.address || '',
-        whatsapp: storeSettings.whatsapp?.replace('+62', '') || '',
-        adminName: storeSettings.adminName || '',
-        brandColor: storeSettings.brandColor || '#d4af37',
-      })
-      setLogo(storeSettings.logo || '')
+        name: storeSettings.name || "",
+        address: storeSettings.address || "",
+        whatsapp: storeSettings.whatsapp?.replace("+62", "") || "",
+        adminName: storeSettings.adminName || "",
+        adminTitle: storeSettings.adminTitle || "Admin Store",
+        brandColor: storeSettings.brandColor || "#d4af37",
+      });
+      setLogo(storeSettings.logo || "");
     }
-  }, [isOpen, storeSettings, form])
+  }, [isOpen, storeSettings, form]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     // Check file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
-      return
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
     }
 
     // Check file size (max 5MB before compression)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB')
-      return
+      alert("Image size must be less than 5MB");
+      return;
     }
 
-    setUploading(true)
+    setUploading(true);
     try {
       // Compress image to max 100KB
-      const compressed = await compressImage(file, 100)
-      setLogo(compressed)
+      const compressed = await compressImage(file, 100);
+      setLogo(compressed);
     } catch (error) {
-      console.error('Error compressing image:', error)
-      alert('Failed to process image. Please try another image.')
+      console.error("Error compressing image:", error);
+      alert("Failed to process image. Please try another image.");
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   const handleRemoveLogo = () => {
-    setLogo('')
+    setLogo("");
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      fileInputRef.current.value = "";
     }
-  }
+  };
 
   const onSubmit = (data: SettingsFormData) => {
     // Format WhatsApp number (add +62 if not present)
-    let whatsapp = data.whatsapp.replace(/\D/g, '') // Remove non-digits
-    if (whatsapp.startsWith('0')) {
-      whatsapp = '62' + whatsapp.substring(1)
-    } else if (!whatsapp.startsWith('62')) {
-      whatsapp = '62' + whatsapp
+    let whatsapp = data.whatsapp.replace(/\D/g, ""); // Remove non-digits
+    if (whatsapp.startsWith("0")) {
+      whatsapp = "62" + whatsapp.substring(1);
+    } else if (!whatsapp.startsWith("62")) {
+      whatsapp = "62" + whatsapp;
     }
 
     const newSettings = {
       name: data.name,
       logo: logo,
       address: data.address,
-      whatsapp: '+' + whatsapp,
+      whatsapp: "+" + whatsapp,
       adminName: data.adminName,
+      adminTitle: data.adminTitle?.trim() || "Store Admin",
       brandColor: data.brandColor,
       lastUpdated: new Date().toISOString() as any,
-    }
+    };
 
-    console.log('💾 Saving settings:', newSettings)
-    setStoreSettings(newSettings)
+    console.log("💾 Saving settings:", newSettings);
+    setStoreSettings(newSettings);
 
     // Verify save
     setTimeout(() => {
-      const saved = localStorage.getItem('invoice-storage')
-      console.log('✅ Verified in localStorage:', saved ? 'Data exists' : 'No data!')
-    }, 100)
+      const saved = localStorage.getItem("invoice-storage");
+      console.log(
+        "✅ Verified in localStorage:",
+        saved ? "Data exists" : "No data!",
+      );
+    }, 100);
 
-    alert('Settings saved successfully!')
-    onClose()
-  }
+    alert("Settings saved successfully!");
+    onClose();
+  };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Store Settings" fullScreen>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 pb-16 space-y-6">
-
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Store Settings"
+      fullScreen
+    >
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="p-4 pb-16 space-y-6"
+      >
         {/* Logo Upload */}
         <div>
           <Label>Store Logo</Label>
@@ -188,7 +204,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             size="lg"
           >
             <Upload size={20} />
-            {uploading ? 'Processing...' : logo ? 'Change Logo' : 'Upload Logo'}
+            {uploading ? "Processing..." : logo ? "Change Logo" : "Upload Logo"}
           </Button>
         </div>
 
@@ -197,12 +213,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <Label htmlFor="storeName">Store Name *</Label>
           <Input
             id="storeName"
-            {...form.register('name')}
+            {...form.register("name")}
             placeholder="Enter your store name"
             className="text-lg"
           />
           {form.formState.errors.name && (
-            <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
+            <p className="text-sm text-red-500 mt-1">
+              {form.formState.errors.name.message}
+            </p>
           )}
         </div>
 
@@ -211,15 +229,31 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <Label htmlFor="adminName">Admin Name (Signature) *</Label>
           <Input
             id="adminName"
-            {...form.register('adminName')}
+            {...form.register("adminName")}
             placeholder="Your name for PDF signature"
           />
           <p className="text-xs text-gray-500 mt-1">
             This will appear as a signature on generated PDFs
           </p>
           {form.formState.errors.adminName && (
-            <p className="text-sm text-red-500 mt-1">{form.formState.errors.adminName.message}</p>
+            <p className="text-sm text-red-500 mt-1">
+              {form.formState.errors.adminName.message}
+            </p>
           )}
+        </div>
+
+        {/* Admin Title */}
+        <div>
+          <Label htmlFor="adminTitle">Admin Title / Position</Label>
+          <Input
+            id="adminTitle"
+            {...form.register("adminTitle")}
+            placeholder="e.g., Kepala Operasional"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Ditampilkan di bawah tanda tangan. Kosongkan untuk menggunakan
+            default "Store Admin".
+          </p>
         </div>
 
         {/* Address */}
@@ -227,12 +261,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <Label htmlFor="address">Store Address *</Label>
           <Textarea
             id="address"
-            {...form.register('address')}
+            {...form.register("address")}
             placeholder="Enter your store address"
             rows={4}
           />
           {form.formState.errors.address && (
-            <p className="text-sm text-red-500 mt-1">{form.formState.errors.address.message}</p>
+            <p className="text-sm text-red-500 mt-1">
+              {form.formState.errors.address.message}
+            </p>
           )}
         </div>
 
@@ -243,13 +279,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <Input
               id="brandColor"
               type="color"
-              value={form.watch('brandColor')}
-              onChange={(e) => form.setValue('brandColor', e.target.value)}
+              value={form.watch("brandColor")}
+              onChange={(e) => form.setValue("brandColor", e.target.value)}
               className="w-20 h-12 p-1 cursor-pointer"
             />
             <Input
               type="text"
-              {...form.register('brandColor')}
+              {...form.register("brandColor")}
               placeholder="#d4af37"
               className="flex-1"
               maxLength={7}
@@ -259,7 +295,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             This color will be used throughout the app and in generated PDFs
           </p>
           {form.formState.errors.brandColor && (
-            <p className="text-sm text-red-500 mt-1">{form.formState.errors.brandColor.message}</p>
+            <p className="text-sm text-red-500 mt-1">
+              {form.formState.errors.brandColor.message}
+            </p>
           )}
         </div>
 
@@ -272,7 +310,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               id="whatsapp"
               type="tel"
               inputMode="tel"
-              {...form.register('whatsapp')}
+              {...form.register("whatsapp")}
               placeholder="812345678"
               className="flex-1"
             />
@@ -281,7 +319,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             Enter without country code (e.g., 812345678)
           </p>
           {form.formState.errors.whatsapp && (
-            <p className="text-sm text-red-500 mt-1">{form.formState.errors.whatsapp.message}</p>
+            <p className="text-sm text-red-500 mt-1">
+              {form.formState.errors.whatsapp.message}
+            </p>
           )}
         </div>
 
@@ -312,5 +352,5 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
       </div>
     </BottomSheet>
-  )
+  );
 }

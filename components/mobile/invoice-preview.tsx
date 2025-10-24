@@ -28,6 +28,7 @@ export function InvoicePreview({
     invoiceDate,
   } = invoice;
   const brandColor = storeSettings?.brandColor || "#d4af37";
+  const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -55,7 +56,9 @@ export function InvoicePreview({
               borderBottom: `2px solid ${brandColor}`,
             }}
           >
-            <div style={{ display: "flex", width: "60%", alignItems: "center" }}>
+            <div
+              style={{ display: "flex", width: "60%", alignItems: "center" }}
+            >
               {storeSettings?.logo && (
                 <img
                   src={storeSettings.logo}
@@ -399,6 +402,17 @@ export function InvoicePreview({
                     marginRight: "auto",
                   }}
                 />
+                {adminTitle && (
+                  <div
+                    style={{
+                      fontSize: "10pt",
+                      color: "#374151",
+                      marginTop: "8px",
+                    }}
+                  >
+                    {adminTitle}
+                  </div>
+                )}
               </div>
             )}
           </div>
