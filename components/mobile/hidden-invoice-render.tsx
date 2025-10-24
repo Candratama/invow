@@ -539,9 +539,11 @@ export function HiddenInvoiceRender({
           {storeSettings?.adminName && (
             <div
               style={{
-                textAlign: "right",
-                minWidth: "150px",
-                marginRight: "10px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                minWidth: "180px",
+                marginRight: "0",
               }}
             >
               {storeSettings?.signature && (
@@ -549,11 +551,13 @@ export function HiddenInvoiceRender({
                   src={storeSettings.signature}
                   alt="Admin Signature"
                   style={{
-                    width: "180px",
+                    maxWidth: "180px",
                     height: "auto",
+                    maxHeight: "80px",
                     objectFit: "contain",
+                    objectPosition: "right center",
+                    marginBottom: "8px",
                     display: "block",
-                    marginLeft: "auto",
                   }}
                 />
               )}
@@ -563,6 +567,8 @@ export function HiddenInvoiceRender({
                   fontSize: "11pt",
                   marginBottom: "0px",
                   fontWeight: "bold",
+                  textAlign: "right",
+                  width: "100%",
                 }}
               >
                 {storeSettings.adminName}
@@ -573,6 +579,8 @@ export function HiddenInvoiceRender({
                   fontSize: "10pt",
                   color: "#374151",
                   marginBottom: "8px",
+                  textAlign: "right",
+                  width: "100%",
                 }}
               >
                 {adminTitle}

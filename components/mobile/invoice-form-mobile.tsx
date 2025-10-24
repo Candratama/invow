@@ -1,44 +1,46 @@
-'use client'
-44
-import { useState, useEffect } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Plus, Save, Download, Loader2 } from 'lucide-react'
-import { useInvoiceStore } from '@/lib/store'
-import { InvoiceItem, Invoice } from '@/lib/types'
-import { formatCurrency } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { CurrencyInput } from '@/components/ui/currency-input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { ItemRow } from './item-row'
-import { BottomSheet } from './bottom-sheet'
-import { generateJPEGFromInvoice } from '@/lib/puppeteer'
-import { HiddenInvoiceRender } from './hidden-invoice-render'
+"use client";
+44;
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Plus, Save, Download, Loader2 } from "lucide-react";
+import { useInvoiceStore } from "@/lib/store";
+import { InvoiceItem, Invoice } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { ItemRow } from "./item-row";
+import { BottomSheet } from "./bottom-sheet";
+import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
+import { HiddenInvoiceRender } from "./hidden-invoice-render";
 
 const invoiceSchema = z.object({
-  invoiceNumber: z.string().min(1, 'Invoice number is required'),
+  invoiceNumber: z.string().min(1, "Invoice number is required"),
   invoiceDate: z.string(),
-  customerName: z.string().min(3, 'Customer name must be at least 3 characters'),
+  customerName: z
+    .string()
+    .min(3, "Customer name must be at least 3 characters"),
   customerAddress: z.string().optional(),
-  customerStatus: z.enum(['Distributor', 'Reseller', 'Customer']),
+  customerStatus: z.enum(["Distributor", "Reseller", "Customer"]),
   shippingCost: z.number().min(0),
   note: z.string().optional(),
-})
+});
 
 const itemSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.number().min(1, 'Quantity must be at least 1'),
-  price: z.number().min(0, 'Price must be positive'),
-})
+  description: z.string().min(1, "Description is required"),
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  price: z.number().min(0, "Price must be positive"),
+});
 
-type InvoiceFormData = z.infer<typeof invoiceSchema>
-type ItemFormData = z.infer<typeof itemSchema>
+type InvoiceFormData = z.infer<typeof invoiceSchema>;
+type ItemFormData = z.infer<typeof itemSchema>;
 
 interface InvoiceFormMobileProps {
-  onPreview: () => void
+  onPreview: () => void;
 }
 
 export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
@@ -50,158 +52,181 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
     removeInvoiceItem,
     saveDraft,
     calculateTotals,
-    initializeNewInvoice
-  } = useInvoiceStore()
+    initializeNewInvoice,
+  } = useInvoiceStore();
 
-  const [showItemModal, setShowItemModal] = useState(false)
-  const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null)
-  const [isDownloading, setIsDownloading] = useState(false)
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Initialize invoice if not exists
   useEffect(() => {
     if (!currentInvoice) {
-      initializeNewInvoice()
+      initializeNewInvoice();
     }
-  }, [currentInvoice, initializeNewInvoice])
+  }, [currentInvoice, initializeNewInvoice]);
 
   // Main form
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
-      invoiceNumber: currentInvoice?.invoiceNumber || '',
-      invoiceDate: currentInvoice?.invoiceDate ? new Date(currentInvoice.invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      customerName: currentInvoice?.customer?.name || '',
-      customerAddress: currentInvoice?.customer?.address || '',
-      customerStatus: currentInvoice?.customer?.status || 'Customer',
+      invoiceNumber: currentInvoice?.invoiceNumber || "",
+      invoiceDate: currentInvoice?.invoiceDate
+        ? new Date(currentInvoice.invoiceDate).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      customerName: currentInvoice?.customer?.name || "",
+      customerAddress: currentInvoice?.customer?.address || "",
+      customerStatus: currentInvoice?.customer?.status || "Customer",
       shippingCost: currentInvoice?.shippingCost || 0,
     },
-  })
+  });
 
   // Item form
   const itemForm = useForm<ItemFormData>({
     resolver: zodResolver(itemSchema),
     defaultValues: {
-      description: '',
+      description: "",
       quantity: 1,
       price: undefined,
     },
-  })
+  });
 
   // Auto-save every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       if (currentInvoice) {
-        saveDraft()
+        saveDraft();
       }
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [currentInvoice, saveDraft])
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [currentInvoice, saveDraft]);
 
   const handleFormChange = (field: keyof InvoiceFormData, value: any) => {
-    if (field === 'customerName' || field === 'customerAddress' || field === 'customerStatus') {
+    if (
+      field === "customerName" ||
+      field === "customerAddress" ||
+      field === "customerStatus"
+    ) {
       updateCurrentInvoice({
         customer: {
           ...currentInvoice?.customer,
-          name: field === 'customerName' ? value : currentInvoice?.customer?.name || '',
-          email: '', // Email removed
-          address: field === 'customerAddress' ? value : currentInvoice?.customer?.address,
-          status: field === 'customerStatus' ? value : currentInvoice?.customer?.status,
-        }
-      })
-    } else if (field === 'invoiceDate') {
+          name:
+            field === "customerName"
+              ? value
+              : currentInvoice?.customer?.name || "",
+          email: "", // Email removed
+          address:
+            field === "customerAddress"
+              ? value
+              : currentInvoice?.customer?.address,
+          status:
+            field === "customerStatus"
+              ? value
+              : currentInvoice?.customer?.status,
+        },
+      });
+    } else if (field === "invoiceDate") {
       updateCurrentInvoice({
-        [field]: new Date(value)
-      })
+        [field]: new Date(value),
+      });
     } else {
       updateCurrentInvoice({
-        [field]: value
-      })
+        [field]: value,
+      });
     }
-  }
+  };
 
   const handleAddItem = (data: ItemFormData) => {
     if (editingItem) {
-      updateInvoiceItem(editingItem.id, data)
+      updateInvoiceItem(editingItem.id, data);
     } else {
-      addInvoiceItem(data)
+      addInvoiceItem(data);
     }
-    calculateTotals()
-    itemForm.reset()
-    setEditingItem(null)
-    setShowItemModal(false)
-  }
+    calculateTotals();
+    itemForm.reset();
+    setEditingItem(null);
+    setShowItemModal(false);
+  };
 
   const handleEditItem = (item: InvoiceItem) => {
-    setEditingItem(item)
+    setEditingItem(item);
     itemForm.reset({
       description: item.description,
       quantity: item.quantity,
       price: item.price,
-    })
-    setShowItemModal(true)
-  }
+    });
+    setShowItemModal(true);
+  };
 
   const handleDeleteItem = (id: string) => {
-    if (confirm('Delete this item?')) {
-      removeInvoiceItem(id)
-      calculateTotals()
+    if (confirm("Delete this item?")) {
+      removeInvoiceItem(id);
+      calculateTotals();
     }
-  }
+  };
 
   const handleSaveDraft = () => {
-    saveDraft()
-    alert('Draft saved!')
-  }
+    saveDraft();
+    alert("Draft saved!");
+  };
 
   const handleQuickDownload = async () => {
-    if (!currentInvoice || !currentInvoice.items || currentInvoice.items.length === 0) {
-      alert('Please add at least one item to the invoice')
-      return
+    if (
+      !currentInvoice ||
+      !currentInvoice.items ||
+      currentInvoice.items.length === 0
+    ) {
+      alert("Please add at least one item to the invoice");
+      return;
     }
 
-    setIsDownloading(true)
+    setIsDownloading(true);
     try {
       // Small delay to ensure DOM is ready
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const { storeSettings, deleteDraft, saveCompleted } = useInvoiceStore.getState()
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings)
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const { storeSettings, deleteDraft, saveCompleted } =
+        useInvoiceStore.getState();
+      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
+
       // Save as completed and remove draft
       if (currentInvoice.id) {
-        deleteDraft(currentInvoice.id)
-        saveCompleted()
+        deleteDraft(currentInvoice.id);
+        saveCompleted();
       }
-      
-      alert('Invoice downloaded successfully!')
-    } catch (error) {
-      console.error('Download error:', error)
-      alert('Failed to download invoice. Please try Preview instead.')
-    } finally {
-      setIsDownloading(false)
-    }
-  }
 
-  if (!currentInvoice) return null
+      alert("Invoice downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download invoice. Please try Preview instead.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  if (!currentInvoice) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
       {/* Form Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-
+      <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 py-6 space-y-6 lg:px-8">
         {/* Invoice Number Section */}
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <div className="space-y-4">
+        <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="invoiceNumber">Invoice Number</Label>
               <Input
                 id="invoiceNumber"
-                {...form.register('invoiceNumber')}
-                onChange={(e) => handleFormChange('invoiceNumber', e.target.value)}
+                {...form.register("invoiceNumber")}
+                onChange={(e) =>
+                  handleFormChange("invoiceNumber", e.target.value)
+                }
                 className="text-lg font-semibold"
               />
               {form.formState.errors.invoiceNumber && (
-                <p className="text-sm text-red-500 mt-1">{form.formState.errors.invoiceNumber.message}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.invoiceNumber.message}
+                </p>
               )}
             </div>
 
@@ -210,68 +235,89 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
               <Input
                 id="invoiceDate"
                 type="date"
-                {...form.register('invoiceDate')}
-                onChange={(e) => handleFormChange('invoiceDate', e.target.value)}
+                {...form.register("invoiceDate")}
+                onChange={(e) =>
+                  handleFormChange("invoiceDate", e.target.value)
+                }
               />
             </div>
           </div>
         </div>
 
         {/* Customer Section */}
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <h3 className="font-semibold text-lg mb-4">Customer Information</h3>
+        <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
+          <h3 className="font-semibold text-lg mb-4 lg:text-xl">
+            Customer Information
+          </h3>
           <div className="space-y-4">
             <div>
               <Label htmlFor="customerName">Customer Name *</Label>
               <Input
                 id="customerName"
-                {...form.register('customerName')}
-                onChange={(e) => handleFormChange('customerName', e.target.value)}
+                {...form.register("customerName")}
+                onChange={(e) =>
+                  handleFormChange("customerName", e.target.value)
+                }
                 placeholder="Enter customer name"
               />
               {form.formState.errors.customerName && (
-                <p className="text-sm text-red-500 mt-1">{form.formState.errors.customerName.message}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.customerName.message}
+                </p>
               )}
             </div>
 
+            {/* 2-column layout for desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Customer Status */}
+              <div>
+                <Label htmlFor="customerStatus">Customer Status</Label>
+                <select
+                  id="customerStatus"
+                  {...form.register("customerStatus")}
+                  onChange={(e) =>
+                    handleFormChange("customerStatus", e.target.value)
+                  }
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="Customer">Customer</option>
+                  <option value="Reseller">Reseller</option>
+                  <option value="Distributor">Distributor</option>
+                </select>
+              </div>
+
+              {/* Spacer for alignment */}
+              <div className="hidden lg:block"></div>
+            </div>
+
+            {/* Customer Address */}
             <div>
               <Label htmlFor="customerAddress">Address (Optional)</Label>
               <Textarea
                 id="customerAddress"
-                {...form.register('customerAddress')}
-                onChange={(e) => handleFormChange('customerAddress', e.target.value)}
+                {...form.register("customerAddress")}
+                onChange={(e) =>
+                  handleFormChange("customerAddress", e.target.value)
+                }
                 placeholder="Enter customer address"
                 rows={3}
+                className="lg:rows-4"
               />
-            </div>
-
-            <div>
-              <Label htmlFor="customerStatus">Customer Status</Label>
-              <select
-                id="customerStatus"
-                {...form.register('customerStatus')}
-                onChange={(e) => handleFormChange('customerStatus', e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="Customer">Customer</option>
-                <option value="Reseller">Reseller</option>
-                <option value="Distributor">Distributor</option>
-              </select>
             </div>
           </div>
         </div>
 
         {/* Items Section */}
-        <div className="bg-white rounded-lg p-4 shadow-sm">
+        <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg">Items</h3>
+            <h3 className="font-semibold text-lg lg:text-xl">Items</h3>
             <Button
               type="button"
               size="sm"
               onClick={() => {
-                setEditingItem(null)
-                itemForm.reset()
-                setShowItemModal(true)
+                setEditingItem(null);
+                itemForm.reset();
+                setShowItemModal(true);
               }}
               className="gap-2"
             >
@@ -299,15 +345,17 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
         </div>
 
         {/* Note Section */}
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <Label htmlFor="note">Note (Optional)</Label>
+        <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
+          <Label htmlFor="note" className="lg:text-base">
+            Note (Optional)
+          </Label>
           <Textarea
             id="note"
-            value={currentInvoice.note || ''}
-            onChange={(e) => handleFormChange('note', e.target.value)}
+            value={currentInvoice.note || ""}
+            onChange={(e) => handleFormChange("note", e.target.value)}
             placeholder="Add any additional notes or instructions..."
             rows={3}
-            className="mt-2"
+            className="mt-2 lg:rows-4"
           />
         </div>
 
@@ -317,7 +365,9 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
             <div className="space-y-3">
               <div className="flex justify-between text-base">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">{formatCurrency(currentInvoice.subtotal || 0)}</span>
+                <span className="font-medium">
+                  {formatCurrency(currentInvoice.subtotal || 0)}
+                </span>
               </div>
 
               <div className="flex justify-between items-center text-base">
@@ -325,8 +375,8 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
                 <CurrencyInput
                   value={currentInvoice.shippingCost || 0}
                   onChange={(value) => {
-                    handleFormChange('shippingCost', value)
-                    calculateTotals()
+                    handleFormChange("shippingCost", value);
+                    calculateTotals();
                   }}
                   className="w-32 h-8 text-sm text-right"
                   placeholder="0"
@@ -335,7 +385,9 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
 
               <div className="border-t pt-3 flex justify-between text-xl font-bold">
                 <span>Total</span>
-                <span className="text-primary">{formatCurrency(currentInvoice.total || 0)}</span>
+                <span className="text-primary">
+                  {formatCurrency(currentInvoice.total || 0)}
+                </span>
               </div>
             </div>
           </div>
@@ -343,8 +395,8 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
       </div>
 
       {/* Fixed Bottom Actions - Green Zone */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 lg:static lg:border-t-0 lg:mt-8 lg:p-0">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto grid grid-cols-2 gap-3 lg:gap-4">
           <Button
             type="button"
             variant="outline"
@@ -358,7 +410,11 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
           <Button
             type="button"
             onClick={handleQuickDownload}
-            disabled={!currentInvoice.items || currentInvoice.items.length === 0 || isDownloading}
+            disabled={
+              !currentInvoice.items ||
+              currentInvoice.items.length === 0 ||
+              isDownloading
+            }
             className="gap-2"
             size="lg"
           >
@@ -381,38 +437,46 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
       <BottomSheet
         isOpen={showItemModal}
         onClose={() => {
-          setShowItemModal(false)
-          setEditingItem(null)
-          itemForm.reset()
+          setShowItemModal(false);
+          setEditingItem(null);
+          itemForm.reset();
         }}
-        title={editingItem ? 'Edit Item' : 'Add Item'}
+        title={editingItem ? "Edit Item" : "Add Item"}
+        maxWidth="lg"
       >
-        <form onSubmit={itemForm.handleSubmit(handleAddItem)} className="p-4 space-y-4">
+        <form
+          onSubmit={itemForm.handleSubmit(handleAddItem)}
+          className="p-4 space-y-4 lg:p-6"
+        >
           <div>
             <Label htmlFor="description">Description *</Label>
             <Input
               id="description"
-              {...itemForm.register('description')}
+              {...itemForm.register("description")}
               placeholder="Item description"
               autoFocus
             />
             {itemForm.formState.errors.description && (
-              <p className="text-sm text-red-500 mt-1">{itemForm.formState.errors.description.message}</p>
+              <p className="text-sm text-red-500 mt-1">
+                {itemForm.formState.errors.description.message}
+              </p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
             <div>
               <Label htmlFor="quantity">Quantity *</Label>
               <Input
                 id="quantity"
                 type="number"
                 inputMode="numeric"
-                {...itemForm.register('quantity', { valueAsNumber: true })}
+                {...itemForm.register("quantity", { valueAsNumber: true })}
                 min="1"
               />
               {itemForm.formState.errors.quantity && (
-                <p className="text-sm text-red-500 mt-1">{itemForm.formState.errors.quantity.message}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {itemForm.formState.errors.quantity.message}
+                </p>
               )}
             </div>
 
@@ -431,7 +495,9 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
                 )}
               />
               {itemForm.formState.errors.price && (
-                <p className="text-sm text-red-500 mt-1">{itemForm.formState.errors.price.message}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {itemForm.formState.errors.price.message}
+                </p>
               )}
             </div>
           </div>
@@ -441,33 +507,31 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
               type="button"
               variant="outline"
               onClick={() => {
-                setShowItemModal(false)
-                setEditingItem(null)
-                itemForm.reset()
+                setShowItemModal(false);
+                setEditingItem(null);
+                itemForm.reset();
               }}
               className="flex-1"
               size="lg"
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              size="lg"
-            >
-              {editingItem ? 'Update' : 'Add'} Item
+            <Button type="submit" className="flex-1" size="lg">
+              {editingItem ? "Update" : "Add"} Item
             </Button>
           </div>
         </form>
       </BottomSheet>
 
       {/* Hidden Invoice Preview for Quick Download */}
-      {currentInvoice && currentInvoice.items && currentInvoice.items.length > 0 && (
-        <HiddenInvoiceRender 
-          invoice={currentInvoice as Invoice}
-          storeSettings={useInvoiceStore.getState().storeSettings}
-        />
-      )}
+      {currentInvoice &&
+        currentInvoice.items &&
+        currentInvoice.items.length > 0 && (
+          <HiddenInvoiceRender
+            invoice={currentInvoice as Invoice}
+            storeSettings={useInvoiceStore.getState().storeSettings}
+          />
+        )}
     </div>
-  )
+  );
 }

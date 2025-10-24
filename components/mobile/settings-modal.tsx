@@ -219,337 +219,352 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         onClose={onClose}
         title="Store Settings"
         fullScreen
+        maxWidth="2xl"
       >
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="p-4 pb-16 space-y-6"
-        >
-          {/* Logo Upload */}
-          <div>
-            <Label>Store Logo</Label>
-            <div className="mt-2">
-              {logo ? (
-                <div className="relative inline-block">
-                  <img
-                    src={logo}
-                    alt="Store logo"
-                    className="w-32 h-32 object-contain border-2 border-gray-200 rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveLogo}
-                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                    aria-label="Remove logo"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Camera size={32} className="text-gray-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Upload your store logo
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Max 5MB • Will be compressed to 100KB
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              className="hidden"
-              id="logo-upload"
-            />
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="w-full mt-3 gap-2"
-              size="lg"
+        <div className="flex flex-col h-full lg:max-h-[calc(95vh-64px)]">
+          {/* Scrollable Form Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 lg:p-8">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="lg:max-w-3xl lg:mx-auto space-y-6"
+              id="settings-form"
             >
-              <Upload size={20} />
-              {uploading
-                ? "Processing..."
-                : logo
-                  ? "Change Logo"
-                  : "Upload Logo"}
-            </Button>
-          </div>
-
-          {/* Store Name */}
-          <div>
-            <Label htmlFor="storeName">Store Name *</Label>
-            <Input
-              id="storeName"
-              {...form.register("name")}
-              placeholder="Enter your store name"
-              className="text-lg"
-            />
-            {form.formState.errors.name && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.name.message}
-              </p>
-            )}
-          </div>
-
-          {/* Store Description */}
-          <div>
-            <Label htmlFor="storeDescription">Store Description</Label>
-            <Textarea
-              id="storeDescription"
-              {...form.register("storeDescription")}
-              placeholder="Describe your store, products, or services"
-              rows={3}
-            />
-            {form.formState.errors.storeDescription && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.storeDescription.message as string}
-              </p>
-            )}
-          </div>
-
-          {/* Tagline */}
-          <div>
-            <Label htmlFor="tagline">Tagline</Label>
-            <Input
-              id="tagline"
-              {...form.register("tagline")}
-              placeholder="e.g., Investasi mudah untuk semua"
-            />
-          </div>
-
-          {/* Store Number */}
-          <div>
-            <Label htmlFor="storeNumber">Store Number / ID</Label>
-            <Input
-              id="storeNumber"
-              {...form.register("storeNumber")}
-              placeholder="Internal reference or registration number"
-            />
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <Label htmlFor="paymentMethod">Preferred Payment Method</Label>
-            <Input
-              id="paymentMethod"
-              {...form.register("paymentMethod")}
-              placeholder="e.g., Bank Transfer BCA a/n PT Invow"
-            />
-          </div>
-
-          {/* Contact Email */}
-          <div>
-            <Label htmlFor="email">Contact Email</Label>
-            <Input
-              id="email"
-              type="email"
-              {...form.register("email")}
-              placeholder="yourstore@example.com"
-            />
-            {form.formState.errors.email && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.email.message as string}
-              </p>
-            )}
-          </div>
-
-          {/* Admin Name */}
-          <div>
-            <Label htmlFor="adminName">Signature Name</Label>
-            <Input
-              id="adminName"
-              {...form.register("adminName")}
-              placeholder="Your name for PDF signature"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              This will appear as a signature on generated PDFs
-            </p>
-            {form.formState.errors.adminName && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.adminName.message}
-              </p>
-            )}
-          </div>
-
-          {/* Admin Title */}
-          <div>
-            <Label htmlFor="adminTitle">Signature Title / Position</Label>
-            <Input
-              id="adminTitle"
-              {...form.register("adminTitle")}
-              placeholder="e.g., Owner"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Ditampilkan di bawah tanda tangan. Kosongkan untuk menggunakan
-              default "Owner".
-            </p>
-          </div>
-
-          {/* Signature Pad */}
-          <div className="space-y-3">
-            <Label>Signature</Label>
-
-            {signature ? (
-              <div className="space-y-3">
-                <div className="border rounded-lg bg-white shadow-sm p-4 flex flex-col items-center gap-3">
-                  <img
-                    src={signature}
-                    alt="Stored signature"
-                    className="max-w-full h-24 object-contain"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleOpenSignatureSheet(signature)}
-                    >
-                      Change Signature
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Hapus tanda tangan saat ini? Anda bisa menggambarnya lagi nanti.",
-                          )
-                        ) {
-                          setSignature("");
-                          setSignatureDraft(undefined);
-                        }
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
+              {/* Logo Upload */}
+              <div>
+                <Label>Store Logo</Label>
+                <div className="mt-2">
+                  {logo ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={logo}
+                        alt="Store logo"
+                        className="w-32 h-32 object-contain border-2 border-gray-200 rounded-lg lg:w-40 lg:h-40"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                        aria-label="Remove logo"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                          <Camera size={32} className="text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            Upload your store logo
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Max 5MB • Will be compressed to 100KB
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <button
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  id="logo-upload"
+                />
+
+                <Button
                   type="button"
-                  onClick={() => {
-                    handleOpenSignatureSheet(undefined);
-                  }}
-                  className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full mt-3 gap-2"
+                  size="lg"
                 >
-                  <div className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center">
-                    <Plus className="h-6 w-6" />
-                  </div>
-                  <span className="text-sm font-medium">Add Signature</span>
-                  <span className="text-xs text-gray-400">Tap to draw</span>
-                </button>
+                  <Upload size={20} />
+                  {uploading
+                    ? "Processing..."
+                    : logo
+                      ? "Change Logo"
+                      : "Upload Logo"}
+                </Button>
               </div>
-            )}
+
+              {/* Store Name */}
+              <div>
+                <Label htmlFor="storeName">Store Name *</Label>
+                <Input
+                  id="storeName"
+                  {...form.register("name")}
+                  placeholder="Enter your store name"
+                  className="text-lg"
+                />
+                {form.formState.errors.name && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.name.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Store Description */}
+              <div>
+                <Label htmlFor="storeDescription">Store Description</Label>
+                <Textarea
+                  id="storeDescription"
+                  {...form.register("storeDescription")}
+                  placeholder="Describe your store, products, or services"
+                  rows={3}
+                  className="lg:rows-4"
+                />
+                {form.formState.errors.storeDescription && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.storeDescription.message as string}
+                  </p>
+                )}
+              </div>
+
+              {/* 2-column layout for desktop */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Tagline */}
+                <div>
+                  <Label htmlFor="tagline">Tagline</Label>
+                  <Input
+                    id="tagline"
+                    {...form.register("tagline")}
+                    placeholder="e.g., Investasi mudah untuk semua"
+                  />
+                </div>
+
+                {/* Store Number */}
+                <div>
+                  <Label htmlFor="storeNumber">Store Number / ID</Label>
+                  <Input
+                    id="storeNumber"
+                    {...form.register("storeNumber")}
+                    placeholder="Internal reference or registration number"
+                  />
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <Label htmlFor="paymentMethod">Preferred Payment Method</Label>
+                <Input
+                  id="paymentMethod"
+                  {...form.register("paymentMethod")}
+                  placeholder="e.g., Bank Transfer BCA a/n PT Invow"
+                />
+              </div>
+
+              {/* Contact Email */}
+              <div>
+                <Label htmlFor="email">Contact Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...form.register("email")}
+                  placeholder="yourstore@example.com"
+                />
+                {form.formState.errors.email && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.email.message as string}
+                  </p>
+                )}
+              </div>
+
+              {/* 2-column layout for signature info */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Admin Name */}
+                <div>
+                  <Label htmlFor="adminName">Signature Name</Label>
+                  <Input
+                    id="adminName"
+                    {...form.register("adminName")}
+                    placeholder="Your name for PDF signature"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This will appear as a signature on generated PDFs
+                  </p>
+                  {form.formState.errors.adminName && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {form.formState.errors.adminName.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Admin Title */}
+                <div>
+                  <Label htmlFor="adminTitle">Signature Title / Position</Label>
+                  <Input
+                    id="adminTitle"
+                    {...form.register("adminTitle")}
+                    placeholder="e.g., Owner"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ditampilkan di bawah tanda tangan. Kosongkan untuk
+                    menggunakan default "Owner".
+                  </p>
+                </div>
+              </div>
+
+              {/* Signature Pad */}
+              <div className="space-y-3">
+                <Label>Signature</Label>
+
+                {signature ? (
+                  <div className="space-y-3">
+                    <div className="border rounded-lg bg-white shadow-sm p-4 flex flex-col items-center gap-3 lg:p-6">
+                      <img
+                        src={signature}
+                        alt="Stored signature"
+                        className="max-w-full h-24 object-contain lg:h-32"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleOpenSignatureSheet(signature)}
+                        >
+                          Change Signature
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Hapus tanda tangan saat ini? Anda bisa menggambarnya lagi nanti.",
+                              )
+                            ) {
+                              setSignature("");
+                              setSignatureDraft(undefined);
+                            }
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleOpenSignatureSheet(undefined);
+                      }}
+                      className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                    >
+                      <div className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center">
+                        <Plus className="h-6 w-6" />
+                      </div>
+                      <span className="text-sm font-medium">Add Signature</span>
+                      <span className="text-xs text-gray-400">Tap to draw</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Address */}
+              <div>
+                <Label htmlFor="address">Store Address *</Label>
+                <Textarea
+                  id="address"
+                  {...form.register("address")}
+                  placeholder="Enter your store address"
+                  rows={4}
+                  className="lg:rows-5"
+                />
+                {form.formState.errors.address && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.address.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Brand Color */}
+              <div>
+                <Label htmlFor="brandColor">Brand Color *</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="brandColor"
+                    type="color"
+                    value={form.watch("brandColor")}
+                    onChange={(e) =>
+                      form.setValue("brandColor", e.target.value)
+                    }
+                    className="w-20 h-12 p-1 cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    {...form.register("brandColor")}
+                    placeholder="#d4af37"
+                    className="flex-1"
+                    maxLength={7}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  This color will be used throughout the app and in generated
+                  PDFs
+                </p>
+                {form.formState.errors.brandColor && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.brandColor.message}
+                  </p>
+                )}
+              </div>
+
+              {/* WhatsApp */}
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp Number *</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 font-medium">+62</span>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    inputMode="tel"
+                    {...form.register("whatsapp")}
+                    placeholder="812345678"
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter without country code (e.g., 812345678)
+                </p>
+                {form.formState.errors.whatsapp && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.whatsapp.message}
+                  </p>
+                )}
+              </div>
+            </form>
           </div>
 
-          {/* Address */}
-          <div>
-            <Label htmlFor="address">Store Address *</Label>
-            <Textarea
-              id="address"
-              {...form.register("address")}
-              placeholder="Enter your store address"
-              rows={4}
-            />
-            {form.formState.errors.address && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.address.message}
-              </p>
-            )}
-          </div>
-
-          {/* Brand Color */}
-          <div>
-            <Label htmlFor="brandColor">Brand Color *</Label>
-            <div className="flex items-center gap-3">
-              <Input
-                id="brandColor"
-                type="color"
-                value={form.watch("brandColor")}
-                onChange={(e) => form.setValue("brandColor", e.target.value)}
-                className="w-20 h-12 p-1 cursor-pointer"
-              />
-              <Input
-                type="text"
-                {...form.register("brandColor")}
-                placeholder="#d4af37"
+          {/* Fixed Action Buttons at Bottom */}
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white p-4 lg:p-6">
+            <div className="flex gap-3 lg:max-w-3xl lg:mx-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
                 className="flex-1"
-                maxLength={7}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              This color will be used throughout the app and in generated PDFs
-            </p>
-            {form.formState.errors.brandColor && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.brandColor.message}
-              </p>
-            )}
-          </div>
-
-          {/* WhatsApp */}
-          <div>
-            <Label htmlFor="whatsapp">WhatsApp Number *</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 font-medium">+62</span>
-              <Input
-                id="whatsapp"
-                type="tel"
-                inputMode="tel"
-                {...form.register("whatsapp")}
-                placeholder="812345678"
+                size="lg"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="settings-form"
                 className="flex-1"
-              />
+                size="lg"
+              >
+                Save Settings
+              </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Enter without country code (e.g., 812345678)
-            </p>
-            {form.formState.errors.whatsapp && (
-              <p className="text-sm text-red-500 mt-1">
-                {form.formState.errors.whatsapp.message}
-              </p>
-            )}
-          </div>
-
-          {/* Spacer for mobile keyboard */}
-          <div className="h-24"></div>
-        </form>
-
-        {/* Action Buttons - Fixed at bottom */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white pt-4 pb-safe border-t border-gray-200 px-4 z-50">
-          <div className="flex gap-3 pb-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-              size="lg"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              onClick={form.handleSubmit(onSubmit)}
-              className="flex-1"
-              size="lg"
-            >
-              Save Settings
-            </Button>
           </div>
         </div>
       </BottomSheet>
@@ -558,21 +573,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         isOpen={isSignatureSheetOpen}
         onClose={handleCloseSignatureSheet}
         title="Tanda Tangan"
+        maxWidth="md"
       >
         <div className="p-4 pb-6 space-y-4">
-          <SignatureCanvas
-            value={signatureDraft}
-            onChange={(dataUrl) => setSignatureDraft(dataUrl)}
-            width={320}
-            height={180}
-            onReady={(pad) => {
-              signaturePadRef.current = pad;
-            }}
-          />
-          <p className="text-xs text-gray-500">
-            Gunakan tombol Clear Signature untuk mengulang dari awal sebelum
-            menyimpan.
-          </p>
+          <div className="flex justify-center w-full overflow-x-auto">
+            <SignatureCanvas
+              value={signatureDraft}
+              onChange={(dataUrl) => setSignatureDraft(dataUrl)}
+              width={320}
+              height={180}
+              responsive={false}
+              onReady={(pad) => {
+                signaturePadRef.current = pad;
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500 text-center">
+              Gambar tanda tangan Anda di area canvas di atas.
+            </p>
+            <p className="text-xs text-primary/70 text-center font-medium">
+              ✨ Whitespace akan otomatis dihapus untuk hasil optimal
+            </p>
+          </div>
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
