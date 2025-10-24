@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Camera, Upload, X, Plus } from "lucide-react";
 import { useInvoiceStore } from "@/lib/store";
+import type { StoreSettings } from "@/lib/types";
 import { compressImage } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,10 +192,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     const cleanedSettings = Object.fromEntries(
       Object.entries(newSettings).filter(([, value]) => value !== undefined),
-    ) as StoreSettings;
+    ) as Partial<StoreSettings>;
 
     console.log("💾 Saving settings:", cleanedSettings);
-    setStoreSettings(cleanedSettings);
+    setStoreSettings(cleanedSettings as StoreSettings);
 
     // Verify save
     setTimeout(() => {
@@ -336,15 +337,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <Input
               id="storeNumber"
               {...form.register("storeNumber")}
-              placeholder="Internal reference or registration number"
-            />
-          </div>
-          {/* Store ID */}
-          <div>
-            <Label htmlFor="storeId">Store ID</Label>
-            <Input
-              id="storeId"
-              {...form.register("storeId")}
               placeholder="Internal reference or registration number"
             />
           </div>

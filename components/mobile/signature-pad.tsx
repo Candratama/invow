@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import SignaturePad from "signature_pad";
+import type { Options as SignaturePadOptions } from "signature_pad";
 
 interface SignaturePadProps {
   value?: string;
@@ -62,25 +63,28 @@ export function SignatureCanvas({
   }, [width, height, backgroundColor]);
 
   useEffect(() => {
+    const handlePadEnd = () => {
+      const pad = padRef.current;
+      if (!pad) return;
+      const dataUrl = pad.isEmpty() ? undefined : pad.toDataURL("image/png");
+      currentValueRef.current = dataUrl;
+      onChange(dataUrl);
+    };
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const options: SignaturePad.SignaturePadOptions = {
+    const options: SignaturePadOptions = {
       penColor,
-      onEnd: () => {
-        const pad = padRef.current;
-        if (!pad) return;
-        const dataUrl = pad.isEmpty() ? undefined : pad.toDataURL("image/png");
-        currentValueRef.current = dataUrl;
-        onChange(dataUrl);
-      },
     };
-
     if (backgroundColor) {
       options.backgroundColor = backgroundColor;
     }
 
     padRef.current = new SignaturePad(canvas, options);
+    if (padRef.current) {
+      (padRef.current as any).onEnd = handlePadEnd;
+    }
     onReady?.(padRef.current);
 
     resizeCanvas();
@@ -92,6 +96,9 @@ export function SignatureCanvas({
       window.removeEventListener("resize", handleResize);
       padRef.current?.off();
       padRef.current?.clear();
+      if (padRef.current) {
+        (padRef.current as any).onEnd = undefined;
+      }
       onReady?.(null);
       padRef.current = null;
     };
