@@ -235,6 +235,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="mt-2">
                   {logo ? (
                     <div className="relative inline-block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={logo}
                         alt="Store logo"
@@ -418,6 +419,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 {signature ? (
                   <div className="space-y-3">
                     <div className="border rounded-lg bg-white shadow-sm p-4 flex flex-col items-center gap-3 lg:p-6">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={signature}
                         alt="Stored signature"

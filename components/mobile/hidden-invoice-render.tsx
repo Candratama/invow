@@ -89,6 +89,7 @@ export function HiddenInvoiceRender({
         >
           <div style={{ display: "flex", width: "60%", alignItems: "end" }}>
             {storeSettings?.logo && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={storeSettings.logo}
                 alt="Store Logo"
@@ -547,6 +548,7 @@ export function HiddenInvoiceRender({
               }}
             >
               {storeSettings?.signature && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={storeSettings.signature}
                   alt="Admin Signature"

@@ -175,7 +175,7 @@ export class SyncService {
     settings: StoreSettings,
   ): Promise<{ success: boolean; error: Error | null }> {
     const dbSettings = storeToDbSettings(settings);
-    const { data, error } = await settingsService.upsertSettings(dbSettings);
+    const { error } = await settingsService.upsertSettings(dbSettings);
 
     if (error) {
       console.error("Failed to sync settings to DB:", error);
@@ -225,7 +225,7 @@ export class SyncService {
 
     if (existing) {
       // Update existing invoice with items
-      const { data, error } = await invoicesService.updateInvoiceWithItems(
+      const { error } = await invoicesService.updateInvoiceWithItems(
         invoice.id,
         dbInvoice,
         dbItems,
@@ -236,9 +236,10 @@ export class SyncService {
         return { success: false, error };
       }
     } else {
-      // Create new invoice
+      // Create new invoice - remove id to let DB generate it
+      const { id, ...invoiceWithoutId } = dbInvoice;
       const { data: newInvoice, error: createError } =
-        await invoicesService.createInvoice(dbInvoice);
+        await invoicesService.createInvoice(invoiceWithoutId);
 
       if (createError || !newInvoice) {
         console.error("Failed to create invoice in DB:", createError);
@@ -260,6 +261,10 @@ export class SyncService {
           return { success: false, error: itemsError };
         }
       }
+
+      // Note: The local invoice ID and DB invoice ID may differ
+      // This is expected - local uses UUID, DB generates its own
+      console.log(`Local invoice ${id} synced as DB invoice ${newInvoice.id}`);
     }
 
     return { success: true, error: null };

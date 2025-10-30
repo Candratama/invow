@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Invoice, StoreSettings, InvoiceItem, Customer } from "./types";
+import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
 import { syncQueueManager } from "./db/sync-queue";
 

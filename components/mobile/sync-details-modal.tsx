@@ -37,16 +37,16 @@ export function SyncDetailsModal({ isOpen, onClose }: SyncDetailsModalProps) {
     null,
   );
 
-  const loadDetailedStatus = async () => {
-    const status = await getDetailedStatus();
-    setDetailedStatus(status);
-  };
-
   useEffect(() => {
+    const loadDetailedStatus = async () => {
+      const status = await getDetailedStatus();
+      setDetailedStatus(status);
+    };
+
     if (isOpen) {
       loadDetailedStatus();
     }
-  }, [isOpen, syncStatus.queueCount]);
+  }, [isOpen, syncStatus.queueCount, getDetailedStatus]);
 
   const handleSync = async () => {
     if (!isOffline && !syncStatus.isSyncing) {
@@ -61,7 +61,8 @@ export function SyncDetailsModal({ isOpen, onClose }: SyncDetailsModalProps) {
       )
     ) {
       await clearQueue();
-      loadDetailedStatus();
+      const status = await getDetailedStatus();
+      setDetailedStatus(status);
     }
   };
 

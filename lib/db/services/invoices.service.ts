@@ -132,9 +132,26 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
+      // Get user with retry logic (for cases where auth session is being established)
+      let user = null;
+      let retries = 0;
+      const maxRetries = 3;
+
+      while (!user && retries < maxRetries) {
+        const {
+          data: { user: currentUser },
+        } = await this.supabase.auth.getUser();
+
+        if (currentUser) {
+          user = currentUser;
+        } else if (retries < maxRetries - 1) {
+          // Wait a bit before retrying
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          retries++;
+        } else {
+          throw new Error("User not authenticated");
+        }
+      }
 
       if (!user) {
         throw new Error("User not authenticated");
@@ -227,7 +244,7 @@ export class InvoicesService {
 
       // Start transaction-like operation
       // 1. Update invoice
-      const { data: updatedInvoice, error: invoiceError } = await this.supabase
+      const { error: invoiceError } = await this.supabase
         .from("invoices")
         .update(invoice)
         .eq("id", invoiceId)

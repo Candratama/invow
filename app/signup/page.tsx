@@ -30,12 +30,53 @@ export default function SignupPage() {
     errors: string[];
   } | null>(null);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (but not during signup process)
   useEffect(() => {
-    if (user && !authLoading) {
+    if (user && !authLoading && !success) {
       router.push("/");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, success, router]);
+
+  // Handle sync after signup when user becomes available
+  useEffect(() => {
+    if (success && user && !syncing && !syncResults) {
+      // User is now authenticated, we can sync
+      if (hasLocalDataToSync()) {
+        const dataSummary = getLocalDataSummary();
+        console.log("User authenticated, syncing local data:", dataSummary);
+
+        setSyncing(true);
+        syncLocalDataToSupabase()
+          .then((results) => {
+            setSyncResults(results);
+            console.log("Sync results:", results);
+            // Redirect after sync completes
+            setTimeout(() => router.push("/"), 2000);
+          })
+          .catch((syncError) => {
+            console.error("Sync failed:", syncError);
+            setSyncResults({
+              success: false,
+              syncedSettings: false,
+              syncedInvoices: 0,
+              errors: [
+                syncError instanceof Error
+                  ? syncError.message
+                  : "Unknown sync error",
+              ],
+            });
+            // Still redirect even if sync failed
+            setTimeout(() => router.push("/"), 3000);
+          })
+          .finally(() => {
+            setSyncing(false);
+          });
+      } else {
+        // No local data to sync, redirect immediately
+        setTimeout(() => router.push("/"), 2000);
+      }
+    }
+  }, [success, user, syncing, syncResults, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,41 +103,7 @@ export default function SignupPage() {
       setLoading(false);
     } else {
       setSuccess(true);
-
-      // Check if there's local data to sync
-      if (hasLocalDataToSync()) {
-        const dataSummary = getLocalDataSummary();
-        console.log("Local data found to sync:", dataSummary);
-
-        // Start syncing after a short delay to ensure auth is complete
-        setTimeout(async () => {
-          setSyncing(true);
-          try {
-            const results = await syncLocalDataToSupabase();
-            setSyncResults(results);
-            console.log("Sync results:", results);
-          } catch (syncError) {
-            console.error("Sync failed:", syncError);
-            setSyncResults({
-              success: false,
-              syncedSettings: false,
-              syncedInvoices: 0,
-              errors: [
-                syncError instanceof Error
-                  ? syncError.message
-                  : "Unknown sync error",
-              ],
-            });
-          } finally {
-            setSyncing(false);
-            // Redirect after sync completes
-            setTimeout(() => router.push("/"), 2000);
-          }
-        }, 1000);
-      } else {
-        // No local data to sync, redirect immediately
-        setTimeout(() => router.push("/"), 2000);
-      }
+      // Don't sync here - wait for auth context to update via onAuthStateChange
     }
   };
 

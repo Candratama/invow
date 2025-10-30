@@ -81,6 +81,7 @@ export function InvoicePreview({
                 style={{ display: "flex", width: "60%", alignItems: "center" }}
               >
                 {storeSettings?.logo && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={storeSettings.logo}
                     alt="Store Logo"
@@ -534,6 +535,7 @@ export function InvoicePreview({
                   }}
                 >
                   {storeSettings.signature && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={storeSettings.signature}
                       alt="Admin signature"

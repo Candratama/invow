@@ -4,8 +4,7 @@
  */
 
 import { useInvoiceStore } from "@/lib/store";
-import { settingsService, invoicesService, itemsService } from "./services";
-import type { StoreSettings, Invoice } from "@/lib/types";
+import { settingsService } from "./services";
 
 /**
  * Sync all local data to Supabase for a new user
@@ -17,6 +16,8 @@ export async function syncLocalDataToSupabase(): Promise<{
   syncedInvoices: number;
   errors: string[];
 }> {
+  console.log("🔄 Starting sync of local data to Supabase...");
+
   const results = {
     success: true,
     syncedSettings: false,
@@ -25,6 +26,22 @@ export async function syncLocalDataToSupabase(): Promise<{
   };
 
   try {
+    // Verify user is authenticated before starting
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
+
+    if (!currentUser) {
+      console.error("❌ Cannot sync: User not authenticated");
+      throw new Error(
+        "User not authenticated. Please ensure you are logged in before syncing.",
+      );
+    }
+
+    console.log("✅ User authenticated:", currentUser.email);
+
     // Get all local data from Zustand store
     const store = useInvoiceStore.getState();
 
@@ -71,7 +88,7 @@ export async function syncLocalDataToSupabase(): Promise<{
 
         if (error) {
           results.errors.push(
-            `Failed to sync invoice ${invoice.invoiceNumber}: ${error.message}`
+            `Failed to sync invoice ${invoice.invoiceNumber}: ${error.message}`,
           );
         } else {
           results.syncedInvoices++;
@@ -81,7 +98,7 @@ export async function syncLocalDataToSupabase(): Promise<{
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         results.errors.push(
-          `Invoice ${invoice.invoiceNumber} sync error: ${errorMessage}`
+          `Invoice ${invoice.invoiceNumber} sync error: ${errorMessage}`,
         );
       }
     }
