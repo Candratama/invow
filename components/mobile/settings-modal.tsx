@@ -223,7 +223,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       >
         <div className="flex flex-col h-full lg:max-h-[calc(95vh-64px)]">
           {/* Scrollable Form Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 lg:p-8">
+          <div className="flex-1 overflow-y-auto py-4 space-y-6 lg:py-8">
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               className="lg:max-w-3xl lg:mx-auto space-y-6"

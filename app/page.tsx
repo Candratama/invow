@@ -7,8 +7,13 @@ import { InvoicePreview } from "@/components/mobile/invoice-preview";
 import { FABButton } from "@/components/mobile/fab-button";
 import { OfflineBanner } from "@/components/mobile/offline-banner";
 import { SettingsModal } from "@/components/mobile/settings-modal";
+import { MigrationModal } from "@/components/mobile/migration-modal";
+import { SyncDetailsModal } from "@/components/mobile/sync-details-modal";
+import { UserMenu } from "@/components/mobile/user-menu";
 import { useInvoiceStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/auth-context";
 import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useMigration } from "@/hooks/use-migration";
 import { addPendingRequest } from "@/lib/offline";
 import { Invoice } from "@/lib/types";
 import { formatDate, generateUUID } from "@/lib/utils";
@@ -106,8 +111,19 @@ export default function HomePage() {
     currentInvoice,
   } = useInvoiceStore();
 
+  // Get auth state
+  const { user } = useAuth();
+
   // Monitor online/offline status
   useOnlineStatus();
+
+  // Handle data migration
+  const {
+    showMigrationModal,
+    dataSummary,
+    closeMigrationModal,
+    handleMigrationComplete,
+  } = useMigration();
 
   // Show settings modal on first visit if not configured
   useEffect(() => {
@@ -222,13 +238,19 @@ export default function HomePage() {
             </svg>
             Invow
           </h1>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-            aria-label="Settings"
-          >
-            <Settings size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {user ? (
+              <UserMenu onOpenSettings={() => setShowSettings(true)} />
+            ) : (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                aria-label="Settings"
+              >
+                <Settings size={20} />
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -342,6 +364,11 @@ export default function HomePage() {
                   <p className="text-sm text-gray-400 mt-1">
                     Create your first invoice to get started
                   </p>
+                  {!user && (
+                    <p className="text-xs text-blue-600 mt-3">
+                      💡 Sign in to sync across devices
+                    </p>
+                  )}
                 </div>
               )}
             </>
@@ -405,8 +432,13 @@ export default function HomePage() {
                 <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
                   <p className="text-gray-500">No completed invoices yet</p>
                   <p className="text-sm text-gray-400 mt-1">
-                    Download a PDF to complete an invoice
+                    Download a JPEG to complete an invoice
                   </p>
+                  {!user && (
+                    <p className="text-xs text-blue-600 mt-3">
+                      💡 Sign in to sync across devices
+                    </p>
+                  )}
                 </div>
               )}
             </>
@@ -435,6 +467,16 @@ export default function HomePage() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
+
+      {/* Migration Modal */}
+      {showMigrationModal && dataSummary && (
+        <MigrationModal
+          isOpen={showMigrationModal}
+          onClose={closeMigrationModal}
+          dataSummary={dataSummary}
+          onComplete={handleMigrationComplete}
+        />
+      )}
     </div>
   );
 }

@@ -95,7 +95,7 @@ export function BottomSheet({
           {/* Content - Scrollable */}
           <div
             className={cn(
-              "overflow-y-auto flex-1",
+              "overflow-y-auto flex-1 px-4 lg:px-6",
               fullScreen ? "pb-safe" : "pb-4",
             )}
           >

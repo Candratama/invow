@@ -42,8 +42,17 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias.canvas = false;
+
+    // Suppress big string serialization warnings for base64 images in cache
+    if (!isServer) {
+      config.infrastructureLogging = {
+        level: "error",
+        debug: /PackFileCacheStrategy/,
+      };
+    }
+
     return config;
   },
 };

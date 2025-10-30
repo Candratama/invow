@@ -395,7 +395,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
       </div>
 
       {/* Fixed Bottom Actions - Green Zone */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 lg:static lg:border-t-0 lg:mt-8 lg:p-0">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 lg:fixed lg:border-t lg:p-4">
         <div className="max-w-2xl lg:max-w-4xl mx-auto grid grid-cols-2 gap-3 lg:gap-4">
           <Button
             type="button"
@@ -446,7 +446,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
       >
         <form
           onSubmit={itemForm.handleSubmit(handleAddItem)}
-          className="p-4 space-y-4 lg:p-6"
+          className="py-4 space-y-4 lg:py-6"
         >
           <div>
             <Label htmlFor="description">Description *</Label>
