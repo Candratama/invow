@@ -8,15 +8,13 @@ import { FABButton } from "@/components/mobile/fab-button";
 import { OfflineBanner } from "@/components/mobile/offline-banner";
 import { SettingsModal } from "@/components/mobile/settings-modal";
 import { MigrationModal } from "@/components/mobile/migration-modal";
-import { SyncDetailsModal } from "@/components/mobile/sync-details-modal";
 import { UserMenu } from "@/components/mobile/user-menu";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useMigration } from "@/hooks/use-migration";
-import { addPendingRequest } from "@/lib/offline";
 import { Invoice } from "@/lib/types";
-import { formatDate, generateUUID } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
 
 function PreviewView({
@@ -26,14 +24,8 @@ function PreviewView({
   onBack: () => void;
   onComplete: () => void;
 }) {
-  const {
-    currentInvoice,
-    storeSettings,
-    isOffline,
-    setPendingSync,
-    deleteDraft,
-    saveCompleted,
-  } = useInvoiceStore();
+  const { currentInvoice, storeSettings, deleteDraft, saveCompleted } =
+    useInvoiceStore();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDownloadJPEG = async () => {
@@ -164,10 +156,6 @@ export default function HomePage() {
     }
   };
 
-  const handlePreview = () => {
-    setView("preview");
-  };
-
   const handleInvoiceComplete = () => {
     alert("Invoice created successfully!");
     setView("home");
@@ -197,7 +185,7 @@ export default function HomePage() {
             <div className="w-16" />
           </div>
         </header>
-        <InvoiceFormMobile onPreview={handlePreview} />
+        <InvoiceFormMobile />
       </>
     );
   }

@@ -32,7 +32,7 @@ export default function AccountPage() {
   const handleSignOut = async () => {
     if (
       confirm(
-        "Are you sure you want to sign out? Your data will remain synced."
+        "Are you sure you want to sign out? Your data will remain synced.",
       )
     ) {
       await signOut();
@@ -54,7 +54,8 @@ export default function AccountPage() {
     const diffMins = Math.floor(diffMs / 60000);
 
     if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
     if (diffMins < 1440)
       return `${Math.floor(diffMins / 60)} hour${Math.floor(diffMins / 60) !== 1 ? "s" : ""} ago`;
     return date.toLocaleDateString();
@@ -192,12 +193,10 @@ export default function AccountPage() {
 
         {/* Sign Out */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="font-semibold text-lg mb-4 text-red-600">
-            Sign Out
-          </h2>
+          <h2 className="font-semibold text-lg mb-4 text-red-600">Sign Out</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Signing out will keep your data synced but you'll need to log in
-            again to access it.
+            Signing out will keep your data synced but you&apos;ll need to log
+            in again to access it.
           </p>
           <button
             onClick={handleSignOut}

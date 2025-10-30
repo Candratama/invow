@@ -187,7 +187,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       email: sanitizeOptional(data.email),
       signature: signature || undefined,
       brandColor: data.brandColor,
-      lastUpdated: new Date().toISOString() as any,
+      lastUpdated: new Date().toISOString() as unknown as Date,
     };
 
     const cleanedSettings = Object.fromEntries(
@@ -406,7 +406,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Ditampilkan di bawah tanda tangan. Kosongkan untuk
-                    menggunakan default "Owner".
+                    menggunakan default &quot;Owner&quot;.
                   </p>
                 </div>
               </div>

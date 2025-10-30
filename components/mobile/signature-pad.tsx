@@ -191,7 +191,8 @@ export function SignatureCanvas({
 
     padRef.current = new SignaturePad(canvas, options);
     if (padRef.current) {
-      (padRef.current as any).onEnd = handlePadEnd;
+      (padRef.current as SignaturePad & { onEnd?: () => void }).onEnd =
+        handlePadEnd;
     }
     onReady?.(padRef.current);
 
@@ -210,7 +211,8 @@ export function SignatureCanvas({
       padRef.current?.off();
       padRef.current?.clear();
       if (padRef.current) {
-        (padRef.current as any).onEnd = undefined;
+        (padRef.current as SignaturePad & { onEnd?: () => void }).onEnd =
+          undefined;
       }
       onReady?.(null);
       padRef.current = null;

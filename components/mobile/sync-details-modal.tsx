@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import { BottomSheet } from "./bottom-sheet";
 import { useSync } from "@/hooks/use-sync";
-import { Cloud, RefreshCw, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import {
+  Cloud,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+} from "lucide-react";
 import { useStore } from "@/lib/store";
 
 interface SyncDetailsModalProps {
@@ -11,21 +17,36 @@ interface SyncDetailsModalProps {
   onClose: () => void;
 }
 
+interface DetailedStatus {
+  isSyncing: boolean;
+  queueCount: number;
+  autoSyncEnabled: boolean;
+  queueItems?: Array<{
+    id: string;
+    action: string;
+    entityType: string;
+    retryCount: number;
+    lastError?: string;
+  }>;
+}
+
 export function SyncDetailsModal({ isOpen, onClose }: SyncDetailsModalProps) {
   const { syncStatus, triggerSync, clearQueue, getDetailedStatus } = useSync();
   const isOffline = useStore((state) => state.isOffline);
-  const [detailedStatus, setDetailedStatus] = useState<any>(null);
+  const [detailedStatus, setDetailedStatus] = useState<DetailedStatus | null>(
+    null,
+  );
+
+  const loadDetailedStatus = async () => {
+    const status = await getDetailedStatus();
+    setDetailedStatus(status);
+  };
 
   useEffect(() => {
     if (isOpen) {
       loadDetailedStatus();
     }
   }, [isOpen, syncStatus.queueCount]);
-
-  const loadDetailedStatus = async () => {
-    const status = await getDetailedStatus();
-    setDetailedStatus(status);
-  };
 
   const handleSync = async () => {
     if (!isOffline && !syncStatus.isSyncing) {
@@ -34,7 +55,11 @@ export function SyncDetailsModal({ isOpen, onClose }: SyncDetailsModalProps) {
   };
 
   const handleClearQueue = async () => {
-    if (confirm("Are you sure you want to clear the sync queue? This will remove all pending sync operations.")) {
+    if (
+      confirm(
+        "Are you sure you want to clear the sync queue? This will remove all pending sync operations.",
+      )
+    ) {
       await clearQueue();
       loadDetailedStatus();
     }
@@ -109,49 +134,55 @@ export function SyncDetailsModal({ isOpen, onClose }: SyncDetailsModalProps) {
         </div>
 
         {/* Detailed Queue Items */}
-        {detailedStatus && detailedStatus.queueItems.length > 0 && (
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">Pending Items</h4>
-            <div className="space-y-2">
-              {detailedStatus.queueItems.map((item: any) => (
-                <div
-                  key={item.id}
-                  className="bg-gray-50 rounded-lg p-3 text-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-medium capitalize">
-                        {item.action}
-                      </span>{" "}
-                      <span className="text-gray-500">{item.entityType}</span>
+        {detailedStatus &&
+          detailedStatus.queueItems &&
+          detailedStatus.queueItems.length > 0 && (
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Pending Items</h4>
+              <div className="space-y-2">
+                {detailedStatus.queueItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-gray-50 rounded-lg p-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-medium capitalize">
+                          {item.action}
+                        </span>{" "}
+                        <span className="text-gray-500">{item.entityType}</span>
+                      </div>
+                      {item.retryCount > 0 && (
+                        <span className="text-xs text-orange-600">
+                          Retry {item.retryCount}
+                        </span>
+                      )}
                     </div>
-                    {item.retryCount > 0 && (
-                      <span className="text-xs text-orange-600">
-                        Retry {item.retryCount}
-                      </span>
+                    {item.lastError && (
+                      <div className="text-xs text-red-600 mt-1">
+                        {item.lastError}
+                      </div>
                     )}
                   </div>
-                  {item.lastError && (
-                    <div className="text-xs text-red-600 mt-1">
-                      {item.lastError}
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Actions */}
         <div className="space-y-3">
           <button
             onClick={handleSync}
-            disabled={isOffline || syncStatus.isSyncing || syncStatus.queueCount === 0}
+            disabled={
+              isOffline || syncStatus.isSyncing || syncStatus.queueCount === 0
+            }
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium
               hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
               transition-colors flex items-center justify-center gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${syncStatus.isSyncing ? "animate-spin" : ""}`}
+            />
             {syncStatus.isSyncing ? "Syncing..." : "Sync Now"}
           </button>
 

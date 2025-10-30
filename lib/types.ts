@@ -58,7 +58,7 @@ export interface PendingRequest {
   id: string;
   url: string;
   method: string;
-  body: any;
+  body: unknown;
   timestamp: Date;
   retryCount: number;
 }

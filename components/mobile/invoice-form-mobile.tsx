@@ -1,5 +1,5 @@
 "use client";
-44;
+
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,11 +39,7 @@ const itemSchema = z.object({
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
 type ItemFormData = z.infer<typeof itemSchema>;
 
-interface InvoiceFormMobileProps {
-  onPreview: () => void;
-}
-
-export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
+export function InvoiceFormMobile() {
   const {
     currentInvoice,
     updateCurrentInvoice,
@@ -101,7 +97,10 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
     return () => clearInterval(interval);
   }, [currentInvoice, saveDraft]);
 
-  const handleFormChange = (field: keyof InvoiceFormData, value: any) => {
+  const handleFormChange = (
+    field: keyof InvoiceFormData,
+    value: string | Date | number,
+  ) => {
     if (
       field === "customerName" ||
       field === "customerAddress" ||
@@ -112,16 +111,16 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
           ...currentInvoice?.customer,
           name:
             field === "customerName"
-              ? value
+              ? String(value)
               : currentInvoice?.customer?.name || "",
           email: "", // Email removed
           address:
             field === "customerAddress"
-              ? value
+              ? String(value)
               : currentInvoice?.customer?.address,
           status:
             field === "customerStatus"
-              ? value
+              ? (value as "Distributor" | "Reseller" | "Customer")
               : currentInvoice?.customer?.status,
         },
       });
@@ -339,7 +338,7 @@ export function InvoiceFormMobile({ onPreview }: InvoiceFormMobileProps) {
             </div>
           ) : (
             <p className="text-center text-gray-500 py-8">
-              No items added yet. Tap "Add Item" to get started.
+              No items added yet. Tap &quot;Add Item&quot; to get started.
             </p>
           )}
         </div>
