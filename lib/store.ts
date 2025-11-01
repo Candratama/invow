@@ -21,6 +21,9 @@ interface InvoiceStore {
   // UI state
   isOffline: boolean;
 
+  // Prevent duplicate save requests (race condition protection)
+  _savingInvoices: Set<string>;
+
   // Actions
   setUserId: (userId: string | null) => void;
   setCurrentInvoice: (invoice: Partial<Invoice> | null) => void;
@@ -60,6 +63,7 @@ export const useStore = create<InvoiceStore>()(
       completedInvoices: [],
       userId: null,
       isOffline: false,
+      _savingInvoices: new Set<string>(),
 
       setUserId: (userId) => set({ userId }),
       setCurrentInvoice: (invoice) => set({ currentInvoice: invoice }),
@@ -170,8 +174,20 @@ export const useStore = create<InvoiceStore>()(
           };
         }
 
+        // Prevent duplicate save requests (race condition protection)
+        const invoiceId = current.id || generateUUID();
+        if (get()._savingInvoices.has(invoiceId)) {
+          console.log("⚠️ Save already in progress for invoice:", invoiceId);
+          return { success: false, error: "Save already in progress" };
+        }
+
+        // Mark as saving
+        set((state) => ({
+          _savingInvoices: new Set(state._savingInvoices).add(invoiceId),
+        }));
+
         const completed: Invoice = {
-          id: current.id || generateUUID(),
+          id: invoiceId,
           invoiceNumber: current.invoiceNumber || generateInvoiceNumber(userId || undefined),
           invoiceDate: current.invoiceDate || new Date(),
           dueDate: new Date(), // Keep for backward compatibility
@@ -217,6 +233,13 @@ export const useStore = create<InvoiceStore>()(
                 : "Failed to save invoice";
             console.error("Failed to save invoice:", err);
             return { success: false, error: errorMessage };
+          } finally {
+            // Remove from saving set
+            set((state) => {
+              const newSet = new Set(state._savingInvoices);
+              newSet.delete(invoiceId);
+              return { _savingInvoices: newSet };
+            });
           }
         }
         return { success: true };
