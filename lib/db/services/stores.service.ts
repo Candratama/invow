@@ -12,6 +12,9 @@ export interface StoreInsert {
   logo?: string | null;
   address: string;
   whatsapp: string;
+  admin_name?: string | null;
+  admin_title?: string | null;
+  admin_signature?: string | null;
   store_description?: string | null;
   tagline?: string | null;
   store_number?: string | null;
@@ -38,6 +41,9 @@ export interface Store {
   phone: string | null;
   email: string | null;
   website: string | null;
+  admin_name: string | null;
+  admin_title: string | null;
+  admin_signature: string | null;
   store_description: string | null;
   tagline: string | null;
   store_number: string | null;
@@ -154,6 +160,23 @@ export class StoresService {
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }
+  }
+
+  /**
+   * Get default store with complete details (including admin info)
+   * This is a unified API method that replaces the N+1 query pattern.
+   * Since admin fields are now denormalized in the stores table,
+   * this method provides complete store data in a single query.
+   *
+   * @returns Complete store data including admin information
+   */
+  async getDefaultStoreWithDetails(): Promise<{
+    data: Store | null;
+    error: Error | null;
+  }> {
+    // Since admin fields are denormalized, this is now equivalent to getDefaultStore()
+    // But we keep this method for semantic clarity and future extensibility
+    return this.getDefaultStore();
   }
 
   /**
@@ -275,7 +298,7 @@ export class StoresService {
   /**
    * Create default store from StoreSettings
    * Used during migration from old user_settings to new stores
-   * Note: This only creates the store. The caller must create the contact separately.
+   * Now includes admin fields directly in the store (denormalized)
    */
   async createDefaultStoreFromSettings(settings: {
     name: string;
@@ -318,6 +341,9 @@ export class StoresService {
         whatsapp: settings.whatsapp,
         phone: null,
         website: null,
+        admin_name: settings.adminName || null,
+        admin_title: settings.adminTitle || null,
+        admin_signature: settings.signature || null,
         store_description: settings.storeDescription || null,
         tagline: settings.tagline || null,
         store_number: settings.storeNumber || null,

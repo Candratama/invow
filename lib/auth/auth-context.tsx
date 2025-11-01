@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { useStore } from "@/lib/store";
 
 interface AuthContextType {
   user: User | null;
@@ -63,6 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Clear all store data including persisted settings
+    useStore.getState().clearAll();
   };
 
   const resetPassword = async (email: string) => {

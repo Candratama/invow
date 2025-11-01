@@ -4,16 +4,15 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
-import { syncQueueManager } from "./db/sync-queue";
 
 interface InvoiceStore {
-  // Current invoice being edited
+  // Current invoice being edited (temporary, not saved to DB until complete)
   currentInvoice: Partial<Invoice> | null;
 
-  // Store settings
+  // Store settings (loaded from Supabase)
   storeSettings: StoreSettings | null;
 
-  // Completed invoices
+  // Completed invoices (loaded from Supabase)
   completedInvoices: Invoice[];
 
   // User ID for invoice number generation
@@ -21,8 +20,6 @@ interface InvoiceStore {
 
   // UI state
   isOffline: boolean;
-  pendingSync: number;
-  _hasHydrated: boolean;
 
   // Actions
   setUserId: (userId: string | null) => void;
@@ -44,7 +41,9 @@ interface InvoiceStore {
   setCompletedInvoices: (invoices: Invoice[]) => void;
 
   setOfflineStatus: (offline: boolean) => void;
-  setPendingSync: (count: number) => void;
+
+  // Clear all data (for logout)
+  clearAll: () => void;
 
   // Initialize new invoice
   initializeNewInvoice: () => void;
@@ -61,8 +60,6 @@ export const useStore = create<InvoiceStore>()(
       completedInvoices: [],
       userId: null,
       isOffline: false,
-      pendingSync: 0,
-      _hasHydrated: false,
 
       setUserId: (userId) => set({ userId }),
       setCurrentInvoice: (invoice) => set({ currentInvoice: invoice }),
@@ -119,24 +116,38 @@ export const useStore = create<InvoiceStore>()(
       },
 
       setStoreSettings: async (settings) => {
+        // Phase 4: Optimistic update pattern - update UI immediately
         set({ storeSettings: settings });
 
-        // Queue sync if offline or user is authenticated
         if (typeof window !== "undefined") {
+          const isOffline = get().isOffline;
+
+          if (isOffline) {
+            return {
+              success: false,
+              error: "Cannot save settings while offline. Please check your connection."
+            };
+          }
+
           try {
-            await syncQueueManager.enqueue({
-              action: "upsert",
-              entityType: "settings",
-              entityId: "user-settings",
-              data: settings,
-            });
-            return { success: true };
+            // Phase 4: Direct mutation to Supabase (no queue when online)
+            // Real-time subscription will confirm the update via Phase 3
+            const { SyncService } = await import("./db/sync");
+            const { success, error } = await SyncService.syncSettingsToDb(settings);
+
+            if (success) {
+              console.log("✅ Settings saved to cloud (direct mutation)");
+              return { success: true };
+            } else {
+              console.error("❌ Failed to save settings:", error);
+              return { success: false, error: String(error || "Failed to save settings") };
+            }
           } catch (err) {
             const errorMessage =
               err instanceof Error
                 ? err.message
-                : "Failed to queue settings sync";
-            console.error("Failed to queue settings sync:", err);
+                : "Failed to save settings";
+            console.error("Failed to save settings:", err);
             return { success: false, error: errorMessage };
           }
         }
@@ -146,8 +157,17 @@ export const useStore = create<InvoiceStore>()(
       saveCompleted: async () => {
         const current = get().currentInvoice;
         const userId = get().userId;
+        const isOffline = get().isOffline;
+
         if (!current) {
           return { success: false, error: "No current invoice to save" };
+        }
+
+        if (isOffline) {
+          return {
+            success: false,
+            error: "Cannot save invoice while offline. Please check your connection."
+          };
         }
 
         const completed: Invoice = {
@@ -165,32 +185,37 @@ export const useStore = create<InvoiceStore>()(
           subtotal: current.subtotal || 0,
           shippingCost: current.shippingCost || 0,
           total: current.total || 0,
+          note: current.note || undefined,
           status: "synced",
           createdAt: current.createdAt || new Date(),
           updatedAt: new Date(),
         } as Invoice;
 
+        // Phase 4: Optimistic update - UI updates immediately
         const completed_list = get().completedInvoices.filter(
           (c) => c.id !== completed.id,
         );
         set({ completedInvoices: [...completed_list, completed] });
 
-        // Queue sync for completed invoice
         if (typeof window !== "undefined") {
           try {
-            await syncQueueManager.enqueue({
-              action: "upsert",
-              entityType: "invoice",
-              entityId: completed.id,
-              data: completed,
-            });
-            return { success: true };
+            // Phase 4: Direct mutation to Supabase (no queue when online)
+            const { SyncService } = await import("./db/sync");
+            const { success, error } = await SyncService.syncInvoiceToDb(completed);
+
+            if (success) {
+              console.log("✅ Invoice saved to cloud");
+              return { success: true };
+            } else {
+              console.error("❌ Failed to save invoice:", error);
+              return { success: false, error: String(error || "Failed to save invoice") };
+            }
           } catch (err) {
             const errorMessage =
               err instanceof Error
                 ? err.message
-                : "Failed to queue completed sync";
-            console.error("Failed to queue completed sync:", err);
+                : "Failed to save invoice";
+            console.error("Failed to save invoice:", err);
             return { success: false, error: errorMessage };
           }
         }
@@ -205,25 +230,38 @@ export const useStore = create<InvoiceStore>()(
       },
 
       deleteCompleted: async (id) => {
+        const isOffline = get().isOffline;
+
+        if (isOffline) {
+          return {
+            success: false,
+            error: "Cannot delete invoice while offline. Please check your connection."
+          };
+        }
+
+        // Phase 4: Optimistic update - UI updates immediately
         const completed = get().completedInvoices.filter((c) => c.id !== id);
         set({ completedInvoices: completed });
 
-        // Queue deletion sync
         if (typeof window !== "undefined") {
           try {
-            await syncQueueManager.enqueue({
-              action: "delete",
-              entityType: "invoice",
-              entityId: id,
-              data: null,
-            });
-            return { success: true };
+            // Phase 4: Direct mutation to Supabase (no queue when online)
+            const { SyncService } = await import("./db/sync");
+            const { success, error } = await SyncService.deleteInvoiceFromDb(id);
+
+            if (success) {
+              console.log("✅ Invoice deleted from cloud");
+              return { success: true };
+            } else {
+              console.error("❌ Failed to delete invoice:", error);
+              return { success: false, error: String(error || "Failed to delete invoice") };
+            }
           } catch (err) {
             const errorMessage =
               err instanceof Error
                 ? err.message
-                : "Failed to queue completed deletion";
-            console.error("Failed to queue completed deletion:", err);
+                : "Failed to delete invoice";
+            console.error("Failed to delete invoice:", err);
             return { success: false, error: errorMessage };
           }
         }
@@ -235,7 +273,15 @@ export const useStore = create<InvoiceStore>()(
       },
 
       setOfflineStatus: (offline) => set({ isOffline: offline }),
-      setPendingSync: (count) => set({ pendingSync: count }),
+
+      clearAll: () => {
+        set({
+          currentInvoice: null,
+          storeSettings: null,
+          completedInvoices: [],
+          userId: null,
+        });
+      },
 
       initializeNewInvoice: () => {
         const userId = get().userId;
@@ -278,22 +324,12 @@ export const useStore = create<InvoiceStore>()(
     {
       name: "invoice-storage",
       storage: createJSONStorage(() => localStorage),
+      // Only persist storeSettings, not invoices (they load fresh from Supabase)
       partialize: (state) => ({
         storeSettings: state.storeSettings,
-        completedInvoices: state.completedInvoices,
       }),
-      onRehydrateStorage: () => (state) => {
-        console.log("🔄 Zustand hydration started");
-        if (state) {
-          state._hasHydrated = true;
-          console.log("✅ Zustand hydrated with:", {
-            hasSettings: !!state.storeSettings,
-            completedCount: state.completedInvoices.length,
-          });
-        }
-      },
-    },
-  ),
+    }
+  )
 );
 
 // Export with backward compatibility

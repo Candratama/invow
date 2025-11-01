@@ -46,6 +46,6 @@ next-env.d.ts
 
 PRD.md
 CLAUDE.md
-docs/
+#docs/
 AGENTS.md
 .claude

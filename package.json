@@ -1,7 +1,7 @@
 {
-  "name": "invoice-generator-mobile",
+  "name": "invow",
   "version": "1.0.0",
-  "description": "Mobile-first Invoice Generator PWA for Indonesian UMKM",
+  "description": "Mobile-first Invoice Generator",
   "private": true,
   "scripts": {
     "dev": "next dev",

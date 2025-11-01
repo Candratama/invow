@@ -520,6 +520,111 @@ export class InvoicesService {
       };
     }
   }
+
+  /**
+   * Get total revenue from all synced invoices
+   * @returns Total revenue amount and invoice count
+   */
+  async getTotalRevenue(): Promise<{
+    total: number;
+    count: number;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Fetch all synced invoices (only total field for efficiency)
+      const { data, error } = await this.supabase
+        .from("invoices")
+        .select("total")
+        .eq("user_id", user.id)
+        .eq("status", "synced");
+
+      if (error) throw new Error(error.message);
+
+      // Calculate total revenue
+      const total = data?.reduce((sum, invoice) => sum + Number(invoice.total), 0) ?? 0;
+      const count = data?.length ?? 0;
+
+      return { total, count, error: null };
+    } catch (error) {
+      console.error("Error calculating total revenue:", error);
+      return {
+        total: 0,
+        count: 0,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Get revenue statistics including monthly and total
+   * @returns Revenue statistics
+   */
+  async getRevenueStats(): Promise<{
+    monthlyRevenue: number;
+    totalRevenue: number;
+    count: number;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Get start of current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Fetch all synced invoices with date
+      const { data, error } = await this.supabase
+        .from("invoices")
+        .select("total, invoice_date")
+        .eq("user_id", user.id)
+        .eq("status", "synced");
+
+      if (error) throw new Error(error.message);
+
+      // Calculate totals
+      let monthlyRevenue = 0;
+      let totalRevenue = 0;
+
+      data?.forEach((invoice) => {
+        const invoiceTotal = Number(invoice.total);
+        const invoiceDate = new Date(invoice.invoice_date);
+
+        // Add to total
+        totalRevenue += invoiceTotal;
+
+        // Add to monthly if in current month
+        if (invoiceDate >= startOfMonth) {
+          monthlyRevenue += invoiceTotal;
+        }
+      });
+
+      const count = data?.length ?? 0;
+
+      return { monthlyRevenue, totalRevenue, count, error: null };
+    } catch (error) {
+      console.error("Error calculating revenue stats:", error);
+      return {
+        monthlyRevenue: 0,
+        totalRevenue: 0,
+        count: 0,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
 }
 
 // Export singleton instance

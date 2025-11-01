@@ -52,7 +52,7 @@ export async function syncLocalDataToSupabase(): Promise<{
         const { data: existingStore } = await storesService.getDefaultStore();
 
         if (existingStore) {
-          // Update existing store (without admin fields)
+          // Update existing store with denormalized admin fields
           const { error: storeError } = await storesService.updateStore(
             existingStore.id,
             {
@@ -60,6 +60,9 @@ export async function syncLocalDataToSupabase(): Promise<{
               logo: store.storeSettings.logo || null,
               address: store.storeSettings.address,
               whatsapp: store.storeSettings.whatsapp,
+              admin_name: store.storeSettings.adminName || null,
+              admin_title: store.storeSettings.adminTitle || null,
+              admin_signature: store.storeSettings.signature || null,
               store_description: store.storeSettings.storeDescription || null,
               tagline: store.storeSettings.tagline || null,
               store_number: store.storeSettings.storeNumber || null,
@@ -174,6 +177,9 @@ export async function syncLocalDataToSupabase(): Promise<{
               slug: "my-store",
               address: "Address not set",
               whatsapp: "+620000000000",
+              admin_name: "Admin",
+              admin_title: "Owner",
+              admin_signature: null,
               brand_color: "#10b981",
               is_active: true,
               invoice_prefix: "INV",

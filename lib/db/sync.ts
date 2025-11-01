@@ -3,7 +3,7 @@
  * Handles bidirectional synchronization between localStorage and database
  */
 
-import { settingsService, storesService, invoicesService, storeContactsService } from "./services";
+import { storesService, invoicesService, storeContactsService } from "./services";
 import { toISOString, toDate } from "./date-utils";
 import type { StoreSettings, Invoice } from "@/lib/types";
 import type { UserSettings } from "./database.types";
@@ -148,18 +148,17 @@ export function storeToDbItems(
 
 /**
  * Convert database Store to app StoreSettings format
- * Note: Admin fields (adminName, adminTitle, signature) are now in store_contacts table
- * and need to be fetched separately if needed
+ * Admin fields are now denormalized in the stores table (Phase 1 optimization)
  */
-export function dbStoreToStoreSettings(dbStore: Store, primaryContact?: { name: string; title?: string | null; signature?: string | null }): StoreSettings {
+export function dbStoreToStoreSettings(dbStore: Store): StoreSettings {
   return {
     name: dbStore.name,
     logo: dbStore.logo || "",
     address: dbStore.address,
     whatsapp: dbStore.whatsapp,
-    adminName: primaryContact?.name || "",
-    adminTitle: primaryContact?.title || undefined,
-    signature: primaryContact?.signature || undefined,
+    adminName: dbStore.admin_name || "",
+    adminTitle: dbStore.admin_title || undefined,
+    signature: dbStore.admin_signature || undefined,
     storeDescription: dbStore.store_description || undefined,
     tagline: dbStore.tagline || undefined,
     storeNumber: dbStore.store_number || undefined,
@@ -176,12 +175,13 @@ export function dbStoreToStoreSettings(dbStore: Store, primaryContact?: { name: 
 export class SyncService {
   /**
    * Sync settings from database to local store
+   * Uses denormalized admin fields - single query, no N+1 problem
    * @returns Settings or null if not found
    */
   static async syncSettingsFromDb(): Promise<StoreSettings | null> {
-    // Get default store
+    // Get default store with denormalized admin fields (single query!)
     const { data: storeData, error: storeError } =
-      await storesService.getDefaultStore();
+      await storesService.getDefaultStoreWithDetails();
 
     if (storeError) {
       console.error("Failed to sync settings from DB:", storeError);
@@ -193,18 +193,14 @@ export class SyncService {
       return null;
     }
 
-    // Also fetch primary contact for admin fields
-    const { data: primaryContact } = await storeContactsService.getPrimaryContact(storeData.id);
-
-    return dbStoreToStoreSettings(storeData, primaryContact ? {
-      name: primaryContact.name,
-      title: primaryContact.title,
-      signature: primaryContact.signature,
-    } : undefined);
+    // Convert to StoreSettings - admin fields are already included
+    return dbStoreToStoreSettings(storeData);
   }
 
   /**
    * Sync settings from local store to database
+   * Updates denormalized admin fields directly in stores table
+   * Also maintains backward compatibility with store_contacts
    * @param settings - Settings to sync
    * @returns Success status
    */
@@ -225,12 +221,15 @@ export class SyncService {
     }
 
     if (existingStore) {
-      // Update existing store (without admin fields)
+      // Update existing store with denormalized admin fields
       const { error: storeError } = await storesService.updateStore(existingStore.id, {
         name: settings.name,
         logo: settings.logo || null,
         address: settings.address,
         whatsapp: settings.whatsapp,
+        admin_name: settings.adminName || null,
+        admin_title: settings.adminTitle || null,
+        admin_signature: settings.signature || null,
         store_description: settings.storeDescription || null,
         tagline: settings.tagline || null,
         store_number: settings.storeNumber || null,
@@ -244,7 +243,7 @@ export class SyncService {
         return { success: false, error: storeError };
       }
 
-      // Update or create primary contact if admin info exists
+      // Also sync to store_contacts for backward compatibility
       if (settings.adminName) {
         const { data: primaryContact } = await storeContactsService.getPrimaryContact(existingStore.id);
 
@@ -277,7 +276,7 @@ export class SyncService {
         }
       }
     } else {
-      // No stores exist, create new default store
+      // No stores exist, create new default store with denormalized admin fields
       const { data: newStore, error } =
         await storesService.createDefaultStoreFromSettings(settings);
 
@@ -286,7 +285,7 @@ export class SyncService {
         return { success: false, error };
       }
 
-      // Create primary contact if store was created and admin info exists
+      // Create primary contact for backward compatibility
       if (newStore && settings.adminName) {
         const { error: contactError } = await storeContactsService.createContact({
           store_id: newStore.id,
@@ -388,10 +387,25 @@ export class SyncService {
         return [];
       }
 
-      // Transform database invoices to app format
-      const completedInvoices = dbInvoices
-        .filter(invoice => invoice.status === 'synced') // Only load synced/completed invoices
-        .map(dbInvoice => dbToStoreInvoice(dbInvoice));
+      // Load invoices with items
+      const completedInvoices = await Promise.all(
+        dbInvoices
+          .filter(invoice => invoice.status === 'synced') // Only load synced/completed invoices
+          .map(async (dbInvoice) => {
+            // Fetch full invoice with items
+            const { data: fullInvoice } = await invoicesService.getInvoiceWithItems(dbInvoice.id);
+
+            if (fullInvoice && fullInvoice.invoice_items) {
+              // Convert to app format with items
+              const invoice = dbToStoreInvoice(dbInvoice);
+              invoice.items = dbToStoreItems(fullInvoice.invoice_items);
+              return invoice;
+            }
+
+            // Fallback to invoice without items
+            return dbToStoreInvoice(dbInvoice);
+          })
+      );
 
       console.log(`✅ Loaded ${completedInvoices.length} completed invoices from database`);
       return completedInvoices;

@@ -9,10 +9,12 @@ import { OfflineBanner } from "@/components/mobile/offline-banner";
 import { SettingsModal } from "@/components/mobile/settings-modal";
 import { MigrationModal } from "@/components/mobile/migration-modal";
 import { UserMenu } from "@/components/mobile/user-menu";
+import { RevenueCard } from "@/components/revenue-card";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useMigration } from "@/hooks/use-migration";
+import { useDataLoader } from "@/hooks/use-data-loader";
 import { Invoice } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
@@ -24,8 +26,7 @@ function PreviewView({
   onBack: () => void;
   onComplete: () => void;
 }) {
-  const { currentInvoice, storeSettings, saveCompleted } =
-    useInvoiceStore();
+  const { currentInvoice, storeSettings, saveCompleted } = useInvoiceStore();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDownloadJPEG = async () => {
@@ -38,7 +39,14 @@ function PreviewView({
 
       // Save as completed invoice
       if (currentInvoice.id) {
-        saveCompleted();
+        const result = await saveCompleted();
+
+        if (!result.success) {
+          console.error("Failed to save invoice:", result.error);
+          alert(`Invoice downloaded but failed to save: ${result.error}`);
+          setIsGenerating(false);
+          return;
+        }
       }
 
       // Notify completion
@@ -103,6 +111,9 @@ export default function HomePage() {
   // Monitor online/offline status
   useOnlineStatus();
 
+  // Supabase-only data loading
+  const { isLoading } = useDataLoader();
+
   // Handle data migration
   const {
     showMigrationModal,
@@ -112,14 +123,15 @@ export default function HomePage() {
   } = useMigration();
 
   // Show settings modal on first visit if not configured
+  // Only show after initial data load is complete
   useEffect(() => {
-    if (!storeSettings && view === "home") {
+    if (!isLoading && !storeSettings && view === "home" && user) {
       const timer = setTimeout(() => {
         setShowSettings(true);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [storeSettings, view]);
+  }, [isLoading, storeSettings, view, user]);
 
   const handleNewInvoice = () => {
     initializeNewInvoice();
@@ -225,19 +237,22 @@ export default function HomePage() {
             <h2 className="text-2xl lg:text-4xl font-bold text-gray-900 mb-2">
               Dashboard
             </h2>
-            <p className="text-gray-600 lg:text-lg">
-              Generate invoices quickly
-            </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="bg-primary/10 p-6 rounded-lg text-center mb-8 lg:p-8 lg:mb-12 lg:max-w-md lg:mx-auto">
-            <div className="text-3xl lg:text-4xl font-bold text-primary">
-              {completedInvoices.length}
-            </div>
-            <div className="text-base lg:text-lg text-primary/80 mt-1">
-              Total Invoices Created
-            </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8 lg:mb-12 lg:gap-6">
+            {/* Revenue Card */}
+            <RevenueCard />
+
+            {/* Invoice Count Card */}
+            {/*<div className="bg-primary/10 p-6 rounded-lg text-center lg:p-8">
+              <div className="text-3xl lg:text-4xl font-bold text-primary">
+                {completedInvoices.length}
+              </div>
+              <div className="text-base lg:text-lg text-primary/80 mt-1">
+                Total Invoices Created
+              </div>
+            </div>*/}
           </div>
 
           {/* Invoices List */}
@@ -247,52 +262,52 @@ export default function HomePage() {
                 <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
                   Your Invoices
                 </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
-                    {completedInvoices
-                      .slice()
-                      .reverse()
-                      .slice(0, 10)
-                      .map((invoice) => (
-                        <div
-                          key={invoice.id}
-                          className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-start justify-between p-3">
-                            <button
-                              onClick={() => handleOpenCompleted(invoice.id)}
-                              className="flex-1 min-w-0 pr-2 text-left"
-                            >
-                              <div className="font-medium text-gray-900 truncate">
-                                {invoice.invoiceNumber}
-                              </div>
-                              <div className="text-sm text-gray-600 truncate">
-                                {invoice.customer.name || "No customer"}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {invoice.items?.length || 0} item
-                                {invoice.items?.length !== 1 ? "s" : ""} •{" "}
-                                {formatDate(new Date(invoice.updatedAt))}
-                              </div>
-                            </button>
-                            <div className="ml-3 flex-shrink-0 flex items-center gap-2">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                Completed
-                              </span>
-                              <button
-                                onClick={(e) =>
-                                  handleDeleteCompleted(e, invoice.id)
-                                }
-                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 text-red-600 transition-colors"
-                                aria-label="Delete invoice"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
+                  {completedInvoices
+                    .slice()
+                    .reverse()
+                    .slice(0, 10)
+                    .map((invoice) => (
+                      <div
+                        key={invoice.id}
+                        className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between p-3">
+                          <button
+                            onClick={() => handleOpenCompleted(invoice.id)}
+                            className="flex-1 min-w-0 pr-2 text-left"
+                          >
+                            <div className="font-medium text-gray-900 truncate">
+                              {invoice.invoiceNumber}
                             </div>
+                            <div className="text-sm text-gray-600 truncate">
+                              {invoice.customer.name || "No customer"}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {invoice.items?.length || 0} item
+                              {invoice.items?.length !== 1 ? "s" : ""} •{" "}
+                              {formatDate(new Date(invoice.updatedAt))}
+                            </div>
+                          </button>
+                          <div className="ml-3 flex-shrink-0 flex items-center gap-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              Completed
+                            </span>
+                            <button
+                              onClick={(e) =>
+                                handleDeleteCompleted(e, invoice.id)
+                              }
+                              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 text-red-600 transition-colors"
+                              aria-label="Delete invoice"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </div>
-                      ))}
-                  </div>
+                      </div>
+                    ))}
                 </div>
+              </div>
             ) : (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
                 <p className="text-gray-500">No invoices yet</p>

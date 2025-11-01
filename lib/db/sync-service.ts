@@ -4,11 +4,7 @@
  */
 
 import { syncQueueManager, type SyncQueueItem } from "./sync-queue";
-import {
-  storesService,
-  storeContactsService,
-  invoicesService,
-} from "./services";
+import { storesService, storeContactsService, invoicesService } from "./services";
 import type { StoreSettings, Invoice } from "@/lib/types";
 
 const MAX_RETRIES = 3;
@@ -35,7 +31,7 @@ export class SyncService {
             await storesService.getDefaultStore();
 
           if (existingStore) {
-            // Update existing store (without admin fields - they're now in store_contacts)
+            // Update existing store with denormalized admin fields
             const { error: storeError } = await storesService.updateStore(
               existingStore.id,
               {
@@ -43,6 +39,9 @@ export class SyncService {
                 logo: settings.logo || null,
                 address: settings.address,
                 whatsapp: settings.whatsapp,
+                admin_name: settings.adminName || null,
+                admin_title: settings.adminTitle || null,
+                admin_signature: settings.signature || null,
                 store_description: settings.storeDescription || null,
                 tagline: settings.tagline || null,
                 store_number: settings.storeNumber || null,
@@ -53,7 +52,7 @@ export class SyncService {
             );
             if (storeError) throw storeError;
 
-            // Update or create primary contact if admin info exists
+            // Also sync to store_contacts for backward compatibility
             if (settings.adminName) {
               const { data: primaryContact } =
                 await storeContactsService.getPrimaryContact(existingStore.id);
@@ -66,9 +65,12 @@ export class SyncService {
                     title: settings.adminTitle || null,
                     signature: settings.signature || null,
                   });
-                if (contactError) throw contactError;
+                if (contactError) {
+                  console.warn("Failed to sync to store_contacts:", contactError);
+                  // Don't throw, denormalized field is the source of truth
+                }
               } else {
-                // Create new primary contact
+                // Create new primary contact for backward compatibility
                 const { error: contactError } =
                   await storeContactsService.createContact({
                     store_id: existingStore.id,
@@ -77,7 +79,10 @@ export class SyncService {
                     signature: settings.signature || null,
                     is_primary: true,
                   });
-                if (contactError) throw contactError;
+                if (contactError) {
+                  console.warn("Failed to sync to store_contacts:", contactError);
+                  // Don't throw, denormalized field is the source of truth
+                }
               }
             }
           } else {

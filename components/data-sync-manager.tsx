@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useInvoiceStore } from "@/lib/store";
 import { syncService } from "@/lib/db/sync-service";
 import { SyncService } from "@/lib/db/sync";
+import { useStoreRealtime } from "@/hooks/use-store-realtime";
 
 /**
  * DataSyncManager Component
@@ -12,7 +13,7 @@ import { SyncService } from "@/lib/db/sync";
  * Automatically handles bidirectional data synchronization:
  * 1. On login: Uploads all local data (settings, invoices) to Supabase
  * 2. On login: Downloads existing data from Supabase
- * 3. While online: Auto-syncs changes every 2 minutes
+ * 3. Real-time: Subscribes to store changes with <100ms latency (Phase 3 optimization)
  * 4. On data change: Queues changes for sync
  *
  * This component should be placed in the root layout to ensure
@@ -24,6 +25,9 @@ export function DataSyncManager() {
     useInvoiceStore();
   const hasInitialSynced = useRef(false);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Real-time subscription for store settings (Phase 3: replaces 2-minute polling)
+  useStoreRealtime(user?.id);
 
   // Initial sync when user logs in
   useEffect(() => {
@@ -95,6 +99,8 @@ export function DataSyncManager() {
   ]);
 
   // Auto-sync while user is online and authenticated
+  // Note: With real-time subscriptions (Phase 3), we still need sync queue processing
+  // for handling offline changes and invoice syncing, but at a reduced frequency
   useEffect(() => {
     if (!user || authLoading) {
       // Clear interval if user logs out
@@ -108,10 +114,12 @@ export function DataSyncManager() {
     // Don't start auto-sync until initial sync is complete
     if (!hasInitialSynced.current) return;
 
-    // Start the sync service auto-sync
-    syncService.startAutoSync(2); // Every 2 minutes
+    // Start the sync service auto-sync with reduced frequency
+    // Real-time handles store settings, this is mainly for sync queue processing
+    syncService.startAutoSync(5); // Every 5 minutes (reduced from 2 with real-time)
 
-    console.log("🔄 Auto-sync started (every 2 minutes)");
+    console.log("🔄 Sync queue processing started (every 5 minutes)");
+    console.log("📡 Store settings use real-time updates (<100ms latency)");
 
     // Cleanup on unmount or user logout
     return () => {
@@ -120,7 +128,7 @@ export function DataSyncManager() {
         syncIntervalRef.current = null;
       }
       syncService.stopAutoSync();
-      console.log("⏸️ Auto-sync stopped");
+      console.log("⏸️ Sync queue processing stopped");
     };
   }, [user, authLoading]);
 

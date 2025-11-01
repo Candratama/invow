@@ -7,6 +7,7 @@ import { BottomSheet } from "./bottom-sheet";
 import { AccountSettingsModal } from "./account-settings-modal";
 import { useSync } from "@/hooks/use-sync";
 import { useStore } from "@/lib/store";
+import { useDataLoader } from "@/hooks/use-data-loader";
 
 interface UserMenuProps {
   onOpenSettings?: () => void;
@@ -15,6 +16,7 @@ interface UserMenuProps {
 export function UserMenu({ onOpenSettings }: UserMenuProps) {
   const { user, signOut } = useAuth();
   const { syncStatus } = useSync();
+  const { isLoading } = useDataLoader();
   const isOffline = useStore((state) => state.isOffline);
   const [showMenu, setShowMenu] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
@@ -40,7 +42,7 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
         {!isOffline && (
           <div
             className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-              syncStatus.isSyncing
+              syncStatus.isSyncing || isLoading
                 ? "bg-blue-500 animate-pulse"
                 : syncStatus.lastError
                 ? "bg-red-500"
@@ -51,6 +53,8 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
             title={
               syncStatus.isSyncing
                 ? "Syncing..."
+                : isLoading
+                ? "Loading data..."
                 : syncStatus.lastError
                 ? "Sync failed"
                 : syncStatus.queueCount > 0
