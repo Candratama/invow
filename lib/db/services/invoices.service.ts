@@ -305,7 +305,16 @@ export class InvoicesService {
           .from("invoice_items")
           .insert(itemsWithInvoiceId);
 
-        if (itemsError) throw new Error(itemsError.message);
+        // Handle duplicate key constraint violation gracefully
+        // This can happen if multiple sync operations occur simultaneously
+        if (itemsError) {
+          if (itemsError.code === "23505") {
+            // 23505 = unique_violation in PostgreSQL
+            console.warn("⚠️ Duplicate invoice items detected, skipping insert (likely race condition)");
+          } else {
+            throw new Error(itemsError.message);
+          }
+        }
       }
 
       // 4. Fetch complete invoice with items
@@ -412,7 +421,16 @@ export class InvoicesService {
           .from("invoice_items")
           .insert(itemsWithInvoiceId);
 
-        if (itemsError) throw new Error(itemsError.message);
+        // Handle duplicate key constraint violation gracefully
+        // This can happen if multiple sync operations occur simultaneously
+        if (itemsError) {
+          if (itemsError.code === "23505") {
+            // 23505 = unique_violation in PostgreSQL
+            console.warn("⚠️ Duplicate invoice items detected, skipping insert (likely race condition)");
+          } else {
+            throw new Error(itemsError.message);
+          }
+        }
       }
 
       // Fetch complete invoice with items

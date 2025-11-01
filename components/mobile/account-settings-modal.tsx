@@ -4,9 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useStore } from "@/lib/store";
-import { useSync } from "@/hooks/use-sync";
 import { SyncService } from "@/lib/db/sync";
-import { CloudOff, CheckCircle, AlertCircle, LogOut, RefreshCw } from "lucide-react";
+import { CloudOff, LogOut, RefreshCw } from "lucide-react";
 import { BottomSheet } from "./bottom-sheet";
 
 interface AccountSettingsModalProps {
@@ -21,7 +20,6 @@ export function AccountSettingsModal({
   const router = useRouter();
   const { user, signOut } = useAuth();
   const isOffline = useStore((state) => state.isOffline);
-  const { syncStatus, triggerSync } = useSync();
   const [isSyncing, setIsSyncing] = useState(false);
 
   if (!user) return null;
@@ -38,38 +36,22 @@ export function AccountSettingsModal({
     }
   };
 
-  const handleManualSync = async () => {
+  const handleManualRefresh = async () => {
     setIsSyncing(true);
-    await triggerSync();
 
-    // Also force sync completed invoices from database
+    // Force refresh completed invoices from database
     try {
       const { success, error } = await SyncService.syncCompletedInvoicesToLocal();
       if (success) {
-        console.log("✅ Manually synced completed invoices from database");
+        console.log("✅ Refreshed data from cloud");
       } else {
-        console.warn("⚠️ Failed to sync completed invoices:", error);
+        console.warn("⚠️ Failed to refresh data:", error);
       }
     } catch (error) {
-      console.error("Error during manual invoice sync:", error);
+      console.error("Error during manual refresh:", error);
     }
 
     setIsSyncing(false);
-  };
-
-  const formatLastSync = () => {
-    if (!syncStatus.lastSync) return "Never";
-    const date = new Date(syncStatus.lastSync);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60)
-      return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
-    if (diffMins < 1440)
-      return `${Math.floor(diffMins / 60)} hour${Math.floor(diffMins / 60) !== 1 ? "s" : ""} ago`;
-    return date.toLocaleDateString();
   };
 
   return (
@@ -102,39 +84,10 @@ export function AccountSettingsModal({
               </div>
             </div>
 
-            {/* Sync Status */}
+            {/* Connection Status */}
             <div>
-              <h3 className="font-semibold text-lg mb-4">Sync Status</h3>
+              <h3 className="font-semibold text-lg mb-4">Connection Status</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-gray-600">Last Synced</span>
-                  <span className="font-medium text-gray-900">
-                    {formatLastSync()}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-gray-600">Pending Changes</span>
-                  <div className="flex items-center gap-2">
-                    {syncStatus.queueCount > 0 ? (
-                      <>
-                        <AlertCircle size={16} className="text-orange-600" />
-                        <span className="font-medium text-orange-600">
-                          {syncStatus.queueCount} item
-                          {syncStatus.queueCount !== 1 ? "s" : ""}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={16} className="text-green-600" />
-                        <span className="font-medium text-green-600">
-                          All synced
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
                 <div className="flex items-center justify-between py-2">
                   <span className="text-gray-600">Connection</span>
                   <div className="flex items-center gap-2">
@@ -155,6 +108,16 @@ export function AccountSettingsModal({
                     )}
                   </div>
                 </div>
+                {!isOffline && (
+                  <p className="text-xs text-gray-600 pt-1">
+                    Your data syncs automatically in real-time when online.
+                  </p>
+                )}
+                {isOffline && (
+                  <p className="text-xs text-orange-600 pt-1">
+                    You&apos;re offline. Please connect to save new data.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -163,27 +126,25 @@ export function AccountSettingsModal({
               <h3 className="font-semibold text-lg mb-4">Data Management</h3>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600 mb-3">
-                  Your invoices and settings are automatically synced to the
-                  cloud and stored locally for offline access.
+                  Your invoices and settings are automatically saved to the
+                  cloud in real-time when online.
                 </p>
                 <p className="text-xs text-blue-600 mb-4">
-                  💡 <strong>Data Sync Issue?</strong> Click the button below to force refresh all data from the cloud and ensure consistency across all devices.
+                  💡 <strong>Data Issue?</strong> Click the button below to refresh all data from the cloud.
                 </p>
                 <div className="pt-2">
                   <button
-                    onClick={handleManualSync}
-                    disabled={isOffline || syncStatus.isSyncing || isSyncing}
+                    onClick={handleManualRefresh}
+                    disabled={isOffline || isSyncing}
                     className="w-full py-3 px-4 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
-                    <RefreshCw size={16} className={(syncStatus.isSyncing || isSyncing) ? "animate-spin" : ""} />
-                    {syncStatus.isSyncing || isSyncing
-                      ? "Syncing & Refreshing..."
-                      : "Sync & Refresh Data"}
+                    <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
+                    {isSyncing ? "Refreshing..." : "Refresh Data"}
                   </button>
                 </div>
                 {isOffline && (
                   <p className="text-xs text-orange-600 text-center">
-                    Cannot sync while offline
+                    Cannot refresh while offline
                   </p>
                 )}
               </div>

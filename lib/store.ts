@@ -347,9 +347,11 @@ export const useStore = create<InvoiceStore>()(
     {
       name: "invoice-storage",
       storage: createJSONStorage(() => localStorage),
-      // Only persist storeSettings, not invoices (they load fresh from Supabase)
+      // Persist both settings and invoices for instant loading
+      // Real-time subscriptions will keep them in sync with Supabase
       partialize: (state) => ({
         storeSettings: state.storeSettings,
+        completedInvoices: state.completedInvoices,
       }),
     }
   )

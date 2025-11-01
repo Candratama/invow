@@ -6,6 +6,7 @@ import { useInvoiceStore } from "@/lib/store";
 import { syncService } from "@/lib/db/sync-service";
 import { SyncService } from "@/lib/db/sync";
 import { useStoreRealtime } from "@/hooks/use-store-realtime";
+import { useInvoicesRealtime } from "@/hooks/use-invoices-realtime";
 
 /**
  * DataSyncManager Component
@@ -26,8 +27,9 @@ export function DataSyncManager() {
   const hasInitialSynced = useRef(false);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Real-time subscription for store settings (Phase 3: replaces 2-minute polling)
+  // Real-time subscriptions (Phase 3: replaces 2-minute polling)
   useStoreRealtime(user?.id);
+  useInvoicesRealtime(user?.id);
 
   // Initial sync when user logs in
   useEffect(() => {
@@ -115,11 +117,11 @@ export function DataSyncManager() {
     if (!hasInitialSynced.current) return;
 
     // Start the sync service auto-sync with reduced frequency
-    // Real-time handles store settings, this is mainly for sync queue processing
+    // Real-time handles both store settings and invoices, this is mainly for sync queue processing
     syncService.startAutoSync(5); // Every 5 minutes (reduced from 2 with real-time)
 
     console.log("🔄 Sync queue processing started (every 5 minutes)");
-    console.log("📡 Store settings use real-time updates (<100ms latency)");
+    console.log("📡 Settings & invoices use real-time updates (<100ms latency)");
 
     // Cleanup on unmount or user logout
     return () => {
