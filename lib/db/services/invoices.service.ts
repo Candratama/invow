@@ -157,11 +157,42 @@ export class InvoicesService {
         throw new Error("User not authenticated");
       }
 
+      // Get default store_id if not provided
+      let storeId = invoice.store_id;
+      if (!storeId) {
+        const { storesService } = await import("./index");
+        const { data: defaultStore } = await storesService.getDefaultStore();
+
+        if (!defaultStore) {
+          throw new Error(
+            "No default store found. Please create a store first.",
+          );
+        }
+
+        storeId = defaultStore.id;
+      }
+
+      // Generate invoice number if not provided
+      let invoiceNumber = invoice.invoice_number;
+      if (!invoiceNumber) {
+        const { data: generatedNumber, error: numberError } = await this.supabase
+          .rpc('get_next_invoice_number', { p_store_id: storeId });
+
+        if (numberError) {
+          console.error("Failed to generate invoice number:", numberError);
+          throw new Error("Failed to generate invoice number");
+        }
+
+        invoiceNumber = generatedNumber;
+      }
+
       const { data, error } = await this.supabase
         .from("invoices")
         .insert({
           ...invoice,
+          invoice_number: invoiceNumber,
           user_id: user.id,
+          store_id: storeId,
         })
         .select()
         .single();
@@ -287,6 +318,113 @@ export class InvoicesService {
         `,
         )
         .eq("id", invoiceId)
+        .single();
+
+      if (fetchError) throw new Error(fetchError.message);
+
+      // Sort items by position
+      if (completeInvoice.invoice_items) {
+        completeInvoice.invoice_items.sort(
+          (a: InvoiceItem, b: InvoiceItem) => a.position - b.position,
+        );
+      }
+
+      return { data: completeInvoice as InvoiceWithItems, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Upsert an invoice with items (for syncing)
+   * This method will insert if not exists, or update if exists
+   * @param invoice - Invoice data to upsert
+   * @param items - Items to replace existing ones
+   * @returns Upserted invoice with items
+   */
+  async upsertInvoiceWithItems(
+    invoice: Omit<InvoiceInsert, "user_id">,
+    items: Omit<InvoiceItemInsert, "invoice_id">[],
+  ): Promise<{
+    data: InvoiceWithItems | null;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Get default store_id if not provided
+      let storeId = invoice.store_id;
+      if (!storeId) {
+        const { storesService } = await import("./index");
+        const { data: defaultStore } = await storesService.getDefaultStore();
+
+        if (!defaultStore) {
+          throw new Error(
+            "No default store found. Please create a store first.",
+          );
+        }
+
+        storeId = defaultStore.id;
+      }
+
+      // Prepare invoice data
+      const invoiceData = {
+        ...invoice,
+        user_id: user.id,
+        store_id: storeId,
+      };
+
+      // Upsert invoice (will insert or update based on id)
+      const { data: upsertedInvoice, error: upsertError } = await this.supabase
+        .from("invoices")
+        .upsert(invoiceData, { onConflict: "id" })
+        .select()
+        .single();
+
+      if (upsertError) throw new Error(upsertError.message);
+
+      // Delete existing items
+      const { error: deleteError } = await this.supabase
+        .from("invoice_items")
+        .delete()
+        .eq("invoice_id", upsertedInvoice.id);
+
+      if (deleteError) throw new Error(deleteError.message);
+
+      // Insert new items
+      if (items.length > 0) {
+        const itemsWithInvoiceId = items.map((item, index) => ({
+          ...item,
+          invoice_id: upsertedInvoice.id,
+          position: item.position ?? index,
+        }));
+
+        const { error: itemsError } = await this.supabase
+          .from("invoice_items")
+          .insert(itemsWithInvoiceId);
+
+        if (itemsError) throw new Error(itemsError.message);
+      }
+
+      // Fetch complete invoice with items
+      const { data: completeInvoice, error: fetchError } = await this.supabase
+        .from("invoices")
+        .select(
+          `
+          *,
+          invoice_items (*)
+        `,
+        )
+        .eq("id", upsertedInvoice.id)
         .single();
 
       if (fetchError) throw new Error(fetchError.message);

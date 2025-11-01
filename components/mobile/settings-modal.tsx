@@ -159,7 +159,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
-  const onSubmit = (data: SettingsFormData) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const onSubmit = async (data: SettingsFormData) => {
     // Format WhatsApp number (add +62 if not present)
     let whatsapp = data.whatsapp.replace(/\D/g, ""); // Remove non-digits
     if (whatsapp.startsWith("0")) {
@@ -195,21 +197,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     ) as Partial<StoreSettings>;
 
     console.log("💾 Saving settings:", cleanedSettings);
-    setStoreSettings(cleanedSettings as StoreSettings);
 
-    // Verify save
-    setTimeout(() => {
-      const saved = localStorage.getItem("invoice-storage");
-      console.log(
-        "✅ Verified in localStorage:",
-        saved ? "Data exists" : "No data!",
-      );
-    }, 100);
+    setIsSaving(true);
+    try {
+      const result = await setStoreSettings(cleanedSettings as StoreSettings);
 
-    alert("Settings saved successfully!");
-    setSignature(signature || "");
-    setSignatureDraft(signature || undefined);
-    onClose();
+      if (result.success) {
+        // Verify save
+        setTimeout(() => {
+          const saved = localStorage.getItem("invoice-storage");
+          console.log(
+            "✅ Verified in localStorage:",
+            saved ? "Data exists" : "No data!",
+          );
+        }, 100);
+
+        alert("Settings saved successfully!");
+        setSignature(signature || "");
+        setSignatureDraft(signature || undefined);
+        onClose();
+      } else {
+        alert(`Failed to save settings: ${result.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -563,8 +578,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 form="settings-form"
                 className="flex-1"
                 size="lg"
+                disabled={isSaving}
               >
-                Save Settings
+                {isSaving ? "Saving..." : "Save Settings"}
               </Button>
             </div>
           </div>

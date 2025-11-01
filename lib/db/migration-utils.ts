@@ -37,16 +37,16 @@ export function detectLocalData(): LocalDataSummary {
     const parsed = JSON.parse(storage)
     const state = parsed.state || parsed
 
-    const draftCount = state.draftInvoices?.length || 0
+    const draftCount = 0 // No more drafts
     const completedCount = state.completedInvoices?.length || 0
 
     return {
       hasSettings: !!state.storeSettings?.name,
-      hasDrafts: draftCount > 0,
+      hasDrafts: false, // No more drafts
       hasCompleted: completedCount > 0,
       draftCount,
       completedCount,
-      totalInvoices: draftCount + completedCount,
+      totalInvoices: completedCount,
     }
   } catch (error) {
     console.error('Failed to detect local data:', error)
@@ -76,7 +76,7 @@ export function getLocalDataForMigration(): {
     if (!storage) {
       return {
         settings: null,
-        draftInvoices: [],
+        draftInvoices: [], // No more drafts
         completedInvoices: [],
       }
     }
@@ -86,14 +86,14 @@ export function getLocalDataForMigration(): {
 
     return {
       settings: state.storeSettings || null,
-      draftInvoices: state.draftInvoices || [],
+      draftInvoices: [], // No more drafts
       completedInvoices: state.completedInvoices || [],
     }
   } catch (error) {
     console.error('Failed to get local data:', error)
     return {
       settings: null,
-      draftInvoices: [],
+      draftInvoices: [], // No more drafts
       completedInvoices: [],
     }
   }

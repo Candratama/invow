@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import { User, Settings, LogOut, Cloud, Store } from "lucide-react";
+import { User, Settings, LogOut, Store } from "lucide-react";
 import { BottomSheet } from "./bottom-sheet";
+import { AccountSettingsModal } from "./account-settings-modal";
 import { useSync } from "@/hooks/use-sync";
 import { useStore } from "@/lib/store";
 
@@ -13,11 +13,11 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ onOpenSettings }: UserMenuProps) {
-  const router = useRouter();
   const { user, signOut } = useAuth();
   const { syncStatus } = useSync();
   const isOffline = useStore((state) => state.isOffline);
   const [showMenu, setShowMenu] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   if (!user) return null;
 
@@ -25,7 +25,6 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
     if (confirm("Are you sure you want to sign out?")) {
       await signOut();
       setShowMenu(false);
-      router.push("/login");
     }
   };
 
@@ -92,24 +91,13 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
             <button
               onClick={() => {
                 setShowMenu(false);
-                router.push("/account");
+                setShowAccountSettings(true);
               }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-left"
             >
               <Settings size={20} className="text-gray-600" />
-              <span>Account Settings</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                router.push("/account");
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-left"
-            >
-              <Cloud size={20} className="text-gray-600" />
               <div className="flex-1 flex items-center justify-between">
-                <span>Sync Status</span>
+                <span>Account Settings</span>
                 {syncStatus.queueCount > 0 && (
                   <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
                     {syncStatus.queueCount} pending
@@ -131,6 +119,12 @@ export function UserMenu({ onOpenSettings }: UserMenuProps) {
           </div>
         </div>
       </BottomSheet>
+
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        isOpen={showAccountSettings}
+        onClose={() => setShowAccountSettings(false)}
+      />
     </>
   );
 }

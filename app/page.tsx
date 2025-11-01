@@ -24,7 +24,7 @@ function PreviewView({
   onBack: () => void;
   onComplete: () => void;
 }) {
-  const { currentInvoice, storeSettings, deleteDraft, saveCompleted } =
+  const { currentInvoice, storeSettings, saveCompleted } =
     useInvoiceStore();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -36,9 +36,8 @@ function PreviewView({
     try {
       await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
 
-      // Save as completed invoice and remove from drafts
+      // Save as completed invoice
       if (currentInvoice.id) {
-        deleteDraft(currentInvoice.id);
         saveCompleted();
       }
 
@@ -90,17 +89,12 @@ function PreviewView({
 export default function HomePage() {
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState<"drafts" | "completed">("drafts");
   const {
-    draftInvoices,
     completedInvoices,
     initializeNewInvoice,
     storeSettings,
-    loadDraft,
-    deleteDraft,
     loadCompleted,
     deleteCompleted,
-    currentInvoice,
   } = useInvoiceStore();
 
   // Get auth state
@@ -132,21 +126,9 @@ export default function HomePage() {
     setView("form");
   };
 
-  const handleOpenDraft = (draftId: string) => {
-    loadDraft(draftId);
-    setView("form");
-  };
-
   const handleOpenCompleted = (invoiceId: string) => {
     loadCompleted(invoiceId);
     setView("form");
-  };
-
-  const handleDeleteDraft = (e: React.MouseEvent, draftId: string) => {
-    e.stopPropagation();
-    if (confirm("Delete this draft?")) {
-      deleteDraft(draftId);
-    }
   };
 
   const handleDeleteCompleted = (e: React.MouseEvent, invoiceId: string) => {
@@ -159,15 +141,9 @@ export default function HomePage() {
   const handleInvoiceComplete = () => {
     alert("Invoice created successfully!");
     setView("home");
-    setActiveTab("completed");
   };
 
   if (view === "form") {
-    const isEditingDraft =
-      currentInvoice?.status === "draft" &&
-      currentInvoice?.items &&
-      currentInvoice.items.length > 0;
-
     return (
       <>
         <OfflineBanner />
@@ -180,7 +156,7 @@ export default function HomePage() {
               ← Back
             </button>
             <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
-              {isEditingDraft ? "Edit Invoice" : "New Invoice"}
+              New Invoice
             </h1>
             <div className="w-16" />
           </div>
@@ -226,7 +202,7 @@ export default function HomePage() {
             </svg>
             Invow
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {user ? (
               <UserMenu onOpenSettings={() => setShowSettings(true)} />
             ) : (
@@ -255,121 +231,22 @@ export default function HomePage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-8 lg:gap-6 lg:mb-12 lg:max-w-2xl lg:mx-auto">
-            <div className="bg-primary/10 p-4 rounded-lg text-center lg:p-6">
-              <div className="text-2xl lg:text-3xl font-bold text-primary">
-                {completedInvoices.length}
-              </div>
-              <div className="text-sm lg:text-base text-primary/80">
-                Invoices Created
-              </div>
+          <div className="bg-primary/10 p-6 rounded-lg text-center mb-8 lg:p-8 lg:mb-12 lg:max-w-md lg:mx-auto">
+            <div className="text-3xl lg:text-4xl font-bold text-primary">
+              {completedInvoices.length}
             </div>
-            <div className="bg-gray-100 p-4 rounded-lg text-center lg:p-6">
-              <div className="text-2xl lg:text-3xl font-bold text-gray-700">
-                {draftInvoices.length}
-              </div>
-              <div className="text-sm lg:text-base text-gray-600">
-                Drafts Saved
-              </div>
+            <div className="text-base lg:text-lg text-primary/80 mt-1">
+              Total Invoices Created
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-4 border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab("completed")}
-              className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                activeTab === "completed"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Completed ({completedInvoices.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("drafts")}
-              className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                activeTab === "drafts"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Drafts ({draftInvoices.length})
-            </button>
-          </div>
-
-          {/* Drafts Tab */}
-          {activeTab === "drafts" && (
-            <>
-              {draftInvoices.length > 0 ? (
-                <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
-                  <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
-                    Draft Invoices
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
-                    {draftInvoices.slice(0, 10).map((draft) => (
-                      <div
-                        key={draft.id}
-                        className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between p-3">
-                          <button
-                            onClick={() => handleOpenDraft(draft.id)}
-                            className="flex-1 min-w-0 pr-2 text-left"
-                          >
-                            <div className="font-medium text-gray-900 truncate">
-                              {draft.invoiceNumber}
-                            </div>
-                            <div className="text-sm text-gray-600 truncate">
-                              {draft.customer.name || "No customer"}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {draft.items?.length || 0} item
-                              {draft.items?.length !== 1 ? "s" : ""} •{" "}
-                              {formatDate(new Date(draft.updatedAt))}
-                            </div>
-                          </button>
-                          <div className="ml-3 flex-shrink-0 flex items-center gap-2">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              Draft
-                            </span>
-                            <button
-                              onClick={(e) => handleDeleteDraft(e, draft.id)}
-                              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 text-red-600 transition-colors"
-                              aria-label="Delete draft"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
-                  <p className="text-gray-500">No drafts yet</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Create your first invoice to get started
-                  </p>
-                  {!user && (
-                    <p className="text-xs text-blue-600 mt-3">
-                      💡 Sign in to sync across devices
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Completed Tab */}
-          {activeTab === "completed" && (
-            <>
-              {completedInvoices.length > 0 ? (
-                <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
-                  <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
-                    Completed Invoices
-                  </h3>
+          {/* Invoices List */}
+          <>
+            {completedInvoices.length > 0 ? (
+              <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
+                <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
+                  Your Invoices
+                </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
                     {completedInvoices
                       .slice()
@@ -416,21 +293,20 @@ export default function HomePage() {
                       ))}
                   </div>
                 </div>
-              ) : (
-                <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
-                  <p className="text-gray-500">No completed invoices yet</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Download a JPEG to complete an invoice
+            ) : (
+              <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
+                <p className="text-gray-500">No invoices yet</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Create your first invoice to get started
+                </p>
+                {!user && (
+                  <p className="text-xs text-blue-600 mt-3">
+                    💡 Sign in to sync across devices
                   </p>
-                  {!user && (
-                    <p className="text-xs text-blue-600 mt-3">
-                      💡 Sign in to sync across devices
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+                )}
+              </div>
+            )}
+          </>
         </div>
       </main>
 

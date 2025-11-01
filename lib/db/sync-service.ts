@@ -4,7 +4,11 @@
  */
 
 import { syncQueueManager, type SyncQueueItem } from "./sync-queue";
-import { settingsService, invoicesService } from "./services";
+import {
+  storesService,
+  storeContactsService,
+  invoicesService,
+} from "./services";
 import type { StoreSettings, Invoice } from "@/lib/types";
 
 const MAX_RETRIES = 3;
@@ -25,30 +29,88 @@ export class SyncService {
 
       if (entityType === "settings") {
         const settings = data as StoreSettings;
-        if (action === "create" || action === "update") {
-          const { error } = await settingsService.upsertSettings({
-            name: settings.name,
-            logo: settings.logo || null,
-            address: settings.address,
-            whatsapp: settings.whatsapp,
-            admin_name: settings.adminName,
-            admin_title: settings.adminTitle || null,
-            signature: settings.signature || null,
-            store_description: settings.storeDescription || null,
-            tagline: settings.tagline || null,
-            store_number: settings.storeNumber || null,
-            payment_method: settings.paymentMethod || null,
-            email: settings.email || null,
-            brand_color: settings.brandColor,
-          });
-          if (error) throw error;
+        if (action === "create" || action === "update" || action === "upsert") {
+          // Check if default store exists
+          const { data: existingStore } =
+            await storesService.getDefaultStore();
+
+          if (existingStore) {
+            // Update existing store (without admin fields - they're now in store_contacts)
+            const { error: storeError } = await storesService.updateStore(
+              existingStore.id,
+              {
+                name: settings.name,
+                logo: settings.logo || null,
+                address: settings.address,
+                whatsapp: settings.whatsapp,
+                store_description: settings.storeDescription || null,
+                tagline: settings.tagline || null,
+                store_number: settings.storeNumber || null,
+                payment_method: settings.paymentMethod || null,
+                email: settings.email || null,
+                brand_color: settings.brandColor,
+              },
+            );
+            if (storeError) throw storeError;
+
+            // Update or create primary contact if admin info exists
+            if (settings.adminName) {
+              const { data: primaryContact } =
+                await storeContactsService.getPrimaryContact(existingStore.id);
+
+              if (primaryContact) {
+                // Update existing primary contact
+                const { error: contactError } =
+                  await storeContactsService.updateContact(primaryContact.id, {
+                    name: settings.adminName,
+                    title: settings.adminTitle || null,
+                    signature: settings.signature || null,
+                  });
+                if (contactError) throw contactError;
+              } else {
+                // Create new primary contact
+                const { error: contactError } =
+                  await storeContactsService.createContact({
+                    store_id: existingStore.id,
+                    name: settings.adminName,
+                    title: settings.adminTitle || null,
+                    signature: settings.signature || null,
+                    is_primary: true,
+                  });
+                if (contactError) throw contactError;
+              }
+            }
+          } else {
+            // Create new default store (this handles migration internally)
+            const { data: newStore, error: storeError } =
+              await storesService.createDefaultStoreFromSettings(settings);
+            if (storeError) throw storeError;
+
+            // Create primary contact if store was created and admin info exists
+            if (newStore && settings.adminName) {
+              const { error: contactError } =
+                await storeContactsService.createContact({
+                  store_id: newStore.id,
+                  name: settings.adminName,
+                  title: settings.adminTitle || null,
+                  signature: settings.signature || null,
+                  is_primary: true,
+                });
+              if (contactError) throw contactError;
+            }
+          }
         } else if (action === "delete") {
-          const { error } = await settingsService.deleteSettings();
-          if (error) throw error;
+          // Soft delete the default store
+          const { data: existingStore } =
+            await storesService.getDefaultStore();
+          if (existingStore) {
+            const { error } = await storesService.deleteStore(existingStore.id);
+            if (error) throw error;
+          }
         }
       } else if (entityType === "invoice") {
         const invoice = data as Invoice;
-        if (action === "create" || action === "update") {
+        if (action === "create" || action === "update" || action === "upsert") {
           // Use the sync service to handle the full invoice with items
           const { SyncService: SyncUtil } = await import("./sync");
           const { error } = await SyncUtil.syncInvoiceToDb(invoice);
@@ -88,13 +150,14 @@ export class SyncService {
       return { processed: 0, succeeded: 0, failed: 0, errors: [] };
     }
 
-    // Check if online
+    this.isSyncing = true;
+
+    // Check if online (after setting isSyncing to avoid race conditions)
     if (!navigator.onLine) {
       console.log("Offline, skipping sync");
+      this.isSyncing = false;
       return { processed: 0, succeeded: 0, failed: 0, errors: ["Offline"] };
     }
-
-    this.isSyncing = true;
     const stats = {
       processed: 0,
       succeeded: 0,

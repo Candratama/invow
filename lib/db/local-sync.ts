@@ -4,7 +4,7 @@
  */
 
 import { useInvoiceStore } from "@/lib/store";
-import { settingsService } from "./services";
+import { storesService, storeContactsService } from "./services";
 
 /**
  * Sync all local data to Supabase for a new user
@@ -45,40 +45,180 @@ export async function syncLocalDataToSupabase(): Promise<{
     // Get all local data from Zustand store
     const store = useInvoiceStore.getState();
 
-    // Sync settings first
+    // Sync settings first - create default store
     if (store.storeSettings) {
       try {
-        const { error } = await settingsService.upsertSettings({
-          name: store.storeSettings.name,
-          logo: store.storeSettings.logo || null,
-          address: store.storeSettings.address,
-          whatsapp: store.storeSettings.whatsapp,
-          admin_name: store.storeSettings.adminName,
-          admin_title: store.storeSettings.adminTitle || null,
-          signature: store.storeSettings.signature || null,
-          store_description: store.storeSettings.storeDescription || null,
-          tagline: store.storeSettings.tagline || null,
-          store_number: store.storeSettings.storeNumber || null,
-          payment_method: store.storeSettings.paymentMethod || null,
-          email: store.storeSettings.email || null,
-          brand_color: store.storeSettings.brandColor,
-        });
+        // Check if store already exists
+        const { data: existingStore } = await storesService.getDefaultStore();
 
-        if (error) {
-          results.errors.push(`Failed to sync settings: ${error.message}`);
+        if (existingStore) {
+          // Update existing store (without admin fields)
+          const { error: storeError } = await storesService.updateStore(
+            existingStore.id,
+            {
+              name: store.storeSettings.name,
+              logo: store.storeSettings.logo || null,
+              address: store.storeSettings.address,
+              whatsapp: store.storeSettings.whatsapp,
+              store_description: store.storeSettings.storeDescription || null,
+              tagline: store.storeSettings.tagline || null,
+              store_number: store.storeSettings.storeNumber || null,
+              payment_method: store.storeSettings.paymentMethod || null,
+              email: store.storeSettings.email || null,
+              brand_color: store.storeSettings.brandColor,
+            },
+          );
+
+          if (storeError) {
+            results.errors.push(`Failed to update store: ${storeError.message}`);
+          } else {
+            results.syncedSettings = true;
+            console.log("✅ Store updated in Supabase");
+
+            // Update or create primary contact if admin info exists
+            if (store.storeSettings.adminName) {
+              const { data: primaryContact } =
+                await storeContactsService.getPrimaryContact(existingStore.id);
+
+              if (primaryContact) {
+                // Update existing primary contact
+                const { error: contactError } =
+                  await storeContactsService.updateContact(primaryContact.id, {
+                    name: store.storeSettings.adminName,
+                    title: store.storeSettings.adminTitle || null,
+                    signature: store.storeSettings.signature || null,
+                  });
+
+                if (contactError) {
+                  console.warn(
+                    "⚠️ Failed to update primary contact:",
+                    contactError.message,
+                  );
+                } else {
+                  console.log("✅ Primary contact updated");
+                }
+              } else {
+                // Create new primary contact
+                const { error: contactError } =
+                  await storeContactsService.createContact({
+                    store_id: existingStore.id,
+                    name: store.storeSettings.adminName,
+                    title: store.storeSettings.adminTitle || null,
+                    signature: store.storeSettings.signature || null,
+                    is_primary: true,
+                  });
+
+                if (contactError) {
+                  console.warn(
+                    "⚠️ Failed to create primary contact:",
+                    contactError.message,
+                  );
+                } else {
+                  console.log("✅ Primary contact created");
+                }
+              }
+            }
+          }
         } else {
-          results.syncedSettings = true;
-          console.log("✅ Settings synced to Supabase");
+          // Create new default store
+          const { data: newStore, error: storeError } =
+            await storesService.createDefaultStoreFromSettings(
+              store.storeSettings,
+            );
+
+          if (storeError) {
+            results.errors.push(`Failed to create store: ${storeError.message}`);
+          } else {
+            results.syncedSettings = true;
+            console.log("✅ Store created in Supabase");
+
+            // Create primary contact if admin info exists
+            if (newStore && store.storeSettings.adminName) {
+              const { error: contactError } =
+                await storeContactsService.createContact({
+                  store_id: newStore.id,
+                  name: store.storeSettings.adminName,
+                  title: store.storeSettings.adminTitle || null,
+                  signature: store.storeSettings.signature || null,
+                  is_primary: true,
+                });
+
+              if (contactError) {
+                console.warn(
+                  "⚠️ Failed to create primary contact:",
+                  contactError.message,
+                );
+              } else {
+                console.log("✅ Primary contact created");
+              }
+            }
+          }
         }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
-        results.errors.push(`Settings sync error: ${errorMessage}`);
+        results.errors.push(`Store sync error: ${errorMessage}`);
+      }
+    } else {
+      // No settings exist - create a minimal default store so invoices can be synced
+      try {
+        const { data: existingStore } = await storesService.getDefaultStore();
+
+        if (!existingStore) {
+          console.log(
+            "⚠️ No store settings found locally, creating minimal default store",
+          );
+          const { data: newStore, error: storeError } =
+            await storesService.createStore({
+              name: "My Store",
+              slug: "my-store",
+              address: "Address not set",
+              whatsapp: "+620000000000",
+              brand_color: "#10b981",
+              is_active: true,
+              invoice_prefix: "INV",
+              store_code: "STORE",
+            });
+
+          if (storeError) {
+            results.errors.push(
+              `Failed to create minimal store: ${storeError.message}`,
+            );
+          } else {
+            results.syncedSettings = true;
+            console.log("✅ Minimal default store created");
+
+            // Create a default primary contact
+            if (newStore) {
+              const { error: contactError } =
+                await storeContactsService.createContact({
+                  store_id: newStore.id,
+                  name: "Admin",
+                  title: "Owner",
+                  signature: null,
+                  is_primary: true,
+                });
+
+              if (contactError) {
+                console.warn(
+                  "⚠️ Failed to create default contact:",
+                  contactError.message,
+                );
+              } else {
+                console.log("✅ Default contact created");
+              }
+            }
+          }
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        results.errors.push(`Default store creation error: ${errorMessage}`);
       }
     }
 
-    // Sync all invoices (both drafts and completed)
-    const allInvoices = [...store.draftInvoices, ...store.completedInvoices];
+    // Sync all completed invoices
+    const allInvoices = [...store.completedInvoices];
 
     for (const invoice of allInvoices) {
       try {
@@ -137,7 +277,6 @@ export function hasLocalDataToSync(): boolean {
   const store = useInvoiceStore.getState();
   return !!(
     store.storeSettings ||
-    store.draftInvoices.length > 0 ||
     store.completedInvoices.length > 0
   );
 }
@@ -154,8 +293,8 @@ export function getLocalDataSummary(): {
   const store = useInvoiceStore.getState();
   return {
     hasSettings: !!store.storeSettings,
-    draftCount: store.draftInvoices.length,
+    draftCount: 0, // No more drafts
     completedCount: store.completedInvoices.length,
-    totalInvoices: store.draftInvoices.length + store.completedInvoices.length,
+    totalInvoices: store.completedInvoices.length,
   };
 }

@@ -3,10 +3,11 @@
  * Handles bidirectional synchronization between localStorage and database
  */
 
-import { settingsService, invoicesService } from "./services";
+import { settingsService, storesService, invoicesService, storeContactsService } from "./services";
 import { toISOString, toDate } from "./date-utils";
 import type { StoreSettings, Invoice } from "@/lib/types";
 import type { UserSettings } from "./database.types";
+import type { Store } from "./services/stores.service";
 
 /**
  * Convert database UserSettings to app StoreSettings format
@@ -58,15 +59,18 @@ export function storeToDbSettings(
 
 /**
  * Convert app Invoice to database format
+ * Note: store_id should be added separately by the caller if needed
  */
 export function storeToDbInvoice(
   invoice: Invoice,
+  storeId?: string,
 ): Omit<
   import("./database.types").InvoiceInsert,
   "user_id" | "created_at" | "updated_at" | "synced_at"
 > {
   return {
     id: invoice.id,
+    store_id: storeId || (invoice as { store_id?: string }).store_id || "",
     invoice_number: invoice.invoiceNumber,
     invoice_date: toISOString(invoice.invoiceDate),
     customer_name: invoice.customer.name,
@@ -96,7 +100,7 @@ export function dbToStoreInvoice(
       name: dbInvoice.customer_name,
       email: dbInvoice.customer_email || "",
       address: dbInvoice.customer_address || undefined,
-      status: dbInvoice.customer_status || "Customer",
+      status: (dbInvoice.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
     },
     items: [], // Items need to be fetched separately or joined
     subtotal: Number(dbInvoice.subtotal),
@@ -131,16 +135,39 @@ export function storeToDbItems(
   items: import("@/lib/types").InvoiceItem[],
 ): Omit<
   import("./database.types").InvoiceItemInsert,
-  "invoice_id" | "created_at" | "updated_at"
+  "invoice_id" | "id" | "created_at" | "updated_at"
 >[] {
   return items.map((item, index) => ({
-    id: item.id,
     description: item.description,
     quantity: item.quantity,
     price: item.price,
     subtotal: item.subtotal,
     position: index,
   }));
+}
+
+/**
+ * Convert database Store to app StoreSettings format
+ * Note: Admin fields (adminName, adminTitle, signature) are now in store_contacts table
+ * and need to be fetched separately if needed
+ */
+export function dbStoreToStoreSettings(dbStore: Store, primaryContact?: { name: string; title?: string | null; signature?: string | null }): StoreSettings {
+  return {
+    name: dbStore.name,
+    logo: dbStore.logo || "",
+    address: dbStore.address,
+    whatsapp: dbStore.whatsapp,
+    adminName: primaryContact?.name || "",
+    adminTitle: primaryContact?.title || undefined,
+    signature: primaryContact?.signature || undefined,
+    storeDescription: dbStore.store_description || undefined,
+    tagline: dbStore.tagline || undefined,
+    storeNumber: dbStore.store_number || undefined,
+    paymentMethod: dbStore.payment_method || undefined,
+    email: dbStore.email || undefined,
+    brandColor: dbStore.brand_color,
+    lastUpdated: toDate(dbStore.updated_at),
+  };
 }
 
 /**
@@ -152,18 +179,28 @@ export class SyncService {
    * @returns Settings or null if not found
    */
   static async syncSettingsFromDb(): Promise<StoreSettings | null> {
-    const { data, error } = await settingsService.getSettings();
+    // Get default store
+    const { data: storeData, error: storeError } =
+      await storesService.getDefaultStore();
 
-    if (error) {
-      console.error("Failed to sync settings from DB:", error);
+    if (storeError) {
+      console.error("Failed to sync settings from DB:", storeError);
       return null;
     }
 
-    if (!data) {
+    if (!storeData) {
+      console.log("No store found in database");
       return null;
     }
 
-    return dbToStoreSettings(data);
+    // Also fetch primary contact for admin fields
+    const { data: primaryContact } = await storeContactsService.getPrimaryContact(storeData.id);
+
+    return dbStoreToStoreSettings(storeData, primaryContact ? {
+      name: primaryContact.name,
+      title: primaryContact.title,
+      signature: primaryContact.signature,
+    } : undefined);
   }
 
   /**
@@ -174,12 +211,96 @@ export class SyncService {
   static async syncSettingsToDb(
     settings: StoreSettings,
   ): Promise<{ success: boolean; error: Error | null }> {
-    const dbSettings = storeToDbSettings(settings);
-    const { error } = await settingsService.upsertSettings(dbSettings);
+    // First, try to get the default store
+    let { data: existingStore } = await storesService.getDefaultStore();
 
-    if (error) {
-      console.error("Failed to sync settings to DB:", error);
-      return { success: false, error };
+    // If no default store, check if user has any stores at all
+    if (!existingStore) {
+      const { data: allStores } = await storesService.getStores();
+      if (allStores && allStores.length > 0) {
+        // Use the first store as the existing one to update
+        existingStore = allStores[0];
+        console.log("No default store found, using first available store");
+      }
+    }
+
+    if (existingStore) {
+      // Update existing store (without admin fields)
+      const { error: storeError } = await storesService.updateStore(existingStore.id, {
+        name: settings.name,
+        logo: settings.logo || null,
+        address: settings.address,
+        whatsapp: settings.whatsapp,
+        store_description: settings.storeDescription || null,
+        tagline: settings.tagline || null,
+        store_number: settings.storeNumber || null,
+        payment_method: settings.paymentMethod || null,
+        email: settings.email || null,
+        brand_color: settings.brandColor,
+      });
+
+      if (storeError) {
+        console.error("Failed to sync settings to DB:", storeError);
+        return { success: false, error: storeError };
+      }
+
+      // Update or create primary contact if admin info exists
+      if (settings.adminName) {
+        const { data: primaryContact } = await storeContactsService.getPrimaryContact(existingStore.id);
+
+        if (primaryContact) {
+          // Update existing primary contact
+          const { error: contactError } = await storeContactsService.updateContact(primaryContact.id, {
+            name: settings.adminName,
+            title: settings.adminTitle || null,
+            signature: settings.signature || null,
+          });
+
+          if (contactError) {
+            console.warn("Failed to update primary contact:", contactError);
+            // Don't fail the whole operation, just log warning
+          }
+        } else {
+          // Create new primary contact
+          const { error: contactError } = await storeContactsService.createContact({
+            store_id: existingStore.id,
+            name: settings.adminName,
+            title: settings.adminTitle || null,
+            signature: settings.signature || null,
+            is_primary: true,
+          });
+
+          if (contactError) {
+            console.warn("Failed to create primary contact:", contactError);
+            // Don't fail the whole operation, just log warning
+          }
+        }
+      }
+    } else {
+      // No stores exist, create new default store
+      const { data: newStore, error } =
+        await storesService.createDefaultStoreFromSettings(settings);
+
+      if (error) {
+        console.error("Failed to create store in DB:", error);
+        return { success: false, error };
+      }
+
+      // Create primary contact if store was created and admin info exists
+      if (newStore && settings.adminName) {
+        const { error: contactError } = await storeContactsService.createContact({
+          store_id: newStore.id,
+          name: settings.adminName,
+          title: settings.adminTitle || null,
+          signature: settings.signature || null,
+          is_primary: true,
+        });
+
+        if (contactError) {
+          console.warn("Failed to create primary contact:", contactError);
+          // Don't fail the whole operation, just log warning
+        }
+      }
     }
 
     return { success: true, error: null };
@@ -218,54 +339,16 @@ export class SyncService {
     const dbInvoice = storeToDbInvoice(invoice);
     const dbItems = storeToDbItems(invoice.items || []);
 
-    // Check if invoice exists
-    const { data: existing } = await invoicesService.getInvoiceWithItems(
-      invoice.id,
-    );
+    // Use upsert to handle both create and update cases
+    const { data: upsertedInvoice, error } =
+      await invoicesService.upsertInvoiceWithItems(dbInvoice, dbItems);
 
-    if (existing) {
-      // Update existing invoice with items
-      const { error } = await invoicesService.updateInvoiceWithItems(
-        invoice.id,
-        dbInvoice,
-        dbItems,
-      );
-
-      if (error) {
-        console.error("Failed to update invoice in DB:", error);
-        return { success: false, error };
-      }
-    } else {
-      // Create new invoice - remove id to let DB generate it
-      const { id, ...invoiceWithoutId } = dbInvoice;
-      const { data: newInvoice, error: createError } =
-        await invoicesService.createInvoice(invoiceWithoutId);
-
-      if (createError || !newInvoice) {
-        console.error("Failed to create invoice in DB:", createError);
-        return { success: false, error: createError };
-      }
-
-      // Add items
-      if (dbItems.length > 0) {
-        const itemsService = await import("./services").then(
-          (m) => m.itemsService,
-        );
-        const { error: itemsError } = await itemsService.replaceItems(
-          newInvoice.id,
-          dbItems,
-        );
-
-        if (itemsError) {
-          console.error("Failed to add items to invoice:", itemsError);
-          return { success: false, error: itemsError };
-        }
-      }
-
-      // Note: The local invoice ID and DB invoice ID may differ
-      // This is expected - local uses UUID, DB generates its own
-      console.log(`Local invoice ${id} synced as DB invoice ${newInvoice.id}`);
+    if (error || !upsertedInvoice) {
+      console.error("Failed to upsert invoice in DB:", error);
+      return { success: false, error };
     }
+
+    console.log(`Invoice ${invoice.id} synced to DB as ${upsertedInvoice.id}`);
 
     return { success: true, error: null };
   }
@@ -286,5 +369,58 @@ export class SyncService {
     }
 
     return { success, error: null };
+  }
+
+  /**
+   * Load all completed invoices from database
+   * @returns Array of completed invoices or null if error
+   */
+  static async loadCompletedInvoicesFromDb(): Promise<import("@/lib/types").Invoice[] | null> {
+    try {
+      const { data: dbInvoices, error } = await invoicesService.getInvoices();
+
+      if (error) {
+        console.error("Failed to load invoices from DB:", error);
+        return null;
+      }
+
+      if (!dbInvoices || dbInvoices.length === 0) {
+        return [];
+      }
+
+      // Transform database invoices to app format
+      const completedInvoices = dbInvoices
+        .filter(invoice => invoice.status === 'synced') // Only load synced/completed invoices
+        .map(dbInvoice => dbToStoreInvoice(dbInvoice));
+
+      console.log(`✅ Loaded ${completedInvoices.length} completed invoices from database`);
+      return completedInvoices;
+    } catch (error) {
+      console.error("Error loading completed invoices from DB:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Sync all completed invoices from database to local store
+   * @returns Success status
+   */
+  static async syncCompletedInvoicesToLocal(): Promise<{ success: boolean; error: Error | null }> {
+    const completedInvoices = await this.loadCompletedInvoicesFromDb();
+
+    if (completedInvoices === null) {
+      return { success: false, error: new Error("Failed to load completed invoices") };
+    }
+
+    // Update local store with completed invoices
+    if (typeof window !== 'undefined') {
+      const { useInvoiceStore } = await import("@/lib/store");
+      const { setCompletedInvoices } = useInvoiceStore.getState();
+      setCompletedInvoices(completedInvoices);
+
+      console.log(`✅ Synced ${completedInvoices.length} completed invoices to local store`);
+    }
+
+    return { success: true, error: null };
   }
 }

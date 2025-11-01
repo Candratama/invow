@@ -71,26 +71,42 @@ export function generateUUID(): string {
   });
 }
 
-// Generate invoice number with format INV-DDMMYY-NNN
-export function generateInvoiceNumber(): string {
+// Generate invoice number with format INV-DDMMYY-{first section of user UUID}-{counter}
+// Example: INV-011125-88A60EE2-001
+// Uses user's UUID to ensure consistent code across all their invoices
+// Counter resets daily and is stored in localStorage
+export function generateInvoiceNumber(userId?: string): string {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, "0");
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = String(now.getFullYear()).slice(-2);
   const dateKey = `${day}${month}${year}`;
 
-  // Get counter from localStorage
-  const counterKey = `invoice-counter-${dateKey}`;
-  let counter = 1;
+  // Use user UUID if provided, otherwise generate new UUID
+  const uuid = userId || generateUUID();
+  const firstSection = uuid.split('-')[0].toUpperCase();
 
+  // Get daily counter from localStorage
+  let counter = 1;
   if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(counterKey);
-    counter = stored ? parseInt(stored, 10) + 1 : 1;
-    localStorage.setItem(counterKey, counter.toString());
+    const counterKey = `invoice-counter-${dateKey}`;
+    const lastCounterKey = `invoice-counter-last-date`;
+    const storedCounter = localStorage.getItem(counterKey);
+    const lastDate = localStorage.getItem(lastCounterKey);
+
+    // Reset counter if it's a new day
+    if (lastDate !== dateKey) {
+      localStorage.setItem(lastCounterKey, dateKey);
+      localStorage.setItem(counterKey, "1");
+      counter = 1;
+    } else {
+      counter = storedCounter ? parseInt(storedCounter, 10) + 1 : 1;
+      localStorage.setItem(counterKey, counter.toString());
+    }
   }
 
   const counterStr = String(counter).padStart(3, "0");
-  return `INV-${dateKey}-${counterStr}`;
+  return `INV-${dateKey}-${firstSection}-${counterStr}`;
 }
 
 // Format date as DDMMYY for filename

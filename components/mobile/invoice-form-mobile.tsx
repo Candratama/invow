@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Save, Download, Loader2 } from "lucide-react";
+import { Plus, Download, Loader2 } from "lucide-react";
 import { useInvoiceStore } from "@/lib/store";
 import { InvoiceItem, Invoice } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -46,7 +46,6 @@ export function InvoiceFormMobile() {
     addInvoiceItem,
     updateInvoiceItem,
     removeInvoiceItem,
-    saveDraft,
     calculateTotals,
     initializeNewInvoice,
   } = useInvoiceStore();
@@ -77,6 +76,23 @@ export function InvoiceFormMobile() {
     },
   });
 
+  // Update form when currentInvoice changes (e.g., when invoice number is generated)
+  useEffect(() => {
+    if (currentInvoice) {
+      form.reset({
+        invoiceNumber: currentInvoice.invoiceNumber || "",
+        invoiceDate: currentInvoice.invoiceDate
+          ? new Date(currentInvoice.invoiceDate).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+        customerName: currentInvoice.customer?.name || "",
+        customerAddress: currentInvoice.customer?.address || "",
+        customerStatus: currentInvoice.customer?.status || "Customer",
+        shippingCost: currentInvoice.shippingCost || 0,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentInvoice?.invoiceNumber]);
+
   // Item form
   const itemForm = useForm<ItemFormData>({
     resolver: zodResolver(itemSchema),
@@ -87,15 +103,6 @@ export function InvoiceFormMobile() {
     },
   });
 
-  // Auto-save every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (currentInvoice) {
-        saveDraft();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [currentInvoice, saveDraft]);
 
   const handleFormChange = (
     field: keyof InvoiceFormData,
@@ -164,11 +171,6 @@ export function InvoiceFormMobile() {
     }
   };
 
-  const handleSaveDraft = () => {
-    saveDraft();
-    alert("Draft saved!");
-  };
-
   const handleQuickDownload = async () => {
     if (
       !currentInvoice ||
@@ -184,14 +186,21 @@ export function InvoiceFormMobile() {
       // Small delay to ensure DOM is ready
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const { storeSettings, deleteDraft, saveCompleted } =
+      const { storeSettings, saveCompleted } =
         useInvoiceStore.getState();
       await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
 
-      // Save as completed and remove draft
+      // Save as completed
       if (currentInvoice.id) {
-        deleteDraft(currentInvoice.id);
-        saveCompleted();
+        const saveResult = await saveCompleted();
+
+        if (!saveResult.success) {
+          console.error("Failed to sync invoice:", saveResult);
+          alert(
+            "Invoice downloaded but may not be synced to cloud. Check your connection.",
+          );
+          return;
+        }
       }
 
       alert("Invoice downloaded successfully!");
@@ -213,14 +222,19 @@ export function InvoiceFormMobile() {
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="invoiceNumber">Invoice Number</Label>
+              <Label htmlFor="invoiceNumber">
+                Invoice Number
+                <span className="ml-2 text-xs text-gray-500 font-normal">
+                  (Auto-generated)
+                </span>
+              </Label>
               <Input
                 id="invoiceNumber"
                 {...form.register("invoiceNumber")}
-                onChange={(e) =>
-                  handleFormChange("invoiceNumber", e.target.value)
-                }
-                className="text-lg font-semibold"
+                readOnly
+                disabled
+                className="text-lg font-semibold bg-gray-50 cursor-not-allowed"
+                title="Invoice number is automatically generated based on date and your user ID"
               />
               {form.formState.errors.invoiceNumber && (
                 <p className="text-sm text-red-500 mt-1">
@@ -395,17 +409,7 @@ export function InvoiceFormMobile() {
 
       {/* Fixed Bottom Actions - Green Zone */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 lg:fixed lg:border-t lg:p-4">
-        <div className="max-w-2xl lg:max-w-4xl mx-auto grid grid-cols-2 gap-3 lg:gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleSaveDraft}
-            className="gap-2"
-            size="lg"
-          >
-            <Save size={20} />
-            Save Draft
-          </Button>
+        <div className="max-w-2xl lg:max-w-4xl mx-auto">
           <Button
             type="button"
             onClick={handleQuickDownload}
@@ -414,7 +418,7 @@ export function InvoiceFormMobile() {
               currentInvoice.items.length === 0 ||
               isDownloading
             }
-            className="gap-2"
+            className="gap-2 w-full"
             size="lg"
           >
             {isDownloading ? (

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, WindSong } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { DataSyncManager } from "@/components/data-sync-manager";
+import { UserIdSync } from "@/components/user-id-sync";
 
 const inter = Inter({ subsets: ["latin"] });
 const windsong = WindSong({
@@ -59,6 +61,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
+          <UserIdSync />
+          <DataSyncManager />
           <div className="min-h-screen bg-background">{children}</div>
         </AuthProvider>
       </body>

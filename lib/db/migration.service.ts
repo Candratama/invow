@@ -168,7 +168,7 @@ export class MigrationService {
 
     try {
       // Get local data
-      const { settings, draftInvoices, completedInvoices } =
+      const { settings, completedInvoices } =
         getLocalDataForMigration()
 
       // Step 1: Migrate settings
@@ -177,13 +177,8 @@ export class MigrationService {
         summary.settingsMigrated = true
       }
 
-      // Step 2: Migrate draft invoices
-      const draftsResult = await this.migrateInvoices(
-        draftInvoices,
-        'drafts',
-        onProgress
-      )
-      summary.draftsMigrated = draftsResult.migrated
+      // Step 2: Skip draft migration (no more drafts)
+      summary.draftsMigrated = 0
 
       // Step 3: Migrate completed invoices
       const completedResult = await this.migrateInvoices(
@@ -208,13 +203,11 @@ export class MigrationService {
       // Check if any errors occurred
       const hasErrors =
         !settingsResult.success ||
-        draftsResult.error !== null ||
         completedResult.error !== null
 
       if (hasErrors) {
         const errorMessages = [
           !settingsResult.success ? 'Settings migration failed' : null,
-          draftsResult.error?.message,
           completedResult.error?.message,
         ]
           .filter(Boolean)

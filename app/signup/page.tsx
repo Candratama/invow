@@ -50,8 +50,13 @@ export default function SignupPage() {
           .then((results) => {
             setSyncResults(results);
             console.log("Sync results:", results);
-            // Redirect after sync completes
-            setTimeout(() => router.push("/"), 2000);
+            // Wait for user to see the results, then redirect
+            return new Promise<void>((resolve) => {
+              setTimeout(() => {
+                router.push("/");
+                resolve();
+              }, 2000);
+            });
           })
           .catch((syncError) => {
             console.error("Sync failed:", syncError);
@@ -65,8 +70,13 @@ export default function SignupPage() {
                   : "Unknown sync error",
               ],
             });
-            // Still redirect even if sync failed
-            setTimeout(() => router.push("/"), 3000);
+            // Still redirect even if sync failed (longer delay to show error)
+            return new Promise<void>((resolve) => {
+              setTimeout(() => {
+                router.push("/");
+                resolve();
+              }, 3000);
+            });
           })
           .finally(() => {
             setSyncing(false);
@@ -124,7 +134,7 @@ export default function SignupPage() {
               <div className="text-green-600 text-4xl mb-4">✓</div>
               <h2 className="text-xl font-bold mb-2">Account Created!</h2>
               <p className="text-gray-600 mb-4">
-                Redirecting to your dashboard...
+                Check your email to verify...
               </p>
             </>
           )}
