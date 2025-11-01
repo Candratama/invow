@@ -253,6 +253,15 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
+      // Check if user is authenticated
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated. Please sign in and try again.");
+      }
+
       const { data, error } = await this.supabase
         .from("stores")
         .update(updates)
@@ -260,10 +269,20 @@ export class StoresService {
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Provide more specific error messages
+        if (error.code === "PGRST116") {
+          throw new Error("Store not found or you don't have permission to update it.");
+        }
+        if (error.message.includes("Failed to fetch")) {
+          throw new Error("Network error: Unable to connect to server. Please check your internet connection.");
+        }
+        throw new Error(error.message);
+      }
 
       return { data, error: null };
     } catch (error) {
+      console.error("Error updating store:", error);
       return {
         data: null,
         error: error instanceof Error ? error : new Error("Unknown error"),

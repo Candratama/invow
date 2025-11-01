@@ -7,7 +7,7 @@
 import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useInvoiceStore } from "@/lib/store";
-import { dbToStoreInvoice } from "@/lib/db/sync";
+import { dbToStoreInvoice, dbToStoreItems } from "@/lib/db/sync";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface DbInvoice {
@@ -29,7 +29,7 @@ interface DbInvoice {
 }
 
 export function useInvoicesRealtime(userId: string | undefined) {
-  const { setCompletedInvoices, completedInvoices } = useInvoiceStore();
+  const setCompletedInvoices = useInvoiceStore((state) => state.setCompletedInvoices);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
 
@@ -74,8 +74,10 @@ export function useInvoicesRealtime(userId: string | undefined) {
               .single();
 
             if (invoiceWithItems) {
-              const newInvoice = dbToStoreInvoice(invoiceWithItems);
-              const updatedInvoices = [...completedInvoices, newInvoice];
+              const newInvoice = dbToStoreInvoice(invoiceWithItems, invoiceWithItems.invoice_items);
+              // Get fresh state to avoid stale closure
+              const currentInvoices = useInvoiceStore.getState().completedInvoices;
+              const updatedInvoices = [...currentInvoices, newInvoice];
               setCompletedInvoices(updatedInvoices);
               console.log("✅ New invoice added via real-time");
             }
@@ -94,8 +96,10 @@ export function useInvoicesRealtime(userId: string | undefined) {
               .single();
 
             if (invoiceWithItems) {
-              const updatedInvoice = dbToStoreInvoice(invoiceWithItems);
-              const updatedInvoices = completedInvoices.map((inv) =>
+              const updatedInvoice = dbToStoreInvoice(invoiceWithItems, invoiceWithItems.invoice_items);
+              // Get fresh state to avoid stale closure
+              const currentInvoices = useInvoiceStore.getState().completedInvoices;
+              const updatedInvoices = currentInvoices.map((inv) =>
                 inv.id === updatedInvoice.id ? updatedInvoice : inv
               );
               setCompletedInvoices(updatedInvoices);
@@ -104,7 +108,9 @@ export function useInvoicesRealtime(userId: string | undefined) {
           } else if (payload.eventType === "DELETE") {
             // Invoice deleted - remove from list
             const deletedInvoice = payload.old as DbInvoice;
-            const updatedInvoices = completedInvoices.filter(
+            // Get fresh state to avoid stale closure
+            const currentInvoices = useInvoiceStore.getState().completedInvoices;
+            const updatedInvoices = currentInvoices.filter(
               (inv) => inv.id !== deletedInvoice.id
             );
             setCompletedInvoices(updatedInvoices);
@@ -132,5 +138,5 @@ export function useInvoicesRealtime(userId: string | undefined) {
         channelRef.current = null;
       }
     };
-  }, [userId, supabase, setCompletedInvoices, completedInvoices]);
+  }, [userId, supabase, setCompletedInvoices]);
 }

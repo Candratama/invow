@@ -35,34 +35,38 @@ export async function generateJPEGFromInvoice(
       windowHeight: element.scrollHeight,
     });
 
-    // Convert to JPEG blob
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          throw new Error("Failed to create JPEG blob");
-        }
+    // Convert to JPEG blob with Promise wrapper
+    await new Promise<void>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Failed to create JPEG blob"));
+            return;
+          }
 
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
+          // Create download link
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
 
-        const filename = `Invoice_${invoice.customer.name.replace(/\s+/g, "_")}_${new Date(invoice.invoiceDate).toLocaleDateString("id-ID").replace(/\//g, "")}.jpg`;
-        link.download = filename;
+          const filename = `Invoice_${invoice.customer.name.replace(/\s+/g, "_")}_${new Date(invoice.invoiceDate).toLocaleDateString("id-ID").replace(/\//g, "")}.jpg`;
+          link.download = filename;
 
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
+          // Trigger download
+          document.body.appendChild(link);
+          link.click();
 
-        // Cleanup
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+          // Cleanup
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
 
-        console.log("✅ JPEG generated and downloaded successfully");
-      },
-      "image/jpeg",
-      0.95,
-    ); // 95% quality
+          console.log("✅ JPEG generated and downloaded successfully");
+          resolve();
+        },
+        "image/jpeg",
+        0.95,
+      ); // 95% quality
+    });
   } catch (error) {
     console.error("❌ JPEG generation error:", error);
     throw error;

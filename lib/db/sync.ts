@@ -86,10 +86,35 @@ export function storeToDbInvoice(
 }
 
 /**
+ * Generate fallback items for invoices that have totals but no items
+ * This handles data inconsistency scenarios where invoice totals exist but items are missing
+ */
+function generateFallbackItems(
+  dbInvoice: import("./database.types").Invoice,
+): import("@/lib/types").InvoiceItem[] {
+  // If invoice has no total or zero subtotal, return empty array (draft invoices)
+  if (!dbInvoice.subtotal || Number(dbInvoice.subtotal) === 0) {
+    return [];
+  }
+
+  // Create a single fallback item that represents the subtotal
+  return [
+    {
+      id: `fallback-${dbInvoice.id}`,
+      description: "Item (original details were missing)",
+      quantity: 1,
+      price: Number(dbInvoice.subtotal),
+      subtotal: Number(dbInvoice.subtotal),
+    },
+  ];
+}
+
+/**
  * Convert database invoice to app Invoice format
  */
 export function dbToStoreInvoice(
   dbInvoice: import("./database.types").Invoice,
+  items?: import("./database.types").InvoiceItem[],
 ): Invoice {
   return {
     id: dbInvoice.id,
@@ -102,7 +127,9 @@ export function dbToStoreInvoice(
       address: dbInvoice.customer_address || undefined,
       status: (dbInvoice.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
     },
-    items: [], // Items need to be fetched separately or joined
+    items: items && items.length > 0
+      ? dbToStoreItems(items)
+      : generateFallbackItems(dbInvoice), // Generate items if none provided
     subtotal: Number(dbInvoice.subtotal),
     shippingCost: Number(dbInvoice.shipping_cost),
     total: Number(dbInvoice.total),
@@ -324,7 +351,7 @@ export class SyncService {
       return [];
     }
 
-    return data.map(dbToStoreInvoice);
+    return data.map(dbInvoice => dbToStoreInvoice(dbInvoice));
   }
 
   /**
@@ -397,9 +424,7 @@ export class SyncService {
 
             if (fullInvoice && fullInvoice.invoice_items) {
               // Convert to app format with items
-              const invoice = dbToStoreInvoice(dbInvoice);
-              invoice.items = dbToStoreItems(fullInvoice.invoice_items);
-              return invoice;
+              return dbToStoreInvoice(dbInvoice, fullInvoice.invoice_items);
             }
 
             // Fallback to invoice without items

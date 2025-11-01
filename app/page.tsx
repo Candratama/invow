@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Settings, Trash2, Plus } from "lucide-react";
 import { InvoiceFormMobile } from "@/components/mobile/invoice-form-mobile";
 import { InvoicePreview } from "@/components/mobile/invoice-preview";
@@ -35,26 +36,30 @@ function PreviewView({
     setIsGenerating(true);
 
     try {
+      // Generate and download JPEG
       await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
 
-      // Save as completed invoice
-      if (currentInvoice.id) {
-        const result = await saveCompleted();
+      // Hide loading immediately after download starts
+      setIsGenerating(false);
 
-        if (!result.success) {
-          console.error("Failed to save invoice:", result.error);
-          alert(`Invoice downloaded but failed to save: ${result.error}`);
-          setIsGenerating(false);
-          return;
-        }
-      }
-
-      // Notify completion
+      // Notify completion immediately so user can continue
       onComplete();
+
+      // Save to database in the background (non-blocking)
+      if (currentInvoice.id) {
+        saveCompleted().then((result) => {
+          if (!result.success) {
+            console.error("Failed to save invoice:", result.error);
+            // Don't alert here since user already moved on
+            // The invoice is downloaded, saving can retry later
+          } else {
+            console.log("✅ Invoice saved to database");
+          }
+        });
+      }
     } catch (error) {
       console.error("Error generating JPEG:", error);
       alert("Failed to generate JPEG. Please try again.");
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -106,7 +111,7 @@ export default function HomePage() {
   } = useInvoiceStore();
 
   // Get auth state
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Monitor online/offline status
   useOnlineStatus();
@@ -122,6 +127,16 @@ export default function HomePage() {
     handleMigrationComplete,
   } = useMigration();
 
+  // Router for navigation
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
   // Show settings modal on first visit if not configured
   // Only show after initial data load is complete
   useEffect(() => {
@@ -132,6 +147,23 @@ export default function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [isLoading, storeSettings, view, user]);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show nothing while redirecting to login
+  if (!user) {
+    return null;
+  }
 
   const handleNewInvoice = () => {
     initializeNewInvoice();
@@ -240,7 +272,7 @@ export default function HomePage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8 lg:mb-12 lg:gap-6">
+          <div className="grid grid-cols-1 gap-4 mb-8 lg:mb-12 lg:gap-6 lg:max-w-md lg:mx-auto">
             {/* Revenue Card */}
             <RevenueCard />
 
