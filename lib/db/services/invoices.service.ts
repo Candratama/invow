@@ -400,17 +400,21 @@ export class InvoicesService {
 
       if (deleteError) throw new Error(deleteError.message);
 
-      // Insert new items
+      // Insert new items with guaranteed unique positions
       if (items.length > 0) {
+        // Ensure all items have unique sequential positions
         const itemsWithInvoiceId = items.map((item, index) => ({
           ...item,
           invoice_id: upsertedInvoice.id,
-          position: item.position ?? index,
+          position: index, // Force sequential positions to avoid conflicts
         }));
+
+        // Remove existing id to prevent conflicts during insert
+        const cleanItems = itemsWithInvoiceId.map(({ id, ...item }) => item);
 
         const { error: itemsError } = await this.supabase
           .from("invoice_items")
-          .insert(itemsWithInvoiceId);
+          .insert(cleanItems);
 
         if (itemsError) throw new Error(itemsError.message);
       }

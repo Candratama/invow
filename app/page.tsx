@@ -9,6 +9,7 @@ import { OfflineBanner } from "@/components/mobile/offline-banner";
 import { SettingsModal } from "@/components/mobile/settings-modal";
 import { MigrationModal } from "@/components/mobile/migration-modal";
 import { UserMenu } from "@/components/mobile/user-menu";
+import { RevenueCards } from "@/components/revenue-cards";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useOnlineStatus } from "@/hooks/use-online-status";
@@ -16,6 +17,7 @@ import { useMigration } from "@/hooks/use-migration";
 import { Invoice } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
+import { calculateRevenueMetrics } from "@/lib/revenue-utils";
 
 function PreviewView({
   onBack,
@@ -230,15 +232,10 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="bg-primary/10 p-6 rounded-lg text-center mb-8 lg:p-8 lg:mb-12 lg:max-w-md lg:mx-auto">
-            <div className="text-3xl lg:text-4xl font-bold text-primary">
-              {completedInvoices.length}
-            </div>
-            <div className="text-base lg:text-lg text-primary/80 mt-1">
-              Total Invoices Created
-            </div>
-          </div>
+          {/* Revenue Cards */}
+          <RevenueCards
+            metrics={calculateRevenueMetrics(completedInvoices)}
+          />
 
           {/* Invoices List */}
           <>
