@@ -1,10 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
-import { syncQueueManager } from "./db/sync-queue";
 import { logger } from "./utils/logger";
 
 interface InvoiceStore {
@@ -20,11 +18,7 @@ interface InvoiceStore {
   // User ID for invoice number generation
   userId: string | null;
 
-  // UI state
-  isOffline: boolean;
-  pendingSync: number;
-  _hasHydrated: boolean;
-
+  
   // Actions
   setUserId: (userId: string | null) => void;
   setCurrentInvoice: (invoice: Partial<Invoice> | null) => void;
@@ -33,19 +27,12 @@ interface InvoiceStore {
   updateInvoiceItem: (id: string, updates: Partial<InvoiceItem>) => void;
   removeInvoiceItem: (id: string) => void;
 
-  setStoreSettings: (
-    settings: StoreSettings,
-  ) => Promise<{ success: boolean; error?: string }>;
+  setStoreSettings: (settings: StoreSettings | null) => void;
 
-  saveCompleted: () => Promise<{ success: boolean; error?: string }>;
+  saveCompleted: () => void;
   loadCompleted: (id: string) => void;
-  deleteCompleted: (
-    id: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  deleteCompleted: (id: string) => void;
   setCompletedInvoices: (invoices: Invoice[]) => void;
-
-  setOfflineStatus: (offline: boolean) => void;
-  setPendingSync: (count: number) => void;
 
   // Initialize new invoice
   initializeNewInvoice: () => void;
@@ -54,16 +41,11 @@ interface InvoiceStore {
   calculateTotals: () => void;
 }
 
-export const useStore = create<InvoiceStore>()(
-  persist(
-    (set, get) => ({
-      currentInvoice: null,
-      storeSettings: null,
-      completedInvoices: [],
-      userId: null,
-      isOffline: false,
-      pendingSync: 0,
-      _hasHydrated: false,
+export const useStore = create<InvoiceStore>()((set, get) => ({
+  currentInvoice: null,
+  storeSettings: null,
+  completedInvoices: [],
+  userId: null,
 
       setUserId: (userId) => set({ userId }),
       setCurrentInvoice: (invoice) => set({ currentInvoice: invoice }),
@@ -119,36 +101,15 @@ export const useStore = create<InvoiceStore>()(
         get().updateCurrentInvoice({ items });
       },
 
-      setStoreSettings: async (settings) => {
+      setStoreSettings: (settings) => {
         set({ storeSettings: settings });
-
-        // Queue sync if offline or user is authenticated
-        if (typeof window !== "undefined") {
-          try {
-            await syncQueueManager.enqueue({
-              action: "upsert",
-              entityType: "settings",
-              entityId: "user-settings",
-              data: settings,
-            });
-            return { success: true };
-          } catch (err) {
-            const errorMessage =
-              err instanceof Error
-                ? err.message
-                : "Failed to queue settings sync";
-            logger.error("Settings sync queue failed", err);
-            return { success: false, error: errorMessage };
-          }
-        }
-        return { success: true };
       },
 
-      saveCompleted: async () => {
+      saveCompleted: () => {
         const current = get().currentInvoice;
         const userId = get().userId;
         if (!current) {
-          return { success: false, error: "No current invoice to save" };
+          return;
         }
 
         const completed: Invoice = {
@@ -167,7 +128,7 @@ export const useStore = create<InvoiceStore>()(
           shippingCost: current.shippingCost || 0,
           total: current.total || 0,
           note: current.note, // Add the note field
-          status: "synced",
+          status: "completed",
           createdAt: current.createdAt || new Date(),
           updatedAt: new Date(),
         } as Invoice;
@@ -176,27 +137,6 @@ export const useStore = create<InvoiceStore>()(
           (c) => c.id !== completed.id,
         );
         set({ completedInvoices: [...completed_list, completed] });
-
-        // Queue sync for completed invoice
-        if (typeof window !== "undefined") {
-          try {
-            await syncQueueManager.enqueue({
-              action: "upsert",
-              entityType: "invoice",
-              entityId: completed.id,
-              data: completed,
-            });
-            return { success: true };
-          } catch (err) {
-            const errorMessage =
-              err instanceof Error
-                ? err.message
-                : "Failed to queue completed sync";
-            logger.error("Invoice sync queue failed", err);
-            return { success: false, error: errorMessage };
-          }
-        }
-        return { success: true };
       },
 
       loadCompleted: (id) => {
@@ -206,38 +146,14 @@ export const useStore = create<InvoiceStore>()(
         }
       },
 
-      deleteCompleted: async (id) => {
+      deleteCompleted: (id) => {
         const completed = get().completedInvoices.filter((c) => c.id !== id);
         set({ completedInvoices: completed });
-
-        // Queue deletion sync
-        if (typeof window !== "undefined") {
-          try {
-            await syncQueueManager.enqueue({
-              action: "delete",
-              entityType: "invoice",
-              entityId: id,
-              data: null,
-            });
-            return { success: true };
-          } catch (err) {
-            const errorMessage =
-              err instanceof Error
-                ? err.message
-                : "Failed to queue completed deletion";
-            logger.error("Invoice deletion queue failed", err);
-            return { success: false, error: errorMessage };
-          }
-        }
-        return { success: true };
       },
 
       setCompletedInvoices: (invoices) => {
         set({ completedInvoices: invoices });
       },
-
-      setOfflineStatus: (offline) => set({ isOffline: offline }),
-      setPendingSync: (count) => set({ pendingSync: count }),
 
       initializeNewInvoice: () => {
         const userId = get().userId;
@@ -277,25 +193,6 @@ export const useStore = create<InvoiceStore>()(
         });
       },
     }),
-    {
-      name: "invoice-storage",
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        storeSettings: state.storeSettings,
-        completedInvoices: state.completedInvoices,
-      }),
-      onRehydrateStorage: () => (state) => {
-        logger.debug("Zustand hydration started");
-        if (state) {
-          state._hasHydrated = true;
-          logger.debug("Zustand hydrated", {
-            hasSettings: !!state.storeSettings,
-            completedCount: state.completedInvoices.length,
-          });
-        }
-      },
-    },
-  ),
 );
 
 // Export with backward compatibility

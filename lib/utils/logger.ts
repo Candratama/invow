@@ -88,10 +88,10 @@ export class SafeLogger {
  * Convenience exports
  */
 export const logger = {
-  info: SafeLogger.info,
-  debug: SafeLogger.debug,
-  warn: SafeLogger.warn,
-  error: SafeLogger.error,
-  log: SafeLogger.log,
-  critical: SafeLogger.critical,
+  info: (message: string, data?: unknown) => SafeLogger.info(message, data),
+  debug: (message: string, data?: unknown) => SafeLogger.debug(message, data),
+  warn: (message: string, data?: unknown, options?: SafeLogOptions) => SafeLogger.warn(message, data, options),
+  error: (message: string, data?: unknown, options?: SafeLogOptions) => SafeLogger.error(message, data, options),
+  log: (message: string, data?: unknown) => SafeLogger.log(message, data),
+  critical: (message: string) => SafeLogger.critical(message),
 };

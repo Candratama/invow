@@ -15,7 +15,7 @@ export function calculateRevenueMetrics(invoices: Invoice[]): RevenueMetrics {
   const currentYear = now.getFullYear();
 
   const completedInvoices = invoices.filter(invoice =>
-    invoice.status === 'synced' || invoice.status === 'pending'
+    invoice.status === 'completed'
   );
 
   const totalRevenue = completedInvoices.reduce((sum, invoice) => sum + invoice.total, 0);

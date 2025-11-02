@@ -200,25 +200,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     setIsSaving(true);
     try {
-      const result = await setStoreSettings(cleanedSettings as StoreSettings);
+      setStoreSettings(cleanedSettings as StoreSettings);
 
-      if (result.success) {
-        // Verify save
-        setTimeout(() => {
-          const saved = localStorage.getItem("invoice-storage");
-          console.log(
-            "✅ Verified in localStorage:",
-            saved ? "Data exists" : "No data!",
-          );
-        }, 100);
-
-        alert("Settings saved successfully!");
-        setSignature(signature || "");
-        setSignatureDraft(signature || undefined);
-        onClose();
-      } else {
-        alert(`Failed to save settings: ${result.error || "Unknown error"}`);
-      }
+      alert("Settings saved successfully!");
+      setSignature(signature || "");
+      setSignatureDraft(signature || undefined);
+      onClose();
     } catch (error) {
       console.error("Error saving settings:", error);
       alert("Failed to save settings. Please try again.");

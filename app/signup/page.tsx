@@ -3,10 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import {
-  hasLocalDataToSync,
-  syncLocalDataToSupabase,
-} from "@/lib/db/local-sync";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,13 +18,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResults, setSyncResults] = useState<{
-    success: boolean;
-    syncedSettings: boolean;
-    syncedInvoices: number;
-    errors: string[];
-  } | null>(null);
 
   // Redirect if already logged in (but not during signup process)
   useEffect(() => {
@@ -37,55 +26,13 @@ export default function SignupPage() {
     }
   }, [user, authLoading, success, router]);
 
-  // Handle sync after signup when user becomes available
+  // Redirect when signup is successful and user is available
   useEffect(() => {
-    if (success && user && !syncing && !syncResults) {
-      // User is now authenticated, we can sync
-      if (hasLocalDataToSync()) {
-        logger.debug("User authenticated, syncing local data");
-
-        setSyncing(true);
-        syncLocalDataToSupabase()
-          .then((results) => {
-            setSyncResults(results);
-            logger.debug("Local data sync completed");
-            // Wait for user to see the results, then redirect
-            return new Promise<void>((resolve) => {
-              setTimeout(() => {
-                router.push("/");
-                resolve();
-              }, 2000);
-            });
-          })
-          .catch((syncError) => {
-            logger.error("Local data sync failed", syncError);
-            setSyncResults({
-              success: false,
-              syncedSettings: false,
-              syncedInvoices: 0,
-              errors: [
-                syncError instanceof Error
-                  ? syncError.message
-                  : "Unknown sync error",
-              ],
-            });
-            // Still redirect even if sync failed (longer delay to show error)
-            return new Promise<void>((resolve) => {
-              setTimeout(() => {
-                router.push("/");
-                resolve();
-              }, 3000);
-            });
-          })
-          .finally(() => {
-            setSyncing(false);
-          });
-      } else {
-        // No local data to sync, redirect immediately
-        setTimeout(() => router.push("/"), 2000);
-      }
+    if (success && user) {
+      // Redirect immediately since there's no offline data to sync anymore
+      setTimeout(() => router.push("/"), 1000);
     }
-  }, [success, user, syncing, syncResults, router]);
+  }, [success, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,57 +75,14 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="w-full max-w-md bg-white rounded-lg shadow-sm p-6 lg:p-8 text-center">
-          {!syncing && !syncResults && (
-            <>
-              <div className="text-green-600 text-4xl mb-4">✓</div>
-              <h2 className="text-xl font-bold mb-2">Account Created!</h2>
-              <p className="text-gray-600 mb-4">
-                Check your email to verify...
-              </p>
-            </>
-          )}
-
-          {syncing && (
-            <>
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <h2 className="text-xl font-bold mb-2">Syncing Your Data...</h2>
-              <p className="text-gray-600 mb-4">
-                We&apos;re transferring your local invoices to your account.
-              </p>
-              <div className="text-xs text-gray-500">
-                This may take a moment...
-              </div>
-            </>
-          )}
-
-          {syncResults && (
-            <>
-              <div
-                className={`text-4xl mb-4 ${
-                  syncResults.success ? "text-green-600" : "text-yellow-600"
-                }`}
-              >
-                {syncResults.success ? "✓" : "⚠️"}
-              </div>
-              <h2 className="text-xl font-bold mb-2">
-                {syncResults.success
-                  ? "Setup Complete!"
-                  : "Setup Complete with Warnings"}
-              </h2>
-              <div className="text-sm text-gray-600 mb-4">
-                {syncResults.syncedSettings && <div>✅ Settings synced</div>}
-                {syncResults.syncedInvoices > 0 && (
-                  <div>✅ {syncResults.syncedInvoices} invoices synced</div>
-                )}
-                {syncResults.errors.length > 0 && (
-                  <div className="text-yellow-600 mt-2">
-                    ⚠️ {syncResults.errors.length} items had issues
-                  </div>
-                )}
-              </div>
-              <p className="text-gray-600">Redirecting to your dashboard...</p>
-            </>
-          )}
+          <>
+            <div className="text-green-600 text-4xl mb-4">✓</div>
+            <h2 className="text-xl font-bold mb-2">Account Created!</h2>
+            <p className="text-gray-600 mb-4">
+              Check your email to verify your account.
+            </p>
+            <p className="text-gray-600">Redirecting to your dashboard...</p>
+          </>
         </div>
       </div>
     );
@@ -193,7 +97,7 @@ export default function SignupPage() {
               Create Account
             </h1>
             <p className="text-gray-600">
-              Sign up to sync your invoices across devices
+              Sign up to manage your invoices online
             </p>
           </div>
 

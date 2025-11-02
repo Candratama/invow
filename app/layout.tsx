@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, WindSong } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { DataSyncManager } from "@/components/data-sync-manager";
-import { UserIdSync } from "@/components/user-id-sync";
+import { UserDataLoader } from "@/components/user-data-loader";
 
 const inter = Inter({ subsets: ["latin"] });
 const windsong = WindSong({
@@ -15,7 +14,6 @@ const windsong = WindSong({
 export const metadata: Metadata = {
   title: "Invow - Invoice Generator",
   description: "Generate professional invoices on the go",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -61,8 +59,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <UserIdSync />
-          <DataSyncManager />
+          <UserDataLoader />
           <div className="min-h-screen bg-background">{children}</div>
         </AuthProvider>
       </body>

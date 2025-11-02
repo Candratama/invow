@@ -47,7 +47,7 @@ export function RevenueCards({ metrics }: RevenueCardsProps) {
         {/* Toggle eye button */}
         <button
           onClick={toggleVisibility}
-          className="absolute top-4 right-4 p-2 transition-colors z-20 hover:bg-primary-foreground/10"
+          className="absolute top-4 right-4 flex justify-center items-center transition-colors z-20 hover:bg-primary-foreground/10"
           aria-label={isAmountVisible ? "Hide amounts" : "Show amounts"}
         >
           {isAmountVisible ? (

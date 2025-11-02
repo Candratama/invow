@@ -86,25 +86,8 @@ export function generateInvoiceNumber(userId?: string): string {
   const uuid = userId || generateUUID();
   const firstSection = uuid.split('-')[0].toUpperCase();
 
-  // Get daily counter from localStorage
-  let counter = 1;
-  if (typeof window !== "undefined") {
-    const counterKey = `invoice-counter-${dateKey}`;
-    const lastCounterKey = `invoice-counter-last-date`;
-    const storedCounter = localStorage.getItem(counterKey);
-    const lastDate = localStorage.getItem(lastCounterKey);
-
-    // Reset counter if it's a new day
-    if (lastDate !== dateKey) {
-      localStorage.setItem(lastCounterKey, dateKey);
-      localStorage.setItem(counterKey, "1");
-      counter = 1;
-    } else {
-      counter = storedCounter ? parseInt(storedCounter, 10) + 1 : 1;
-      localStorage.setItem(counterKey, counter.toString());
-    }
-  }
-
+  // Generate a random 3-digit counter
+  const counter = Math.floor(Math.random() * 999) + 1;
   const counterStr = String(counter).padStart(3, "0");
   return `INV-${dateKey}-${firstSection}-${counterStr}`;
 }

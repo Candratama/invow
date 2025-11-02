@@ -196,15 +196,7 @@ export function InvoiceFormMobile({ onComplete }: InvoiceFormMobileProps) {
 
       // Save as completed
       if (currentInvoice.id) {
-        const saveResult = await saveCompleted();
-
-        if (!saveResult.success) {
-          console.error("Failed to sync invoice:", saveResult);
-          alert(
-            "Invoice downloaded but may not be synced to cloud. Check your connection.",
-          );
-          return;
-        }
+        saveCompleted();
       }
 
       if (onComplete) {

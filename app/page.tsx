@@ -1,21 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Trash2, Plus } from "lucide-react";
+import { Settings, Trash2, Plus, CheckCircle } from "lucide-react";
 import { InvoiceFormMobile } from "@/components/mobile/invoice-form-mobile";
 import { InvoicePreview } from "@/components/mobile/invoice-preview";
 import { FABButton } from "@/components/mobile/fab-button";
-import { OfflineBanner } from "@/components/mobile/offline-banner";
 import { SettingsModal } from "@/components/mobile/settings-modal";
-import { MigrationModal } from "@/components/mobile/migration-modal";
 import { UserMenu } from "@/components/mobile/user-menu";
 import { RevenueCards } from "@/components/revenue-cards";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
-import { useOnlineStatus } from "@/hooks/use-online-status";
-import { useMigration } from "@/hooks/use-migration";
 import { Invoice } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
 import { calculateRevenueMetrics } from "@/lib/revenue-utils";
 
@@ -26,8 +22,7 @@ function PreviewView({
   onBack: () => void;
   onComplete: () => void;
 }) {
-  const { currentInvoice, storeSettings, saveCompleted } =
-    useInvoiceStore();
+  const { currentInvoice, storeSettings, saveCompleted } = useInvoiceStore();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDownloadJPEG = async () => {
@@ -63,7 +58,6 @@ function PreviewView({
 
   return (
     <>
-      <OfflineBanner />
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button
@@ -103,15 +97,6 @@ export default function HomePage() {
   const { user } = useAuth();
 
   // Monitor online/offline status
-  useOnlineStatus();
-
-  // Handle data migration
-  const {
-    showMigrationModal,
-    dataSummary,
-    closeMigrationModal,
-    handleMigrationComplete,
-  } = useMigration();
 
   // Show settings modal on first visit if not configured
   useEffect(() => {
@@ -147,7 +132,6 @@ export default function HomePage() {
   if (view === "form") {
     return (
       <>
-        <OfflineBanner />
         <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button
@@ -178,8 +162,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <OfflineBanner />
-
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -221,20 +203,23 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
-        <div className="max-w-md lg:max-w-7xl mx-auto pt-8 lg:pt-12">
-          <div className="text-center mb-8 lg:mb-12">
-            <h2 className="text-2xl lg:text-4xl font-bold text-gray-900 mb-2">
-              Dashboard
-            </h2>
-            <p className="text-gray-600 lg:text-lg">
-              Generate invoices quickly
+        <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
+          <div className="text-left mb-8 lg:mb-12 lg:text-center">
+            <p className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
+              Welcome back,
+              {user?.email
+                ? ` ${user.email
+                    .split("@")[0]
+                    .split(".")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ")}`
+                : ""}
+              ! 👋
             </p>
           </div>
 
           {/* Revenue Cards */}
-          <RevenueCards
-            metrics={calculateRevenueMetrics(completedInvoices)}
-          />
+          <RevenueCards metrics={calculateRevenueMetrics(completedInvoices)} />
 
           {/* Invoices List */}
           <>
@@ -243,37 +228,36 @@ export default function HomePage() {
                 <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
                   Your Invoices
                 </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
-                    {completedInvoices
-                      .slice()
-                      .reverse()
-                      .slice(0, 10)
-                      .map((invoice) => (
-                        <div
-                          key={invoice.id}
-                          className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-start justify-between p-3">
-                            <button
-                              onClick={() => handleOpenCompleted(invoice.id)}
-                              className="flex-1 min-w-0 pr-2 text-left"
-                            >
-                              <div className="font-medium text-gray-900 truncate">
-                                {invoice.invoiceNumber}
-                              </div>
-                              <div className="text-sm text-gray-600 truncate">
-                                {invoice.customer.name || "No customer"}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {invoice.items?.length || 0} item
-                                {invoice.items?.length !== 1 ? "s" : ""} •{" "}
-                                {formatDate(new Date(invoice.updatedAt))}
-                              </div>
-                            </button>
-                            <div className="ml-3 flex-shrink-0 flex items-center gap-2">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                Completed
-                              </span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
+                  {completedInvoices
+                    .slice()
+                    .reverse()
+                    .slice(0, 10)
+                    .map((invoice) => (
+                      <div
+                        key={invoice.id}
+                        className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between p-3">
+                          <button
+                            onClick={() => handleOpenCompleted(invoice.id)}
+                            className="flex-1 min-w-0 pr-2 text-left"
+                          >
+                            <div className="font-medium text-gray-900 truncate">
+                              {invoice.invoiceNumber}
+                            </div>
+                            <div className="text-sm text-gray-600 truncate">
+                              {invoice.customer.name || "No customer"}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {invoice.items?.length || 0} item
+                              {invoice.items?.length !== 1 ? "s" : ""} •{" "}
+                              {formatDate(new Date(invoice.updatedAt))}
+                            </div>
+                          </button>
+                          <div className="ml-3 flex-shrink-0 flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={18} className="text-primary" />
                               <button
                                 onClick={(e) =>
                                   handleDeleteCompleted(e, invoice.id)
@@ -284,11 +268,15 @@ export default function HomePage() {
                                 <Trash2 size={16} />
                               </button>
                             </div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {formatCurrency(invoice.total || 0)}
+                            </div>
                           </div>
                         </div>
-                      ))}
-                  </div>
+                      </div>
+                    ))}
                 </div>
+              </div>
             ) : (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
                 <p className="text-gray-500">No invoices yet</p>
@@ -327,16 +315,6 @@ export default function HomePage() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
-
-      {/* Migration Modal */}
-      {showMigrationModal && dataSummary && (
-        <MigrationModal
-          isOpen={showMigrationModal}
-          onClose={closeMigrationModal}
-          dataSummary={dataSummary}
-          onComplete={handleMigrationComplete}
-        />
-      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ export interface Invoice {
   shippingCost: number; // Changed from taxPercentage/taxAmount
   total: number;
   note?: string; // Optional note field
-  status: "draft" | "pending" | "synced";
+  status: "draft" | "pending" | "completed";
   createdAt: Date;
   updatedAt: Date;
   syncedAt?: Date;
