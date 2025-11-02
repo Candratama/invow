@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
 import { logger } from "./utils/logger";
+import { invoicesService, storesService } from "./db/services";
 
 interface InvoiceStore {
   // Current invoice being edited
@@ -34,7 +35,7 @@ interface InvoiceStore {
 
   saveCompleted: () => void;
   loadCompleted: (id: string) => void;
-  deleteCompleted: (id: string) => void;
+  deleteCompleted: (id: string) => Promise<void>;
   setCompletedInvoices: (invoices: Invoice[]) => void;
 
   // Initialize new invoice
@@ -151,9 +152,6 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
 
         // Then save to database in background
         try {
-          const { invoicesService } = await import("@/lib/db/services");
-          const { storesService } = await import("@/lib/db/services");
-
           // Get default store
           const { data: defaultStore } = await storesService.getDefaultStore();
           if (!defaultStore) {
@@ -223,9 +221,40 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
         }
       },
 
-      deleteCompleted: (id) => {
+      deleteCompleted: async (id) => {
+        // Get current invoice data for rollback if needed
+        const invoiceToDelete = get().completedInvoices.find((c) => c.id === id);
+
+        // Immediately remove from local state for responsive UI
         const completed = get().completedInvoices.filter((c) => c.id !== id);
         set({ completedInvoices: completed });
+
+        // Then delete from database
+        try {
+          const { error } = await invoicesService.deleteInvoice(id);
+
+          if (error) {
+            console.error("Failed to delete invoice from database:", error);
+            // Rollback: add invoice back to local state if database delete failed
+            if (invoiceToDelete) {
+              set({
+                completedInvoices: [...get().completedInvoices, invoiceToDelete],
+              });
+            }
+            alert("Failed to delete invoice. Please try again.");
+          } else {
+            console.log("✅ Invoice deleted from database successfully");
+          }
+        } catch (error) {
+          console.error("Error deleting invoice:", error);
+          // Rollback: add invoice back to local state if database delete failed
+          if (invoiceToDelete) {
+            set({
+              completedInvoices: [...get().completedInvoices, invoiceToDelete],
+            });
+          }
+          alert("Failed to delete invoice. Please try again.");
+        }
       },
 
       setCompletedInvoices: (invoices) => {

@@ -121,10 +121,10 @@ export default function HomePage() {
     setView("form");
   };
 
-  const handleDeleteCompleted = (e: React.MouseEvent, invoiceId: string) => {
+  const handleDeleteCompleted = async (e: React.MouseEvent, invoiceId: string) => {
     e.stopPropagation();
     if (confirm("Delete this invoice?")) {
-      deleteCompleted(invoiceId);
+      await deleteCompleted(invoiceId);
     }
   };
 
