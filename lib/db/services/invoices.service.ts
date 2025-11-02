@@ -392,13 +392,24 @@ export class InvoicesService {
 
       if (upsertError) throw new Error(upsertError.message);
 
-      // Delete existing items
-      const { error: deleteError } = await this.supabase
+      // Delete existing items - use proper error handling to ensure it completes
+      const { data: deletedItems, error: deleteError } = await this.supabase
         .from("invoice_items")
         .delete()
-        .eq("invoice_id", upsertedInvoice.id);
+        .eq("invoice_id", upsertedInvoice.id)
+        .select("id");
 
-      if (deleteError) throw new Error(deleteError.message);
+      if (deleteError) {
+        throw new Error(`Failed to delete existing items: ${deleteError.message}`);
+      }
+
+      // Optional: Log how many items were deleted for debugging (development only, no sensitive data)
+      if (deletedItems && deletedItems.length > 0) {
+        // Log only in development environment with no invoice ID exposure
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Deleted ${deletedItems.length} existing items for invoice`);
+        }
+      }
 
       // Insert new items with guaranteed unique positions
       if (items.length > 0) {
@@ -409,14 +420,28 @@ export class InvoicesService {
           position: index, // Force sequential positions to avoid conflicts
         }));
 
-        // Remove existing id to prevent conflicts during insert
-        const cleanItems = itemsWithInvoiceId.map(({ id, ...item }) => item);
+        // Remove any existing fields that could cause conflicts during insert
+        const cleanItems = itemsWithInvoiceId.map(({
+          id,
+          created_at,
+          updated_at,
+          ...item
+        }) => item);
 
-        const { error: itemsError } = await this.supabase
+        const { data: insertedItems, error: itemsError } = await this.supabase
           .from("invoice_items")
-          .insert(cleanItems);
+          .insert(cleanItems)
+          .select("id, position, description");
 
-        if (itemsError) throw new Error(itemsError.message);
+        if (itemsError) {
+          // Provide error information without exposing sensitive data
+          const errorDetails = itemsError.message;
+          console.error('Invoice items insertion failed:', {
+            error: errorDetails,
+            itemCount: items.length,
+          });
+          throw new Error(`Failed to insert items: ${errorDetails}`);
+        }
       }
 
       // Fetch complete invoice with items

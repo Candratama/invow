@@ -10,7 +10,7 @@ export async function generateJPEGFromInvoice(
   _storeSettings: StoreSettings | null,
 ): Promise<void> {
   try {
-    console.log("📸 Generating JPEG for invoice:", invoice.invoiceNumber);
+    console.log("📸 Generating JPEG for invoice");
 
     // Get the invoice content element
     const element = document.getElementById("invoice-content");

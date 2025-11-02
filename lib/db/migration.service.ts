@@ -106,7 +106,7 @@ export class MigrationService {
         const result = await SyncService.syncInvoiceToDb(invoice)
 
         if (result.error) {
-          console.error(`Failed to migrate invoice ${invoice.id}:`, result.error)
+          console.error("Failed to migrate invoice:", result.error)
           errors.push(result.error)
         } else {
           migrated++
@@ -115,7 +115,7 @@ export class MigrationService {
         // Small delay to avoid rate limiting
         await new Promise((resolve) => setTimeout(resolve, 100))
       } catch (error) {
-        console.error(`Failed to migrate invoice ${invoice.id}:`, error)
+        console.error("Failed to migrate invoice:", error)
         errors.push(
           error instanceof Error ? error : new Error('Unknown migration error')
         )

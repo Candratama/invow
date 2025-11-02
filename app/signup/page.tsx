@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   hasLocalDataToSync,
-  getLocalDataSummary,
   syncLocalDataToSupabase,
 } from "@/lib/db/local-sync";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { logger } from "@/lib/utils/logger";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -42,14 +42,13 @@ export default function SignupPage() {
     if (success && user && !syncing && !syncResults) {
       // User is now authenticated, we can sync
       if (hasLocalDataToSync()) {
-        const dataSummary = getLocalDataSummary();
-        console.log("User authenticated, syncing local data:", dataSummary);
+        logger.debug("User authenticated, syncing local data");
 
         setSyncing(true);
         syncLocalDataToSupabase()
           .then((results) => {
             setSyncResults(results);
-            console.log("Sync results:", results);
+            logger.debug("Local data sync completed");
             // Wait for user to see the results, then redirect
             return new Promise<void>((resolve) => {
               setTimeout(() => {
@@ -59,7 +58,7 @@ export default function SignupPage() {
             });
           })
           .catch((syncError) => {
-            console.error("Sync failed:", syncError);
+            logger.error("Local data sync failed", syncError);
             setSyncResults({
               success: false,
               syncedSettings: false,

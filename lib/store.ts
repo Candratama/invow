@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
 import { syncQueueManager } from "./db/sync-queue";
+import { logger } from "./utils/logger";
 
 interface InvoiceStore {
   // Current invoice being edited
@@ -136,7 +137,7 @@ export const useStore = create<InvoiceStore>()(
               err instanceof Error
                 ? err.message
                 : "Failed to queue settings sync";
-            console.error("Failed to queue settings sync:", err);
+            logger.error("Settings sync queue failed", err);
             return { success: false, error: errorMessage };
           }
         }
@@ -165,6 +166,7 @@ export const useStore = create<InvoiceStore>()(
           subtotal: current.subtotal || 0,
           shippingCost: current.shippingCost || 0,
           total: current.total || 0,
+          note: current.note, // Add the note field
           status: "synced",
           createdAt: current.createdAt || new Date(),
           updatedAt: new Date(),
@@ -190,7 +192,7 @@ export const useStore = create<InvoiceStore>()(
               err instanceof Error
                 ? err.message
                 : "Failed to queue completed sync";
-            console.error("Failed to queue completed sync:", err);
+            logger.error("Invoice sync queue failed", err);
             return { success: false, error: errorMessage };
           }
         }
@@ -223,7 +225,7 @@ export const useStore = create<InvoiceStore>()(
               err instanceof Error
                 ? err.message
                 : "Failed to queue completed deletion";
-            console.error("Failed to queue completed deletion:", err);
+            logger.error("Invoice deletion queue failed", err);
             return { success: false, error: errorMessage };
           }
         }
@@ -283,10 +285,10 @@ export const useStore = create<InvoiceStore>()(
         completedInvoices: state.completedInvoices,
       }),
       onRehydrateStorage: () => (state) => {
-        console.log("🔄 Zustand hydration started");
+        logger.debug("Zustand hydration started");
         if (state) {
           state._hasHydrated = true;
-          console.log("✅ Zustand hydrated with:", {
+          logger.debug("Zustand hydrated", {
             hasSettings: !!state.storeSettings,
             completedCount: state.completedInvoices.length,
           });

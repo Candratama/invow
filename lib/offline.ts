@@ -2,6 +2,7 @@
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb'
 import { Invoice, PendingRequest } from './types'
+import { logger } from './utils/logger'
 
 interface InvoiceDB extends DBSchema {
   drafts: {
@@ -47,7 +48,7 @@ async function getDB(): Promise<IDBPDatabase<InvoiceDB>> {
 export async function saveDraftToIndexedDB(invoice: Invoice): Promise<void> {
   const db = await getDB()
   await db.put('drafts', invoice)
-  console.log('💾 Draft saved to IndexedDB:', invoice.id)
+  logger.debug("Draft saved to IndexedDB")
 }
 
 export async function getDraftFromIndexedDB(id: string): Promise<Invoice | undefined> {
@@ -63,14 +64,14 @@ export async function getAllDraftsFromIndexedDB(): Promise<Invoice[]> {
 export async function deleteDraftFromIndexedDB(id: string): Promise<void> {
   const db = await getDB()
   await db.delete('drafts', id)
-  console.log('🗑️ Draft deleted from IndexedDB:', id)
+  logger.debug("Draft deleted from IndexedDB")
 }
 
 // Pending Request Operations (for offline queue)
 export async function addPendingRequest(request: PendingRequest): Promise<void> {
   const db = await getDB()
   await db.put('pendingRequests', request)
-  console.log('📤 Request queued for sync:', request.id)
+  logger.debug("Request queued for sync")
 }
 
 export async function getPendingRequest(id: string): Promise<PendingRequest | undefined> {
@@ -86,7 +87,7 @@ export async function getAllPendingRequests(): Promise<PendingRequest[]> {
 export async function deletePendingRequest(id: string): Promise<void> {
   const db = await getDB()
   await db.delete('pendingRequests', id)
-  console.log('✅ Request synced and removed:', id)
+  logger.debug("Request synced and removed")
 }
 
 // Sync pending requests when online
@@ -113,18 +114,18 @@ export async function syncPendingRequests(): Promise<number> {
         if (request.retryCount > 3) {
           // Max retries reached, delete the request
           await deletePendingRequest(request.id)
-          console.error('❌ Max retries reached for request:', request.id)
+          logger.error("Max retries reached for sync request")
         } else {
           await addPendingRequest(request)
         }
       }
     } catch (error) {
-      console.error('❌ Error syncing request:', request.id, error)
+      logger.error("Error syncing request", error)
       // Keep in queue for next sync attempt
     }
   }
 
-  console.log(`🔄 Synced ${syncedCount} of ${requests.length} pending requests`)
+  logger.debug(`Synced ${syncedCount} of ${requests.length} pending requests`)
   return syncedCount
 }
 

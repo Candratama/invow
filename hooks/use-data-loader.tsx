@@ -44,8 +44,8 @@ export function useDataLoader() {
         // Load completed invoices from Supabase for consistency across devices
         const { success, error } = await SyncService.syncCompletedInvoicesToLocal();
         if (!success) {
-          console.warn("Failed to sync completed invoices from DB:", error);
-          // Don't fail completely if invoice sync fails, just log warning
+          // Don't log detailed errors to prevent data leakage
+          // Don't fail completely if invoice sync fails, just handle gracefully
         }
 
         setLoaded(true);
@@ -53,21 +53,19 @@ export function useDataLoader() {
       } catch (err) {
         const error =
           err instanceof Error ? err : new Error("Failed to load data");
-        console.error(
-          `Failed to load data from Supabase (attempt ${attempt + 1}/${maxRetries}):`,
-          error,
-        );
+
+        // Don't log detailed errors to prevent data leakage
 
         if (attempt < maxRetries - 1) {
           // Retry with exponential backoff
-          console.log(`Retrying in ${retryDelay}ms...`);
           setTimeout(() => {
             loadDataWithRetry(attempt + 1);
           }, retryDelay);
         } else {
           // Max retries exceeded
           setError(error);
-          console.error("Max retries exceeded. Failed to load data.");
+          // Log generic error without sensitive details
+          console.error("Data loading failed. Please check connection.");
         }
       } finally {
         setLoading(false);
@@ -104,9 +102,9 @@ export function useAutoDataSync(intervalMinutes: number = 5) {
         }
 
         setLastSync(new Date());
-        console.log("✅ Auto-sync completed");
+        // Removed auto-sync logging for production
       } catch (error) {
-        console.error("Auto-sync failed:", error);
+        // Don't log detailed sync errors to prevent data leakage
       }
     };
 

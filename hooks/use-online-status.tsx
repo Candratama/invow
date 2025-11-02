@@ -16,13 +16,13 @@ export function useOnlineStatus() {
     const handleOnline = () => {
       setIsOnline(true)
       setOfflineStatus(false)
-      console.log('🟢 Back online')
+      // Removed online logging for production
     }
 
     const handleOffline = () => {
       setIsOnline(false)
       setOfflineStatus(true)
-      console.log('🔴 Gone offline')
+      // Removed offline logging for production
     }
 
     window.addEventListener('online', handleOnline)

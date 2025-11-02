@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Eye, EyeOff, TrendingUp } from 'lucide-react';
-import { RevenueMetrics } from '@/lib/revenue-utils';
-import { formatCurrency } from '@/lib/utils';
+import { useState } from "react";
+import { Eye, EyeOff, TrendingUp } from "lucide-react";
+import { RevenueMetrics } from "@/lib/revenue-utils";
+import { formatCurrency } from "@/lib/utils";
 
 interface RevenueCardsProps {
   metrics: RevenueMetrics;
@@ -12,11 +12,11 @@ function formatCurrencyWithDots(amount: number): string {
 
   // Indonesian Rupiah typically formats as "Rp1.000.000" or "Rp 1.000.000"
   // Normalize to handle both regular space and non-breaking space
-  const normalizedFormatted = formatted.replace(/[\u00A0\s]+/, ' ');
+  const normalizedFormatted = formatted.replace(/[\u00A0\s]+/, " ");
   const rpMatch = normalizedFormatted.match(/^Rp\s?(.+)$/);
   if (rpMatch) {
     const number = rpMatch[1]; // Get the number part after "Rp"
-    return `Rp ${'*'.repeat(number.replace(/\s/g, '').length)}`;
+    return `Rp ${"*".repeat(number.replace(/\s/g, "").length)}`;
   }
 
   return formatted; // Fallback to original if format doesn't match
@@ -30,11 +30,11 @@ export function RevenueCards({ metrics }: RevenueCardsProps) {
   };
 
   const displayMonthlyRevenue = isAmountVisible
-    ? formatCurrency(metrics.monthlyRevenue).replace(/[\u00A0]+/, ' ')
+    ? formatCurrency(metrics.monthlyRevenue).replace(/[\u00A0]+/, " ")
     : formatCurrencyWithDots(metrics.monthlyRevenue);
 
   const displayTotalRevenue = isAmountVisible
-    ? formatCurrency(metrics.totalRevenue).replace(/[\u00A0]+/, ' ')
+    ? formatCurrency(metrics.totalRevenue).replace(/[\u00A0]+/, " ")
     : formatCurrencyWithDots(metrics.totalRevenue);
 
   return (
@@ -44,7 +44,6 @@ export function RevenueCards({ metrics }: RevenueCardsProps) {
         <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full opacity-10 bg-primary-foreground" />
         <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-24 w-24 rounded-full opacity-10 bg-primary-foreground" />
 
-        
         {/* Toggle eye button */}
         <button
           onClick={toggleVisibility}
@@ -72,13 +71,15 @@ export function RevenueCards({ metrics }: RevenueCardsProps) {
               {displayMonthlyRevenue}
             </h3>
             <p className="text-sm text-primary-foreground/80">
-              Revenue ({metrics.monthlyInvoiceCount} invoices)
+              Revenue of {metrics.monthlyInvoiceCount} invoices
             </p>
           </div>
 
           <div className="border-t border-primary-foreground/20 pt-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-primary-foreground/80">Total Revenue</span>
+              <span className="text-xs text-primary-foreground/80">
+                Total Revenue
+              </span>
               <span className="text-sm font-medium text-primary-foreground/80">
                 {displayTotalRevenue}
               </span>

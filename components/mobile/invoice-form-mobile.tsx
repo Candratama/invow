@@ -39,7 +39,11 @@ const itemSchema = z.object({
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
 type ItemFormData = z.infer<typeof itemSchema>;
 
-export function InvoiceFormMobile() {
+interface InvoiceFormMobileProps {
+  onComplete?: () => void;
+}
+
+export function InvoiceFormMobile({ onComplete }: InvoiceFormMobileProps) {
   const {
     currentInvoice,
     updateCurrentInvoice,
@@ -203,7 +207,9 @@ export function InvoiceFormMobile() {
         }
       }
 
-      alert("Invoice downloaded successfully!");
+      if (onComplete) {
+        onComplete();
+      }
     } catch (error) {
       console.error("Download error:", error);
       alert("Failed to download invoice. Please try Preview instead.");

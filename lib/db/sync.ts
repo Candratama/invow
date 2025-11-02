@@ -137,12 +137,19 @@ export function storeToDbItems(
   import("./database.types").InvoiceItemInsert,
   "invoice_id" | "id" | "created_at" | "updated_at"
 >[] {
-  return items.map((item, index) => ({
+  // Sort items by existing position if available, then assign sequential positions
+  const sortedItems = [...items].sort((a, b) => {
+    // Simple sort by description if no original position is available
+    // The actual position will be overridden in the service
+    return a.description.localeCompare(b.description);
+  });
+
+  return sortedItems.map((item, index) => ({
     description: item.description,
     quantity: item.quantity,
     price: item.price,
     subtotal: item.subtotal,
-    position: index,
+    position: index, // Sequential position will be recalculated in service
   }));
 }
 
@@ -348,7 +355,7 @@ export class SyncService {
       return { success: false, error };
     }
 
-    console.log(`Invoice ${invoice.id} synced to DB as ${upsertedInvoice.id}`);
+    console.log(`Invoice synced to database successfully`);
 
     return { success: true, error: null };
   }

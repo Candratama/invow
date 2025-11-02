@@ -228,17 +228,17 @@ export async function syncLocalDataToSupabase(): Promise<{
 
         if (error) {
           results.errors.push(
-            `Failed to sync invoice ${invoice.invoiceNumber}: ${error.message}`,
+            `Failed to sync invoice: ${error.message}`,
           );
         } else {
           results.syncedInvoices++;
-          console.log(`✅ Invoice ${invoice.invoiceNumber} synced to Supabase`);
+          console.log(`✅ Invoice synced to Supabase successfully`);
         }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         results.errors.push(
-          `Invoice ${invoice.invoiceNumber} sync error: ${errorMessage}`,
+          `Invoice sync error: ${errorMessage}`,
         );
       }
     }

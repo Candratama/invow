@@ -141,7 +141,6 @@ export default function HomePage() {
   };
 
   const handleInvoiceComplete = () => {
-    alert("Invoice created successfully!");
     setView("home");
   };
 
@@ -163,7 +162,7 @@ export default function HomePage() {
             <div className="w-16" />
           </div>
         </header>
-        <InvoiceFormMobile />
+        <InvoiceFormMobile onComplete={handleInvoiceComplete} />
       </>
     );
   }
