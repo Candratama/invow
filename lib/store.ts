@@ -18,7 +18,10 @@ interface InvoiceStore {
   // User ID for invoice number generation
   userId: string | null;
 
-  
+  // Loading states
+  isLoading: boolean;
+  isInitialLoad: boolean;
+
   // Actions
   setUserId: (userId: string | null) => void;
   setCurrentInvoice: (invoice: Partial<Invoice> | null) => void;
@@ -39,6 +42,9 @@ interface InvoiceStore {
 
   // Calculate totals
   calculateTotals: () => void;
+
+  // Set loading state
+  setLoading: (isLoading: boolean, isInitialLoad?: boolean) => void;
 }
 
 export const useStore = create<InvoiceStore>()((set, get) => ({
@@ -46,6 +52,8 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
   storeSettings: null,
   completedInvoices: [],
   userId: null,
+  isLoading: true,
+  isInitialLoad: true,
 
       setUserId: (userId) => set({ userId }),
       setCurrentInvoice: (invoice) => set({ currentInvoice: invoice }),
@@ -105,16 +113,18 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
         set({ storeSettings: settings });
       },
 
-      saveCompleted: () => {
+      saveCompleted: async () => {
         const current = get().currentInvoice;
         const userId = get().userId;
-        if (!current) {
+        const storeSettings = get().storeSettings;
+        if (!current || !userId) {
           return;
         }
 
+        // First, save to memory for immediate UI update
         const completed: Invoice = {
           id: current.id || generateUUID(),
-          invoiceNumber: current.invoiceNumber || generateInvoiceNumber(userId || undefined),
+          invoiceNumber: current.invoiceNumber || generateInvoiceNumber(userId),
           invoiceDate: current.invoiceDate || new Date(),
           dueDate: new Date(), // Keep for backward compatibility
           customer: {
@@ -127,16 +137,82 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
           subtotal: current.subtotal || 0,
           shippingCost: current.shippingCost || 0,
           total: current.total || 0,
-          note: current.note, // Add the note field
+          note: current.note,
           status: "completed",
           createdAt: current.createdAt || new Date(),
           updatedAt: new Date(),
         } as Invoice;
 
+        // Update memory immediately for responsive UI
         const completed_list = get().completedInvoices.filter(
           (c) => c.id !== completed.id,
         );
         set({ completedInvoices: [...completed_list, completed] });
+
+        // Then save to database in background
+        try {
+          const { invoicesService } = await import("@/lib/db/services");
+          const { storesService } = await import("@/lib/db/services");
+
+          // Get default store
+          const { data: defaultStore } = await storesService.getDefaultStore();
+          if (!defaultStore) {
+            console.error("No default store found for saving invoice");
+            return;
+          }
+
+          // Prepare invoice data for database
+          const invoiceData = {
+            id: completed.id,
+            invoice_number: completed.invoiceNumber,
+            invoice_date: completed.invoiceDate.toISOString(),
+            customer_name: completed.customer.name,
+            customer_email: completed.customer.email || "",
+            customer_address: completed.customer.address || "",
+            customer_status: completed.customer.status || "Customer",
+            subtotal: completed.subtotal,
+            shipping_cost: completed.shippingCost,
+            total: completed.total,
+            note: completed.note || "",
+            status: "synced" as const,
+          };
+
+          // Prepare items for database
+          const itemsData = completed.items.map((item, index) => ({
+            id: item.id,
+            description: item.description,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.subtotal,
+            position: index,
+          }));
+
+          // Save to database
+          const { error } = await invoicesService.upsertInvoiceWithItems(
+            invoiceData,
+            itemsData,
+          );
+
+          if (error) {
+            console.error("Failed to save invoice to database:", error);
+            // Remove from memory if database save failed
+            set({
+              completedInvoices: get().completedInvoices.filter(
+                (c) => c.id !== completed.id,
+              ),
+            });
+          } else {
+            console.log("✅ Invoice saved to database successfully");
+          }
+        } catch (error) {
+          console.error("Error saving invoice:", error);
+          // Remove from memory if database save failed
+          set({
+            completedInvoices: get().completedInvoices.filter(
+              (c) => c.id !== completed.id,
+            ),
+          });
+        }
       },
 
       loadCompleted: (id) => {
@@ -191,6 +267,14 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
           shippingCost,
           total,
         });
+      },
+
+      setLoading: (isLoading, isInitialLoad) => {
+        const newState: Partial<InvoiceStore> = { isLoading };
+        if (isInitialLoad !== undefined) {
+          newState.isInitialLoad = isInitialLoad;
+        }
+        set(newState);
       },
     }),
 );

@@ -8,6 +8,7 @@ import { FABButton } from "@/components/mobile/fab-button";
 import { SettingsModal } from "@/components/mobile/settings-modal";
 import { UserMenu } from "@/components/mobile/user-menu";
 import { RevenueCards } from "@/components/revenue-cards";
+import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
@@ -91,6 +92,8 @@ export default function HomePage() {
     storeSettings,
     loadCompleted,
     deleteCompleted,
+    isLoading,
+    isInitialLoad,
   } = useInvoiceStore();
 
   // Get auth state
@@ -219,11 +222,16 @@ export default function HomePage() {
           </div>
 
           {/* Revenue Cards */}
-          <RevenueCards metrics={calculateRevenueMetrics(completedInvoices)} />
+          <RevenueCards
+            metrics={calculateRevenueMetrics(completedInvoices)}
+            isLoading={isLoading && isInitialLoad}
+          />
 
           {/* Invoices List */}
           <>
-            {completedInvoices.length > 0 ? (
+            {isLoading && isInitialLoad ? (
+              <InvoicesListSkeleton />
+            ) : completedInvoices.length > 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
                 <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
                   Your Invoices

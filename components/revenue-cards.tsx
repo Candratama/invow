@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Eye, EyeOff, TrendingUp } from "lucide-react";
 import { RevenueMetrics } from "@/lib/revenue-utils";
 import { formatCurrency } from "@/lib/utils";
+import { RevenueCardSkeleton } from "./skeletons/revenue-card-skeleton";
 
 interface RevenueCardsProps {
   metrics: RevenueMetrics;
+  isLoading?: boolean;
 }
 
 function formatCurrencyWithDots(amount: number): string {
@@ -22,8 +24,13 @@ function formatCurrencyWithDots(amount: number): string {
   return formatted; // Fallback to original if format doesn't match
 }
 
-export function RevenueCards({ metrics }: RevenueCardsProps) {
+export function RevenueCards({ metrics, isLoading = false }: RevenueCardsProps) {
   const [isAmountVisible, setIsAmountVisible] = useState(true);
+
+  // Show skeleton when loading
+  if (isLoading) {
+    return <RevenueCardSkeleton />;
+  }
 
   const toggleVisibility = () => {
     setIsAmountVisible(!isAmountVisible);

@@ -20,12 +20,14 @@ export function UserDataLoader() {
   const {
     setStoreSettings,
     setCompletedInvoices,
-    setUserId
+    setUserId,
+    setLoading
   } = useInvoiceStore();
 
   const loadUserData = useCallback(async (userId: string) => {
     try {
-      // Load store settings
+      // Set loading state
+      setLoading(true, true);
       logger.debug("Loading user data:", userId);
 
       const { data: storeData, error: storeError } = await storesService.getDefaultStore();
@@ -57,28 +59,46 @@ export function UserDataLoader() {
       if (invoicesError) {
         logger.error("Error loading invoices:", invoicesError);
       } else if (invoicesData) {
-        // Transform database format to Invoice format
-        const formattedInvoices = invoicesData.map(invoice => ({
-          id: invoice.id,
-          invoiceNumber: invoice.invoice_number,
-          invoiceDate: new Date(invoice.invoice_date),
-          dueDate: new Date(invoice.invoice_date), // Use invoice_date as due_date since it's not in DB
-          customer: {
-            name: invoice.customer_name,
-            email: invoice.customer_email || "",
-            status: (invoice.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
-            address: invoice.customer_address || ""
-          },
-          items: [], // Load items separately if needed
-          subtotal: invoice.subtotal,
-          shippingCost: invoice.shipping_cost,
-          total: invoice.total,
-          note: invoice.note || undefined,
-          status: invoice.status === 'synced' ? 'completed' : invoice.status as "draft" | "pending" | "completed",
-          createdAt: new Date(invoice.created_at),
-          updatedAt: new Date(invoice.updated_at),
-          syncedAt: invoice.synced_at ? new Date(invoice.synced_at) : undefined
-        }));
+        // Load each invoice with its items
+        const formattedInvoices = [];
+        for (const invoice of invoicesData) {
+          const { data: invoiceWithItems, error: itemsError } = await invoicesService.getInvoiceWithItems(invoice.id);
+
+          if (itemsError) {
+            logger.error(`Error loading items for invoice ${invoice.id}:`, itemsError);
+            continue;
+          }
+
+          if (invoiceWithItems) {
+            formattedInvoices.push({
+              id: invoice.id,
+              invoiceNumber: invoice.invoice_number,
+              invoiceDate: new Date(invoice.invoice_date),
+              dueDate: new Date(invoice.invoice_date), // Use invoice_date as due_date since it's not in DB
+              customer: {
+                name: invoice.customer_name,
+                email: invoice.customer_email || "",
+                status: (invoice.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
+                address: invoice.customer_address || ""
+              },
+              items: invoiceWithItems.invoice_items.map(item => ({
+                id: item.id,
+                description: item.description,
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.subtotal,
+              })),
+              subtotal: invoice.subtotal,
+              shippingCost: invoice.shipping_cost,
+              total: invoice.total,
+              note: invoice.note || undefined,
+              status: invoice.status === 'synced' ? 'completed' : invoice.status as "draft" | "pending" | "completed",
+              createdAt: new Date(invoice.created_at),
+              updatedAt: new Date(invoice.updated_at),
+              syncedAt: invoice.synced_at ? new Date(invoice.synced_at) : undefined
+            });
+          }
+        }
 
         logger.debug("Completed invoices loaded:", formattedInvoices.length);
         setCompletedInvoices(formattedInvoices);
@@ -86,8 +106,11 @@ export function UserDataLoader() {
 
     } catch (error) {
       logger.error("Error loading user data:", error);
+    } finally {
+      // Always stop loading, even if there was an error
+      setLoading(false, false);
     }
-  }, [setStoreSettings, setCompletedInvoices]);
+  }, [setStoreSettings, setCompletedInvoices, setLoading]);
 
   useEffect(() => {
     if (user?.id) {
@@ -96,13 +119,15 @@ export function UserDataLoader() {
 
       // Load user data from Supabase
       loadUserData(user.id);
-    } else {
-      // Clear data when user logs out
+    } else if (user !== undefined) {
+      // Only clear data and loading when user explicitly logs out (not during initial auth check)
+      // user !== undefined means we've completed the auth check
       setUserId(null);
       setStoreSettings(null);
       setCompletedInvoices([]);
+      setLoading(false, false);
     }
-  }, [user, setUserId, setStoreSettings, setCompletedInvoices, loadUserData]);
+  }, [user, setUserId, setStoreSettings, setCompletedInvoices, setLoading, loadUserData]);
 
   // This component doesn't render anything
   return null;

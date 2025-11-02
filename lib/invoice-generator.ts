@@ -21,9 +21,9 @@ export async function generateJPEGFromInvoice(
     // Wait a bit for fonts and images to load
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    // Capture the element as canvas with optimized settings
+    // Capture the element as canvas with optimized settings for smaller file size
     const canvas = await html2canvas(element, {
-      scale: 2, // Good balance between quality and performance
+      scale: 1, // Reduced from 2 to 1 for smaller file size
       useCORS: true,
       allowTaint: false,
       logging: false,
@@ -35,7 +35,7 @@ export async function generateJPEGFromInvoice(
       windowHeight: element.scrollHeight,
     });
 
-    // Convert to JPEG blob
+    // Convert to JPEG blob with optimized compression
     canvas.toBlob(
       (blob) => {
         if (!blob) {
@@ -58,11 +58,13 @@ export async function generateJPEGFromInvoice(
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        console.log("✅ JPEG generated and downloaded successfully");
+        console.log(
+          `✅ JPEG generated and downloaded successfully (${(blob.size / 1024).toFixed(1)}KB)`,
+        );
       },
       "image/jpeg",
-      0.95,
-    ); // 95% quality
+      0.8,
+    ); // Quality set to 0.8 for smaller file size (reduced from 0.95)
   } catch (error) {
     console.error("❌ JPEG generation error:", error);
     throw error;
