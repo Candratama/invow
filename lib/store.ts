@@ -164,6 +164,7 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
           // Prepare invoice data for database
           const invoiceData = {
             id: completed.id,
+            store_id: defaultStore.id,
             invoice_number: completed.invoiceNumber,
             invoice_date: completed.invoiceDate.toISOString(),
             customer_name: completed.customer.name,
