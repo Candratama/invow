@@ -63,8 +63,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    // Redirect to landing page after sign out
-    window.location.href = "/";
+    // Clear all caches for PWA
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+    }
+    // Clear localStorage and sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    // Force reload with cache bust
+    window.location.href = "/?v=" + Date.now();
   };
 
   const resetPassword = async (email: string) => {
