@@ -2,48 +2,48 @@ import PricingCard from "./PricingCard";
 
 const pricingTiers = [
   {
-    name: "Free",
+    name: "Gratis",
     price: "Rp 0",
-    period: "month",
-    description: "Perfect for trying out Invow",
+    period: "bulan",
+    description: "Coba dulu, gratis!",
     features: [
-      "30 invoices per month",
-      "Basic customization",
-      "Revenue tracking",
+      "30 invoice sebulan",
+      "Kustomisasi basic",
+      "Cek pendapatan",
     ],
-    ctaText: "Get Started Free",
+    ctaText: "Cobain Dulu",
     ctaVariant: "outline" as const,
     isPopular: false,
   },
   {
     name: "Starter",
     price: "Rp 15K",
-    period: "month",
-    description: "For small businesses",
+    period: "bulan",
+    description: "Perfect buat jualan kecil-kecilan",
     features: [
-      "200 invoices per month",
-      "Basic customization",
-      "Digital signatures",
-      "Revenue tracking",
-      "Customer management",
+      "200 invoice sebulan",
+      "Kustomisasi basic",
+      "Tanda tangan digital",
+      "Cek pendapatan",
+      "Manajemen customer",
     ],
-    ctaText: "Coming Soon",
+    ctaText: "Lagi Disiapkan",
     ctaVariant: "default" as const,
     isPopular: true,
   },
   {
     name: "Pro",
     price: "Rp 50K",
-    period: "month",
-    description: "For growing businesses",
+    period: "bulan",
+    description: "Untuk yang udah kebesaran",
     features: [
-      "Unlimited invoices",
-      "Advanced analytics",
-      "Bulk invoice actions",
-      "Priority support",
-      "Custom templates",
+      "Invoice unlimited",
+      "Analytics advanced",
+      "Bulk actions",
+      "CS prioritas",
+      "Template custom",
     ],
-    ctaText: "Coming Soon",
+    ctaText: "Lagi Disiapkan",
     ctaVariant: "default" as const,
     isPopular: false,
   },
@@ -55,11 +55,10 @@ export default function PricingSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Simple, transparent pricing
+            Harga fair & jelas
           </h2>
           <p className="mt-6 text-lg text-gray-600">
-            Choose the plan that fits your business. Start free, upgrade when
-            you&apos;re ready.
+            Pilih yang sesuai budget lo. Mulai dari gratis, mau upgrade kapan aja bisa.
           </p>
         </div>
 
@@ -71,7 +70,7 @@ export default function PricingSection() {
 
         <div className="mt-12 text-center">
           <p className="text-sm text-gray-600">
-            All plans are free trial right now. No credit card required.
+            Sekarang semua paket masih digratisin. Gak perlu CC juga kok.
           </p>
         </div>
       </div>

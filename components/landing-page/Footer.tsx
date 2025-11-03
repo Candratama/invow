@@ -24,7 +24,7 @@ export default function Footer() {
             <span className="text-2xl font-bold text-white">Invow</span>
           </div>
           <p className="text-sm text-gray-400 text-center">
-            © {new Date().getFullYear()} Invow. Built for Indonesian UMKM.
+            © {new Date().getFullYear()} Invow. With love untuk UMKM Indonesia.
           </p>
         </div>
       </div>

@@ -3,11 +3,11 @@ import { ArrowRight, CheckCircle, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const benefits = [
-  "Save 10+ hours per week on invoicing",
-  "Get paid faster with professional invoices",
-  "Access your invoice history from any device",
-  "Export and share invoices as images via WhatsApp",
-  "No credit card required to start",
+  "Hemat 10+ jam seminggu buat invoicing. Waktu lo bisa buat hal yang lebih asik!",
+  "Duit masuk lebih cepet! Invoice keren = pembayaran lebih cepat",
+  "Mau cek invoice? Bisa dari hp, tablet, atau laptop. Mau dimana aja bisa!",
+  "Langsung share ke WA dalam bentuk gambar. Customer happy, lo juga happy!",
+  "Gak perlu kartu kredit buat mulai. Asik kan?",
 ];
 
 export default function BenefitsSection() {
@@ -17,11 +17,11 @@ export default function BenefitsSection() {
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Why Indonesian businesses choose Invow
+              Kenapa UMKM Indonesia suka Invow?
             </h2>
             <p className="mt-6 text-lg text-gray-600">
-              Stop wasting time on paperwork. Focus on growing your business
-              while we handle the invoicing.
+              Udah cape main kertas-kertasan mulu? Yuk fokus jualan aja!
+              Urusan invoicing, serahin ke kita.
             </p>
             <div className="mt-10 space-y-5">
               {benefits.map((benefit) => (
@@ -37,7 +37,7 @@ export default function BenefitsSection() {
                   size="lg"
                   className="bg-primary hover:bg-primary/90 shadow-sm"
                 >
-                  Create Your First Invoice
+                  Cobain Sekarang!
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -48,11 +48,10 @@ export default function BenefitsSection() {
               <div className="text-center p-12">
                 <Smartphone className="h-24 w-24 text-primary mx-auto mb-6" />
                 <p className="text-lg font-semibold text-gray-900">
-                  Create invoices in 30 seconds
+                  Invoice kece dalam 30 detik
                 </p>
                 <p className="text-sm text-gray-600 mt-3">
-                  No laptop required. Just your phone and you&apos;re ready to
-                  go.
+                  Gak perlu laptop njir. Cukup hp lo doang, beres!
                 </p>
               </div>
             </div>

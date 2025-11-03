@@ -49,7 +49,7 @@ export default function Navigation() {
           </div>
           <Link href="/dashboard">
             <Button className="bg-primary hover:bg-primary/90">
-              Get Started
+              Yuk Mulai!
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>

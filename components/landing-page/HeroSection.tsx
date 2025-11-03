@@ -24,15 +24,12 @@ export default function HeroSection() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-gray-900">
-              Create Professional Invoices
-              <span className="block text-primary mt-2">
-                Without the Headache
-              </span>
+              Buat Invoice Keren
+              <span className="block text-primary mt-2">Gak Perlu Ribet!</span>
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 max-w-2xl mx-auto px-4">
-              Tired of messy handwritten receipts or Word templates that look
-              unprofessional? Generate beautiful invoices in 30 seconds on your
-              phone. No account needed to try.
+              Udah gak zaman pakai kwitangan tangan yang acak-acakan atau template Word yang gitu-gitu aja?
+              Dengan Invow, invoice keren bisa lo buat cuma 30 detik doang di hp. Mau coba dulu? Gak perlu daftar kok!
             </p>
             <div className="mt-8 sm:mt-12 flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-6 px-4">
               <Link href="/dashboard" className="w-full sm:w-auto">
@@ -40,7 +37,7 @@ export default function HeroSection() {
                   size="lg"
                   className="bg-primary hover:bg-primary/90 text-base sm:text-lg w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 shadow-sm"
                 >
-                  Create Your First Invoice
+                  Bikin Invoice Pertama Yuk!
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
@@ -48,7 +45,7 @@ export default function HeroSection() {
                 href="/dashboard"
                 className="text-sm sm:text-base font-semibold leading-6 text-gray-900 hover:text-primary transition-colors py-2"
               >
-                See it in action <span aria-hidden="true">→</span>
+                Liat Demo Dong <span aria-hidden="true">→</span>
               </Link>
             </div>
           </div>

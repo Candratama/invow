@@ -11,39 +11,39 @@ import FeatureCard from "./FeatureCard";
 const features = [
   {
     icon: Smartphone,
-    title: "Create invoices anywhere",
+    title: "Buat invoice dimanaja asik",
     description:
-      "No laptop needed. Write invoices while you're at the market, in your shop, or anywhere you are. Your phone is all you need.",
+      "Gak perlu ribet bawa laptop. Mau di pasar, di toko, atau di mana aja, asal ada hp lo, beres!",
   },
   {
     icon: Zap,
-    title: "Done in 30 seconds",
+    title: "Cuma 30 detik doang!",
     description:
-      "Just type the items, add the price, and you'sre done. No complicated forms or setup. Get back to running your business.",
+      "Ketik barang, masukin harga, done! Gak ada form yang njelimet atau setting sana-sini. Yuk fokus jualan aja!",
   },
   {
     icon: FileText,
-    title: "Looks professional",
+    title: "Auto naik level!",
     description:
-      "Your customers will take you seriously. Clean, professional invoices that build trust and make you look like a real business.",
+      "Invoice lo bakal keliatan impress. Customer bakal mikir lo punya tim IT atau designer. Gesrek!",
   },
   {
     icon: Shield,
-    title: "Never lose an invoice",
+    title: "Invoice gak bakal ilang",
     description:
-      "Everything saves automatically. Access your invoice history from any device. No more lost receipts or wondering what you sold.",
+      "Tersimpan auto di cloud. Mau cek dari hp, tablet, atau laptop, bisa semua. Gak bakal lost gitu deh.",
   },
   {
     icon: CheckCircle,
-    title: "No learning curve",
+    title: "Mudah banget, gak perlu kursus",
     description:
-      "If you can text, you can use this. No courses to take or manuals to read. Just open the app and start creating invoices.",
+      "Serius, kalau lo bisa chat WA, berarti lo bisa pake Invow. Gak perlu jadi expert dulu.",
   },
   {
     icon: CreditCard,
-    title: "Works with Rupiah",
+    title: "Rupiah? Easy!",
     description:
-      "Automatic IDR formatting, proper decimal places, and currency symbols. Just enter the numbers, we handle the formatting.",
+      "Format otomatis pake IDR. Titik duanya Lengkap. Lo tinggal ketik angka doang, sisanya serahin ke kita.",
   },
 ];
 
@@ -53,10 +53,10 @@ export default function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-24">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Everything you need to invoice like a pro
+            Semua yang lo butuhin buat invoice kece
           </h2>
           <p className="mt-6 text-lg text-gray-600">
-            Built specifically for Indonesian UMKM who want to get paid faster
+            Khusus buat UMKM Indonesia yang mau dibayar cepet tanpa ribet
           </p>
         </div>
 
