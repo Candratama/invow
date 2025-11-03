@@ -37,9 +37,7 @@ export default function LandingPage() {
                 <circle cx="20" cy="16" r="2" />
                 <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
               </svg>
-              <span className="text-2xl font-bold text-gray-900">
-                Invow
-              </span>
+              <span className="text-2xl font-bold text-gray-900">Invow</span>
             </div>
             <Link href="/dashboard">
               <Button className="bg-primary hover:bg-primary/90">
@@ -52,16 +50,19 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-12 sm:py-16 lg:py-24 xl:py-32">
+      <section className="relative overflow-hidden min-h-screen flex items-center -mt-16 py-12 sm:py-16 lg:py-24 xl:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-gray-900">
               Create Professional Invoices
-              <span className="block text-primary mt-2">Without the Headache</span>
+              <span className="block text-primary mt-2">
+                Without the Headache
+              </span>
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 max-w-2xl mx-auto px-4">
-              Tired of messy handwritten receipts or Word templates that look unprofessional?
-              Generate beautiful invoices in 30 seconds on your phone. No account needed to try.
+              Tired of messy handwritten receipts or Word templates that look
+              unprofessional? Generate beautiful invoices in 30 seconds on your
+              phone. No account needed to try.
             </p>
             <div className="mt-8 sm:mt-12 flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-6 px-4">
               <Link href="/dashboard" className="w-full sm:w-auto">
@@ -106,8 +107,9 @@ export default function LandingPage() {
                 Create invoices anywhere
               </h3>
               <p className="text-gray-600">
-                No laptop needed. Write invoices while you&apos;re at the market,
-                in your shop, or anywhere you are. Your phone is all you need.
+                No laptop needed. Write invoices while you&apos;re at the
+                market, in your shop, or anywhere you are. Your phone is all you
+                need.
               </p>
             </div>
 
@@ -135,7 +137,8 @@ export default function LandingPage() {
               </h3>
               <p className="text-gray-600">
                 Your customers will take you seriously. Clean, professional
-                invoices that build trust and make you look like a real business.
+                invoices that build trust and make you look like a real
+                business.
               </p>
             </div>
 
@@ -212,7 +215,10 @@ export default function LandingPage() {
               </div>
               <div className="mt-12">
                 <Link href="/dashboard">
-                  <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-sm">
+                  <Button
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90 shadow-sm"
+                  >
                     Create Your First Invoice
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -227,7 +233,8 @@ export default function LandingPage() {
                     Create invoices in 30 seconds
                   </p>
                   <p className="text-sm text-gray-600 mt-3">
-                    No laptop required. Just your phone and you&apos;re ready to go.
+                    No laptop required. Just your phone and you&apos;re ready to
+                    go.
                   </p>
                 </div>
               </div>
@@ -243,7 +250,8 @@ export default function LandingPage() {
             Stop invoicking manually. Start today.
           </h2>
           <p className="mt-6 text-xl text-white/90">
-            It takes 30 seconds to create your first invoice. No signup required to try.
+            It takes 30 seconds to create your first invoice. No signup required
+            to try.
           </p>
           <div className="mt-12">
             <Link href="/dashboard">
