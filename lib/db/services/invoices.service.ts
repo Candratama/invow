@@ -422,13 +422,16 @@ export class InvoicesService {
 
         // Remove any existing fields that could cause conflicts during insert
         const cleanItems = itemsWithInvoiceId.map(({
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           id,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           created_at,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           updated_at,
           ...item
         }) => item);
 
-        const { data: insertedItems, error: itemsError } = await this.supabase
+        const { error: itemsError } = await this.supabase
           .from("invoice_items")
           .insert(cleanItems)
           .select("id, position, description");

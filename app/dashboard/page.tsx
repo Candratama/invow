@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Trash2, Plus, CheckCircle } from "lucide-react";
 import { InvoiceFormMobile } from "@/components/mobile/invoice-form-mobile";
 import { InvoicePreview } from "@/components/mobile/invoice-preview";
@@ -85,7 +84,6 @@ function PreviewView({
 }
 
 export default function HomePage() {
-  const router = useRouter();
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [showSettings, setShowSettings] = useState(false);
   const {

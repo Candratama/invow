@@ -3,7 +3,6 @@
 import { create } from "zustand";
 import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
-import { logger } from "./utils/logger";
 import { invoicesService, storesService } from "./db/services";
 
 interface InvoiceStore {
@@ -117,7 +116,6 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
       saveCompleted: async () => {
         const current = get().currentInvoice;
         const userId = get().userId;
-        const storeSettings = get().storeSettings;
         if (!current || !userId) {
           return;
         }

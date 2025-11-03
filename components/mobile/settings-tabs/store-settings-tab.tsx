@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Camera, Upload, X } from "lucide-react";
-import { useInvoiceStore } from "@/lib/store";
 import { storesService } from "@/lib/db/services";
 import { compressImage } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -46,7 +46,6 @@ interface StoreSettingsTabProps {
 }
 
 export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
-  const { storeSettings } = useInvoiceStore();
   const [logo, setLogo] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -222,10 +221,13 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
             <div className="mt-2">
               {logo ? (
                 <div className="relative inline-block">
-                  <img
+                  <Image
                     src={logo}
                     alt="Store logo"
                     className="w-32 h-32 object-contain border-2 border-gray-200 rounded-lg lg:w-40 lg:h-40"
+                    unoptimized
+                    width={160}
+                    height={160}
                   />
                   <button
                     type="button"

@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import { useStore } from "@/lib/store";
 import { ArrowLeft } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function AccountPage() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
-  const { storeSettings } = useStore();
 
   useEffect(() => {
     if (!loading && !user) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,6 +27,8 @@ interface ContactPersonTabProps {
 }
 
 export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _onClose = onClose;
   const [contacts, setContacts] = useState<StoreContact[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -290,10 +293,13 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
                     )}
                     {contact.signature && (
                       <div className="mt-2 p-2 border rounded bg-gray-50">
-                        <img
+                        <Image
                           src={contact.signature}
                           alt={`${contact.name} signature`}
                           className="h-12 object-contain"
+                          unoptimized
+                          width={48}
+                          height={48}
                         />
                       </div>
                     )}
@@ -374,10 +380,13 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
               <Label>Signature</Label>
               {signature ? (
                 <div className="border rounded-lg bg-white p-4 flex flex-col items-center gap-3">
-                  <img
+                  <Image
                     src={signature}
                     alt="Contact signature"
                     className="max-w-full h-24 object-contain"
+                    unoptimized
+                    width={300}
+                    height={96}
                   />
                   <div className="flex gap-2">
                     <Button
