@@ -17,7 +17,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const redirectTo = searchParams.get("redirect") || "/";
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
 
   // Redirect if already logged in
   useEffect(() => {
@@ -106,14 +106,14 @@ function LoginForm() {
 
           <div className="mt-6 text-center space-y-2">
             <Link
-              href="/forgot-password"
+              href="/dashboard/forgot-password"
               className="text-sm text-primary hover:underline block"
             >
               Forgot password?
             </Link>
             <div className="text-sm text-gray-600">
               Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-primary hover:underline">
+              <Link href="/dashboard/signup" className="text-primary hover:underline">
                 Sign up
               </Link>
             </div>

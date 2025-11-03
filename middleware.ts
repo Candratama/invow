@@ -6,8 +6,8 @@ export async function middleware(request: NextRequest) {
   const response = await updateSession(request);
 
   // Protected routes that require authentication
-  const protectedPaths = ["/"];
-  const authPaths = ["/login", "/signup", "/forgot-password"];
+  const protectedPaths = ["/dashboard"];
+  const authPaths = ["/dashboard/login", "/dashboard/signup", "/dashboard/forgot-password"];
 
   const path = request.nextUrl.pathname;
   const isProtectedPath = protectedPaths.some(
@@ -40,15 +40,19 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isProtectedPath && !user) {
-    // Redirect to login with return URL
-    const redirectUrl = new URL("/login", request.url);
+    // Don't redirect if already on an auth path
+    if (isAuthPath) {
+      return response;
+    }
+    // Redirect to dashboard/login with return URL
+    const redirectUrl = new URL("/dashboard/login", request.url);
     redirectUrl.searchParams.set("redirect", path);
     return NextResponse.redirect(redirectUrl);
   }
 
   if (isAuthPath && user) {
     // Redirect to dashboard if already logged in
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;

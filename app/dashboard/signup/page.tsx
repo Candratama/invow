@@ -22,7 +22,7 @@ export default function SignupPage() {
   // Redirect if already logged in (but not during signup process)
   useEffect(() => {
     if (user && !authLoading && !success) {
-      router.push("/");
+      router.push("/dashboard");
     }
   }, [user, authLoading, success, router]);
 
@@ -30,7 +30,7 @@ export default function SignupPage() {
   useEffect(() => {
     if (success && user) {
       // Redirect immediately since there's no offline data to sync anymore
-      setTimeout(() => router.push("/"), 1000);
+      setTimeout(() => router.push("/dashboard"), 1000);
     }
   }, [success, user, router]);
 
@@ -163,7 +163,7 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <div className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline">
+              <Link href="/dashboard/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </div>

@@ -1,328 +1,298 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Settings, Trash2, Plus, CheckCircle } from "lucide-react";
-import { InvoiceFormMobile } from "@/components/mobile/invoice-form-mobile";
-import { InvoicePreview } from "@/components/mobile/invoice-preview";
-import { FABButton } from "@/components/mobile/fab-button";
-import { SettingsModal } from "@/components/mobile/settings-modal";
-import { UserMenu } from "@/components/mobile/user-menu";
-import { RevenueCards } from "@/components/revenue-cards";
-import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
-import { useInvoiceStore } from "@/lib/store";
-import { useAuth } from "@/lib/auth/auth-context";
-import { Invoice } from "@/lib/types";
-import { formatDate, formatCurrency } from "@/lib/utils";
-import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
-import { calculateRevenueMetrics } from "@/lib/revenue-utils";
+import Link from "next/link";
+import {
+  ArrowRight,
+  CheckCircle,
+  FileText,
+  Smartphone,
+  Zap,
+  Shield,
+  CreditCard,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-function PreviewView({
-  onBack,
-  onComplete,
-}: {
-  onBack: () => void;
-  onComplete: () => void;
-}) {
-  const { currentInvoice, storeSettings, saveCompleted } = useInvoiceStore();
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleDownloadJPEG = async () => {
-    if (!currentInvoice || !currentInvoice.id) return;
-
-    setIsGenerating(true);
-
-    try {
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
-
-      // Save as completed invoice
-      if (currentInvoice.id) {
-        saveCompleted();
-      }
-
-      // Notify completion
-      onComplete();
-    } catch (error) {
-      console.error("Error generating JPEG:", error);
-      alert("Failed to generate JPEG. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  if (!currentInvoice) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">No invoice to preview</p>
-      </div>
-    );
-  }
-
+export default function LandingPage() {
   return (
-    <>
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="text-primary font-medium hover:text-primary/80 transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
-            Preview
-          </h1>
-          <div className="w-16" />
-        </div>
-      </header>
-      <InvoicePreview
-        invoice={currentInvoice as Invoice}
-        storeSettings={storeSettings}
-        onDownloadJPEG={handleDownloadJPEG}
-        isGenerating={isGenerating}
-      />
-    </>
-  );
-}
-
-export default function HomePage() {
-  const [view, setView] = useState<"home" | "form" | "preview">("home");
-  const [showSettings, setShowSettings] = useState(false);
-  const {
-    completedInvoices,
-    initializeNewInvoice,
-    storeSettings,
-    loadCompleted,
-    deleteCompleted,
-    isLoading,
-    isInitialLoad,
-  } = useInvoiceStore();
-
-  // Get auth state
-  const { user } = useAuth();
-
-  // Monitor online/offline status
-
-  // Show settings modal on first visit if not configured
-  useEffect(() => {
-    if (!storeSettings && view === "home") {
-      const timer = setTimeout(() => {
-        setShowSettings(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [storeSettings, view]);
-
-  const handleNewInvoice = () => {
-    initializeNewInvoice();
-    setView("form");
-  };
-
-  const handleOpenCompleted = (invoiceId: string) => {
-    loadCompleted(invoiceId);
-    setView("form");
-  };
-
-  const handleDeleteCompleted = async (e: React.MouseEvent, invoiceId: string) => {
-    e.stopPropagation();
-    if (confirm("Delete this invoice?")) {
-      await deleteCompleted(invoiceId);
-    }
-  };
-
-  const handleInvoiceComplete = () => {
-    setView("home");
-  };
-
-  if (view === "form") {
-    return (
-      <>
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <button
-              onClick={() => setView("home")}
-              className="text-primary font-medium hover:text-primary/80 transition-colors"
-            >
-              ← Back
-            </button>
-            <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
-              New Invoice
-            </h1>
-            <div className="w-16" />
-          </div>
-        </header>
-        <InvoiceFormMobile onComplete={handleInvoiceComplete} />
-      </>
-    );
-  }
-
-  if (view === "preview") {
-    return (
-      <PreviewView
-        onBack={() => setView("form")}
-        onComplete={handleInvoiceComplete}
-      />
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary"
-            >
-              <circle cx="11" cy="4" r="2" />
-              <circle cx="18" cy="8" r="2" />
-              <circle cx="20" cy="16" r="2" />
-              <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
-            </svg>
-            Invow
-          </h1>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <UserMenu onOpenSettings={() => setShowSettings(true)} />
-            ) : (
-              <button
-                onClick={() => setShowSettings(true)}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-                aria-label="Settings"
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      {/* Navigation */}
+      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-primary"
               >
-                <Settings size={20} />
-              </button>
-            )}
+                <circle cx="11" cy="4" r="2" />
+                <circle cx="18" cy="8" r="2" />
+                <circle cx="20" cy="16" r="2" />
+                <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
+              </svg>
+              <span className="text-2xl font-bold text-gray-900">
+                Invow
+              </span>
+            </div>
+            <Link href="/dashboard">
+              <Button className="bg-primary hover:bg-primary/90">
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
-      <main className="pb-24 px-4 lg:px-6 lg:pb-8">
-        <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
-          <div className="text-left mb-8 lg:mb-12 lg:text-center">
-            <p className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
-              Welcome back,
-              {user?.email
-                ? ` ${user.email
-                    .split("@")[0]
-                    .split(".")
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(" ")}`
-                : ""}
-              ! 👋
+      {/* Hero Section */}
+      <section className="relative overflow-hidden py-24 sm:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+              Create Professional Invoices
+              <span className="block text-primary">Without the Headache</span>
+            </h1>
+            <p className="mt-8 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
+              Tired of messy handwritten receipts or Word templates that look unprofessional?
+              Generate beautiful invoices in 30 seconds on your phone. No account needed to try.
+            </p>
+            <div className="mt-12 flex items-center justify-center gap-6">
+              <Link href="/dashboard">
+                <Button
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-lg px-8 py-6 shadow-sm"
+                >
+                  Create Your First Invoice
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link
+                href="/dashboard"
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary transition-colors"
+              >
+                See it in action <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-24">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Everything you need to invoice like a pro
+            </h2>
+            <p className="mt-6 text-lg text-gray-600">
+              Built specifically for Indonesian UMKM who want to get paid faster
             </p>
           </div>
 
-          {/* Revenue Cards */}
-          <RevenueCards
-            metrics={calculateRevenueMetrics(completedInvoices)}
-            isLoading={isLoading && isInitialLoad}
-          />
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Feature 1 */}
+            <div className="relative rounded-xl bg-white p-8 hover:shadow-md transition-shadow border border-gray-200">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Smartphone className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Create invoices anywhere
+              </h3>
+              <p className="text-gray-600">
+                No laptop needed. Write invoices while you&apos;re at the market,
+                in your shop, or anywhere you are. Your phone is all you need.
+              </p>
+            </div>
 
-          {/* Invoices List */}
-          <>
-            {isLoading && isInitialLoad ? (
-              <InvoicesListSkeleton />
-            ) : completedInvoices.length > 0 ? (
-              <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
-                <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
-                  Your Invoices
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
-                  {completedInvoices
-                    .slice()
-                    .reverse()
-                    .slice(0, 10)
-                    .map((invoice) => (
-                      <div
-                        key={invoice.id}
-                        className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between p-3">
-                          <button
-                            onClick={() => handleOpenCompleted(invoice.id)}
-                            className="flex-1 min-w-0 pr-2 text-left"
-                          >
-                            <div className="font-medium text-gray-900 truncate">
-                              {invoice.invoiceNumber}
-                            </div>
-                            <div className="text-sm text-gray-600 truncate">
-                              {invoice.customer.name || "No customer"}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {invoice.items?.length || 0} item
-                              {invoice.items?.length !== 1 ? "s" : ""} •{" "}
-                              {formatDate(new Date(invoice.updatedAt))}
-                            </div>
-                          </button>
-                          <div className="ml-3 flex-shrink-0 flex flex-col items-end gap-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle size={18} className="text-primary" />
-                              <button
-                                onClick={(e) =>
-                                  handleDeleteCompleted(e, invoice.id)
-                                }
-                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 text-red-600 transition-colors"
-                                aria-label="Delete invoice"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {formatCurrency(invoice.total || 0)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+            {/* Feature 2 */}
+            <div className="relative rounded-xl bg-white p-8 hover:shadow-md transition-shadow border border-gray-200">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Zap className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Done in 30 seconds
+              </h3>
+              <p className="text-gray-600">
+                Just type the items, add the price, and you&apos;re done. No
+                complicated forms or setup. Get back to running your business.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="relative rounded-xl bg-white p-8 hover:shadow-md transition-shadow border border-gray-200">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <FileText className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Looks professional
+              </h3>
+              <p className="text-gray-600">
+                Your customers will take you seriously. Clean, professional
+                invoices that build trust and make you look like a real business.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="relative rounded-xl bg-white p-8 hover:shadow-md transition-shadow border border-gray-200">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Never lose an invoice
+              </h3>
+              <p className="text-gray-600">
+                Everything saves automatically. Access your invoice history from
+                any device. No more lost receipts or wondering what you sold.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="relative rounded-xl bg-white p-8 hover:shadow-md transition-shadow border border-gray-200">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <CheckCircle className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                No learning curve
+              </h3>
+              <p className="text-gray-600">
+                If you can text, you can use this. No courses to take or manuals
+                to read. Just open the app and start creating invoices.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="relative rounded-xl bg-white p-8 hover:shadow-md transition-shadow border border-gray-200">
+              <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <CreditCard className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Works with Rupiah
+              </h3>
+              <p className="text-gray-600">
+                Automatic IDR formatting, proper decimal places, and currency
+                symbols. Just enter the numbers, we handle the formatting.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-center">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Why Indonesian businesses choose Invow
+              </h2>
+              <p className="mt-6 text-lg text-gray-600">
+                Stop wasting time on paperwork. Focus on growing your business
+                while we handle the invoicing.
+              </p>
+              <div className="mt-10 space-y-5">
+                {[
+                  "Save 10+ hours per week on invoicing",
+                  "Get paid faster with professional invoices",
+                  "Access your invoice history from any device",
+                  "Export and share invoices as images via WhatsApp",
+                  "No credit card required to start",
+                ].map((benefit) => (
+                  <div key={benefit} className="flex items-start gap-3">
+                    <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">{benefit}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-12">
+                <Link href="/dashboard">
+                  <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-sm">
+                    Create Your First Invoice
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="aspect-[4/3] rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                <div className="text-center p-12">
+                  <Smartphone className="h-24 w-24 text-primary mx-auto mb-6" />
+                  <p className="text-lg font-semibold text-gray-900">
+                    Create invoices in 30 seconds
+                  </p>
+                  <p className="text-sm text-gray-600 mt-3">
+                    No laptop required. Just your phone and you&apos;re ready to go.
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
-                <p className="text-gray-500">No invoices yet</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Create your first invoice to get started
-                </p>
-                {!user && (
-                  <p className="text-xs text-blue-600 mt-3">
-                    💡 Sign in to sync across devices
-                  </p>
-                )}
-              </div>
-            )}
-          </>
+            </div>
+          </div>
         </div>
-      </main>
+      </section>
 
-      {/* Floating Action Button - Mobile only, Desktop uses different approach */}
-      <div className="lg:hidden">
-        <FABButton onClick={handleNewInvoice} />
-      </div>
+      {/* CTA Section */}
+      <section className="py-24 bg-primary">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Stop invoicking manually. Start today.
+          </h2>
+          <p className="mt-6 text-xl text-white/90">
+            It takes 30 seconds to create your first invoice. No signup required to try.
+          </p>
+          <div className="mt-12">
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-white text-primary hover:bg-gray-50 text-lg px-8 py-6 shadow-sm"
+              >
+                Create Your First Invoice
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <p className="mt-4 text-sm text-white/80">
+              Free forever • No credit card • Works on any phone
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {/* Desktop: Fixed bottom-right button with better positioning */}
-      <div className="hidden lg:block fixed bottom-8 right-8 z-40">
-        <button
-          onClick={handleNewInvoice}
-          className="bg-primary text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2 font-medium"
-        >
-          <Plus size={20} />
-          New Invoice
-        </button>
-      </div>
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center gap-3 mb-6">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-primary"
+              >
+                <circle cx="11" cy="4" r="2" />
+                <circle cx="18" cy="8" r="2" />
+                <circle cx="20" cy="16" r="2" />
+                <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
+              </svg>
+              <span className="text-2xl font-bold text-white">Invow</span>
+            </div>
+            <p className="text-sm text-gray-400 text-center">
+              © {new Date().getFullYear()} Invow. Built for Indonesian UMKM.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
