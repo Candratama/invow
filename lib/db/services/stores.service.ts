@@ -260,6 +260,30 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
+      // Get authenticated user
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Verify store belongs to user before updating
+      const { data: store } = await this.supabase
+        .from("stores")
+        .select("user_id")
+        .eq("id", storeId)
+        .single();
+
+      if (!store) {
+        throw new Error("Store not found");
+      }
+
+      if (store.user_id !== user.id) {
+        throw new Error("Unauthorized: Store does not belong to authenticated user");
+      }
+
       const { data, error } = await this.supabase
         .from("stores")
         .update(updates)
@@ -293,6 +317,30 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
+      // Get authenticated user
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Verify store belongs to user
+      const { data: store } = await this.supabase
+        .from("stores")
+        .select("user_id")
+        .eq("id", storeId)
+        .single();
+
+      if (!store) {
+        throw new Error("Store not found");
+      }
+
+      if (store.user_id !== user.id) {
+        throw new Error("Unauthorized: Store does not belong to authenticated user");
+      }
+
       // Check if primary contact exists
       const { data: existingContact } = await this.supabase
         .from("store_contacts")

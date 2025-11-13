@@ -86,10 +86,22 @@ export function generateInvoiceNumber(userId?: string): string {
   const uuid = userId || generateUUID();
   const firstSection = uuid.split('-')[0].toUpperCase();
 
-  // Generate a random 3-digit counter
-  const counter = Math.floor(Math.random() * 999) + 1;
+  // Generate cryptographically secure random 3-digit counter
+  const counter = getSecureRandomNumber(1, 999);
   const counterStr = String(counter).padStart(3, "0");
   return `INV-${dateKey}-${firstSection}-${counterStr}`;
+}
+
+// Generate cryptographically secure random number in range [min, max]
+function getSecureRandomNumber(min: number, max: number): number {
+  // Use crypto.getRandomValues for secure random generation
+  const range = max - min + 1;
+  const maxUint32 = 0xFFFFFFFF;
+  const randomBuffer = new Uint32Array(1);
+
+  // Generate random number and scale to desired range
+  crypto.getRandomValues(randomBuffer);
+  return min + (randomBuffer[0] % range);
 }
 
 // Format date as DDMMYY for filename
@@ -100,9 +112,112 @@ export function formatDateShort(date: Date): string {
   return `${day}${month}${year}`;
 }
 
-// Sanitize filename (remove special characters)
+// Sanitize filename (remove special characters and path traversal)
 export function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_");
+  // Remove path traversal and dangerous characters
+  let sanitized = name
+    .replace(/[/\\?%*:|"<>]/g, '') // Remove path traversal and illegal filename chars
+    .replace(/\.\./g, '') // Remove double dots
+    .replace(/[\x00-\x1f\x80-\x9f]/g, '') // Remove control characters
+    .replace(/\s+/g, '_') // Replace spaces with underscore
+    .replace(/_+/g, '_') // Collapse multiple underscores
+    .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+
+  // Ensure not empty and limit length
+  sanitized = sanitized.substring(0, 50) || 'file';
+
+  return sanitized;
+}
+
+// Image upload validation
+export interface ImageValidationOptions {
+  maxSizeBytes?: number; // Default 5MB
+  allowedTypes?: string[]; // Default ['image/jpeg', 'image/png', 'image/webp']
+  maxDimensions?: { width: number; height: number }; // Default 2000x2000
+  minDimensions?: { width: number; height: number }; // Default 10x10
+}
+
+// Comprehensive image validation
+export async function validateImageFile(
+  file: File,
+  options: ImageValidationOptions = {}
+): Promise<{ valid: boolean; error?: string }> {
+  const {
+    maxSizeBytes = 5 * 1024 * 1024, // 5MB
+    allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
+    maxDimensions = { width: 2000, height: 2000 },
+    minDimensions = { width: 10, height: 10 }
+  } = options;
+
+  // 1. Check file size
+  if (file.size > maxSizeBytes) {
+    const maxSizeMB = Math.floor(maxSizeBytes / (1024 * 1024));
+    return { valid: false, error: `File size must be less than ${maxSizeMB}MB` };
+  }
+
+  // 2. Check MIME type
+  if (!allowedTypes.includes(file.type)) {
+    return {
+      valid: false,
+      error: `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`
+    };
+  }
+
+  // 3. Verify file signature (magic bytes)
+  const fileSignature = await getFileSignature(file);
+  const validSignatures: Record<string, string[]> = {
+    'image/jpeg': ['FFD8FF'], // JPEG
+    'image/png': ['89504E47'], // PNG
+    'image/webp': ['52494646'], // WEBP (RIFF...WEBP)
+  };
+
+  const expectedSignatures = validSignatures[file.type];
+  if (!expectedSignatures.some(sig => fileSignature.startsWith(sig))) {
+    return { valid: false, error: 'Invalid file signature. File may be corrupted or malicious.' };
+  }
+
+  // 4. Check image dimensions
+  try {
+    const dimensions = await getImageDimensions(file);
+    if (dimensions.width < minDimensions.width || dimensions.height < minDimensions.height) {
+      return {
+        valid: false,
+        error: `Image dimensions too small. Minimum: ${minDimensions.width}x${minDimensions.height}px`
+      };
+    }
+    if (dimensions.width > maxDimensions.width || dimensions.height > maxDimensions.height) {
+      return {
+        valid: false,
+        error: `Image dimensions too large. Maximum: ${maxDimensions.width}x${maxDimensions.height}px`
+      };
+    }
+  } catch (error) {
+    return { valid: false, error: 'Failed to read image. File may be corrupted.' };
+  }
+
+  return { valid: true };
+}
+
+// Get file signature (magic bytes)
+async function getFileSignature(file: File): Promise<string> {
+  const arrayBuffer = await file.slice(0, 12).arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  return Array.from(bytes)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+}
+
+// Get image dimensions
+async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({ width: img.width, height: img.height });
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 // Compress image for mobile upload (preserves PNG transparency)

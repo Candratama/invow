@@ -7,7 +7,7 @@ import * as z from "zod";
 import { Camera, Upload, X, Plus } from "lucide-react";
 import { useInvoiceStore } from "@/lib/store";
 import type { StoreSettings } from "@/lib/types";
-import { compressImage } from "@/lib/utils";
+import { compressImage, validateImageFile } from "@/lib/utils";
 import { storesService } from "@/lib/db/services";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,26 +150,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
-      return;
-    }
-
-    // Check file size (max 5MB before compression)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
-      return;
-    }
-
     setUploading(true);
     try {
+      // Comprehensive image validation
+      const validation = await validateImageFile(file, {
+        maxSizeBytes: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        maxDimensions: { width: 2000, height: 2000 },
+        minDimensions: { width: 50, height: 50 }
+      });
+
+      if (!validation.valid) {
+        alert(`Invalid image: ${validation.error}`);
+        return;
+      }
+
       // Compress image to max 100KB
       const compressed = await compressImage(file, 100);
       setLogo(compressed);
     } catch (error) {
-      console.error("Error compressing image:", error);
-      alert("Failed to process image. Please try another image.");
+      console.error("Error processing image:", error);
+      alert("Failed to process image. Please try a different image.");
     } finally {
       setUploading(false);
     }

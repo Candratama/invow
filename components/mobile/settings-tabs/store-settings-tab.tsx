@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Camera, Upload, X } from "lucide-react";
 import { storesService } from "@/lib/db/services";
-import { compressImage } from "@/lib/utils";
+import { compressImage, validateImageFile } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -118,23 +118,26 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
-      return;
-    }
-
     setUploading(true);
     try {
+      // Comprehensive image validation
+      const validation = await validateImageFile(file, {
+        maxSizeBytes: 5 * 1024 * 1024, // 5MB
+        allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        maxDimensions: { width: 2000, height: 2000 },
+        minDimensions: { width: 50, height: 50 }
+      });
+
+      if (!validation.valid) {
+        alert(`Invalid image: ${validation.error}`);
+        return;
+      }
+
       const compressed = await compressImage(file, 100);
       setLogo(compressed);
     } catch (error) {
-      console.error("Error compressing image:", error);
-      alert("Failed to process image. Please try another image.");
+      console.error("Error processing image:", error);
+      alert("Failed to process image. Please try a different image.");
     } finally {
       setUploading(false);
     }

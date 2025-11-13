@@ -2,6 +2,7 @@
 
 import html2canvas from "html2canvas";
 import { Invoice, StoreSettings } from "./types";
+import { sanitizeFilename } from "./utils";
 
 export async function generateJPEGFromInvoice(
   invoice: Invoice,
@@ -47,7 +48,12 @@ export async function generateJPEGFromInvoice(
         const link = document.createElement("a");
         link.href = url;
 
-        const filename = `Invoice_${invoice.customer.name.replace(/\s+/g, "_")}_${new Date(invoice.invoiceDate).toLocaleDateString("id-ID").replace(/\//g, "")}.jpg`;
+        // Sanitize customer name to prevent path traversal and special character injection
+        const sanitizedCustomerName = sanitizeFilename(invoice.customer.name || "Customer");
+        const dateStr = new Date(invoice.invoiceDate)
+          .toLocaleDateString("id-ID")
+          .replace(/\//g, "");
+        const filename = `Invoice_${sanitizedCustomerName}_${dateStr}.jpg`;
         link.download = filename;
 
         // Trigger download

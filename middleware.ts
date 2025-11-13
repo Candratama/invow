@@ -33,10 +33,21 @@ export async function middleware(request: NextRequest) {
     );
     const {
       data: { user: authUser },
+      error,
     } = await supabase.auth.getUser();
+
+    // Log auth errors but don't crash
+    if (error && process.env.NODE_ENV === 'development') {
+      console.error('Auth error in middleware:', error.message);
+    }
+
     user = authUser;
   } catch (error) {
-    // Continue without user
+    // Log error but continue without user
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Middleware auth check failed:', error);
+    }
+    // Intentionally continue without user - don't expose error details
   }
 
   if (isProtectedPath && !user) {
