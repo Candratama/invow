@@ -53,6 +53,15 @@ export interface Store {
   daily_invoice_counter: number | null;
   created_at: string;
   updated_at: string;
+
+  // Primary contact information (from store_contacts table)
+  store_contacts?: {
+    id: string;
+    name: string;
+    title: string | null;
+    signature: string | null;
+    is_primary: boolean;
+  }[];
 }
 
 export class StoresService {
@@ -95,6 +104,7 @@ export class StoresService {
   /**
    * Get default store for the authenticated user
    * Priority: 1) User's default_store_id from preferences, 2) First active store
+   * Includes primary contact information
    */
   async getDefaultStore(): Promise<{
     data: Store | null;
@@ -119,9 +129,19 @@ export class StoresService {
       if (preferences?.default_store_id) {
         const { data: defaultStore } = await this.supabase
           .from("stores")
-          .select("*")
+          .select(`
+            *,
+            store_contacts!inner (
+              id,
+              name,
+              title,
+              signature,
+              is_primary
+            )
+          `)
           .eq("id", preferences.default_store_id)
           .eq("is_active", true)
+          .eq("store_contacts.is_primary", true)
           .single();
 
         if (defaultStore) {
@@ -129,12 +149,22 @@ export class StoresService {
         }
       }
 
-      // Fallback: Get first active store
+      // Fallback: Get first active store with contact
       const { data, error } = await this.supabase
         .from("stores")
-        .select("*")
+        .select(`
+          *,
+          store_contacts!inner (
+            id,
+            name,
+            title,
+            signature,
+            is_primary
+          )
+        `)
         .eq("user_id", user.id)
         .eq("is_active", true)
+        .eq("store_contacts.is_primary", true)
         .order("created_at", { ascending: true })
         .limit(1)
         .single();
@@ -243,6 +273,65 @@ export class StoresService {
     } catch (error) {
       return {
         data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Update primary contact for a store
+   */
+  async updatePrimaryContact(
+    storeId: string,
+    contactData: {
+      name: string | null;
+      title: string | null;
+      signature: string | null;
+    },
+  ): Promise<{
+    success: boolean;
+    error: Error | null;
+  }> {
+    try {
+      // Check if primary contact exists
+      const { data: existingContact } = await this.supabase
+        .from("store_contacts")
+        .select("id")
+        .eq("store_id", storeId)
+        .eq("is_primary", true)
+        .single();
+
+      if (existingContact) {
+        // Update existing primary contact
+        const { error } = await this.supabase
+          .from("store_contacts")
+          .update({
+            name: contactData.name,
+            title: contactData.title,
+            signature: contactData.signature,
+          })
+          .eq("id", existingContact.id);
+
+        if (error) throw new Error(error.message);
+      } else {
+        // Create new primary contact
+        const { error } = await this.supabase
+          .from("store_contacts")
+          .insert({
+            store_id: storeId,
+            name: contactData.name || "Store Owner",
+            title: contactData.title,
+            signature: contactData.signature,
+            is_primary: true,
+          });
+
+        if (error) throw new Error(error.message);
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      return {
+        success: false,
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }

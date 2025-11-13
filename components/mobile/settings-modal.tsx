@@ -8,6 +8,7 @@ import { Camera, Upload, X, Plus } from "lucide-react";
 import { useInvoiceStore } from "@/lib/store";
 import type { StoreSettings } from "@/lib/types";
 import { compressImage } from "@/lib/utils";
+import { storesService } from "@/lib/db/services";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +72,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       brandColor: storeSettings?.brandColor || "#d4af37",
     },
   });
+
+  // Sync form with storeSettings when they change (e.g., on reload)
+  useEffect(() => {
+    if (storeSettings) {
+      form.reset({
+        name: storeSettings.name || "",
+        address: storeSettings.address || "",
+        whatsapp: storeSettings.whatsapp?.replace("+62", "") || "",
+        adminName: storeSettings.adminName || "",
+        adminTitle: storeSettings.adminTitle || "Admin Store",
+        storeDescription: storeSettings.storeDescription || "",
+        tagline: storeSettings.tagline || "",
+        storeNumber: storeSettings.storeNumber || "",
+        paymentMethod: storeSettings.paymentMethod || "",
+        email: storeSettings.email || "",
+        brandColor: storeSettings.brandColor || "#d4af37",
+      });
+      setLogo(storeSettings.logo || "");
+      setSignature(storeSettings.signature || "");
+      setSignatureDraft(storeSettings.signature || undefined);
+    }
+  }, [storeSettings, form]);
 
   const handleOpenSignatureSheet = (initial?: string | undefined) => {
     setSignatureDraft(initial);
@@ -170,41 +193,81 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       whatsapp = "62" + whatsapp;
     }
 
-    const sanitizeOptional = (val?: string) => {
+    const sanitize = (val?: string) => {
       const trimmed = val?.trim();
-      return trimmed ? trimmed : undefined;
+      return trimmed || null;
     };
 
-    const newSettings = {
-      name: data.name,
-      logo: logo,
-      address: data.address,
-      whatsapp: "+" + whatsapp,
-      adminName: data.adminName,
-      adminTitle: sanitizeOptional(data.adminTitle) || "Admin Store",
-      storeDescription: sanitizeOptional(data.storeDescription),
-      tagline: sanitizeOptional(data.tagline),
-      storeNumber: sanitizeOptional(data.storeNumber),
-      paymentMethod: sanitizeOptional(data.paymentMethod),
-      email: sanitizeOptional(data.email),
-      signature: signature || undefined,
-      brandColor: data.brandColor,
-      lastUpdated: new Date().toISOString() as unknown as Date,
-    };
-
-    const cleanedSettings = Object.fromEntries(
-      Object.entries(newSettings).filter(([, value]) => value !== undefined),
-    ) as Partial<StoreSettings>;
-
-    console.log("💾 Saving settings:", cleanedSettings);
+    console.log("💾 Saving settings to database...");
 
     setIsSaving(true);
     try {
-      setStoreSettings(cleanedSettings as StoreSettings);
+      // First, get the current store to get its ID
+      const { data: store } = await storesService.getDefaultStore();
+
+      if (!store) {
+        alert("Store not found. Please refresh and try again.");
+        return;
+      }
+
+      // Save store information to database
+      const { error: storeError } = await storesService.updateStore(store.id, {
+        name: data.name,
+        logo: logo || null,
+        address: data.address,
+        whatsapp: "+" + whatsapp,
+        phone: null, // This modal doesn't have a phone field
+        email: sanitize(data.email),
+        website: null, // This modal doesn't have a website field
+        store_description: sanitize(data.storeDescription),
+        tagline: sanitize(data.tagline),
+        store_number: sanitize(data.storeNumber),
+        payment_method: sanitize(data.paymentMethod),
+        brand_color: data.brandColor,
+        invoice_prefix: "INV", // Default, modal doesn't have this field
+        store_code: (data.name || "STORE").replace(/[^A-Za-z0-9]/g, "").toUpperCase().substring(0, 6) || "STORE",
+      });
+
+      if (storeError) {
+        console.error("Failed to save store:", storeError);
+        alert(`Failed to save store: ${storeError.message}`);
+        return;
+      }
+
+      // Save contact/signature to database
+      const { error: contactError } = await storesService.updatePrimaryContact(store.id, {
+        name: data.adminName,
+        title: sanitize(data.adminTitle) || "Admin Store",
+        signature: signature || null,
+      });
+
+      if (contactError) {
+        console.error("Failed to save contact:", contactError);
+        alert(`Failed to save signature: ${contactError.message}`);
+        return;
+      }
+
+      // Update local state
+      const newSettings: StoreSettings = {
+        name: data.name,
+        logo: logo,
+        address: data.address,
+        whatsapp: "+" + whatsapp,
+        adminName: data.adminName,
+        adminTitle: sanitize(data.adminTitle) || "Admin Store",
+        signature: signature || undefined,
+        email: sanitize(data.email) || undefined,
+        brandColor: data.brandColor,
+        storeDescription: sanitize(data.storeDescription) || undefined,
+        tagline: sanitize(data.tagline) || undefined,
+        storeNumber: sanitize(data.storeNumber) || undefined,
+        paymentMethod: sanitize(data.paymentMethod) || undefined,
+        lastUpdated: new Date(),
+      };
+
+      setStoreSettings(newSettings);
 
       alert("Settings saved successfully!");
-      setSignature(signature || "");
-      setSignatureDraft(signature || undefined);
       onClose();
     } catch (error) {
       console.error("Error saving settings:", error);

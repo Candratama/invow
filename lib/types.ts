@@ -35,6 +35,9 @@ export interface StoreSettings {
   logo: string; // base64 compressed (supports PNG transparency)
   address: string;
   whatsapp: string;
+  phone?: string; // Optional phone number
+  email?: string; // Optional email
+  website?: string; // Optional website URL
   adminName: string; // For signature on PDF
   adminTitle?: string; // Optional job title shown under signature
   signature?: string; // Base64 encoded drawn signature
@@ -42,7 +45,6 @@ export interface StoreSettings {
   tagline?: string;
   storeNumber?: string;
   paymentMethod?: string;
-  email?: string;
   brandColor: string; // Hex color for app and PDF theming
   lastUpdated: Date | string; // Can be Date or ISO string from localStorage
 }

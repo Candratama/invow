@@ -35,17 +35,26 @@ export function UserDataLoader() {
       if (storeError) {
         logger.error("Error loading store settings:", storeError);
       } else if (storeData) {
+        // Get primary contact for admin info
+        const primaryContact = storeData.store_contacts?.find(c => c.is_primary) || storeData.store_contacts?.[0];
+
         // Convert Store to StoreSettings format
         const storeSettings: StoreSettings = {
           name: storeData.name,
           logo: storeData.logo || "",
           address: storeData.address,
           whatsapp: storeData.whatsapp,
-          adminName: storeData.name.split(' ')[0], // Use first word of store name as admin name
+          adminName: primaryContact?.name || storeData.name.split(' ')[0],
+          adminTitle: primaryContact?.title || undefined,
+          signature: primaryContact?.signature || undefined,
           email: storeData.email || undefined,
+          phone: storeData.phone || undefined,
+          website: storeData.website || undefined,
           brandColor: storeData.brand_color || "#000000",
           storeDescription: storeData.store_description || undefined,
           tagline: storeData.tagline || undefined,
+          storeNumber: storeData.store_number || undefined,
+          paymentMethod: storeData.payment_method || undefined,
           lastUpdated: new Date(),
         };
 

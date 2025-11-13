@@ -87,6 +87,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
         if (store) {
           setStoreId(store.id);
           setLogo(store.logo || "");
+
           form.reset({
             name: store.name,
             address: store.address,
