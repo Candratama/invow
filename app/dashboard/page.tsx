@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Trash2, Plus, CheckCircle } from "lucide-react";
-import { InvoiceFormMobile } from "@/components/mobile/invoice-form-mobile";
-import { InvoicePreview } from "@/components/mobile/invoice-preview";
-import { FABButton } from "@/components/mobile/fab-button";
-import { SettingsModal } from "@/components/mobile/settings-modal";
-import { UserMenu } from "@/components/mobile/user-menu";
-import { RevenueCards } from "@/components/revenue-cards";
+import { InvoiceForm } from "@/components/features/invoice/invoice-form";
+import { InvoicePreview } from "@/components/features/invoice/invoice-preview";
+import { FABButton } from "@/components/ui/fab-button";
+import { UserMenu } from "@/components/features/dashboard/user-menu";
+import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
+import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { generateJPEGFromInvoice } from "@/lib/invoice-generator";
-import { calculateRevenueMetrics } from "@/lib/revenue-utils";
+import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
+import { calculateRevenueMetrics } from "@/lib/utils/revenue";
 
 function PreviewView({
   onBack,
@@ -32,12 +32,17 @@ function PreviewView({
     setIsGenerating(true);
 
     try {
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
-
-      // Save as completed invoice
+      // Check subscription limit and save invoice
       if (currentInvoice.id) {
-        saveCompleted();
+        const result = await saveCompleted();
+        if (!result.success) {
+          alert(result.error || "Failed to save invoice");
+          setIsGenerating(false);
+          return;
+        }
       }
+
+      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
 
       // Notify completion
       onComplete();
@@ -85,11 +90,9 @@ function PreviewView({
 
 export default function HomePage() {
   const [view, setView] = useState<"home" | "form" | "preview">("home");
-  const [showSettings, setShowSettings] = useState(false);
   const {
     completedInvoices,
     initializeNewInvoice,
-    storeSettings,
     loadCompleted,
     deleteCompleted,
     isLoading,
@@ -98,16 +101,6 @@ export default function HomePage() {
 
   // Get auth state
   const { user, loading: authLoading } = useAuth();
-
-  // Show settings modal on first visit if not configured and user is authenticated
-  useEffect(() => {
-    if (user && !storeSettings && view === "home") {
-      const timer = setTimeout(() => {
-        setShowSettings(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [user, storeSettings, view]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -174,7 +167,7 @@ export default function HomePage() {
             <div className="w-16" />
           </div>
         </header>
-        <InvoiceFormMobile onComplete={handleInvoiceComplete} />
+        <InvoiceForm onComplete={handleInvoiceComplete} />
       </>
     );
   }
@@ -190,6 +183,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Payment Success/Failure Handler */}
+      <PaymentSuccessHandler />
+      
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -213,9 +209,7 @@ export default function HomePage() {
             </svg>
             Invow
           </h1>
-          <div className="flex items-center gap-3">
-            <UserMenu onOpenSettings={() => setShowSettings(true)} />
-          </div>
+          <UserMenu />
         </div>
       </header>
 
@@ -327,12 +321,6 @@ export default function HomePage() {
           New Invoice
         </button>
       </div>
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
     </div>
   );
 }

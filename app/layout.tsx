@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, WindSong } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { UserDataLoader } from "@/components/user-data-loader";
+import { UserDataLoader } from "@/components/features/dashboard/user-data-loader";
 
 const inter = Inter({ subsets: ["latin"] });
 const windsong = WindSong({

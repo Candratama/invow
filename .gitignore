@@ -30,6 +30,8 @@ yarn-error.log*
 .env*.local
 .env
 .env.local
+.env.development
+.env.production
 
 # vercel
 .vercel
@@ -46,11 +48,16 @@ next-env.d.ts
 /public/workbox-*.js.map
 /public/worker-*.js.map
 
-PRD.md
-CLAUDE.md
-docs/
-AGENTS.md
-.claude
+# Kiro IDE
+.kiro/
+.kirotmp/
 
-*.md
-.kiro
+# Temporary files
+tmp/
+*.tmp
+*.log
+
+# Sensitive files
+mcp.json
+*-credentials.json
+*-secrets.json

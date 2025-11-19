@@ -96,7 +96,6 @@ export function generateInvoiceNumber(userId?: string): string {
 function getSecureRandomNumber(min: number, max: number): number {
   // Use crypto.getRandomValues for secure random generation
   const range = max - min + 1;
-  const maxUint32 = 0xFFFFFFFF;
   const randomBuffer = new Uint32Array(1);
 
   // Generate random number and scale to desired range
@@ -191,7 +190,7 @@ export async function validateImageFile(
         error: `Image dimensions too large. Maximum: ${maxDimensions.width}x${maxDimensions.height}px`
       };
     }
-  } catch (error) {
+  } catch {
     return { valid: false, error: 'Failed to read image. File may be corrupted.' };
   }
 

@@ -323,6 +323,111 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          tier: string
+          invoice_limit: number
+          current_month_count: number
+          month_year: string
+          subscription_start_date: string
+          subscription_end_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          tier?: string
+          invoice_limit?: number
+          current_month_count?: number
+          month_year: string
+          subscription_start_date?: string
+          subscription_end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          tier?: string
+          invoice_limit?: number
+          current_month_count?: number
+          month_year?: string
+          subscription_start_date?: string
+          subscription_end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      payment_transactions: {
+        Row: {
+          id: string
+          user_id: string
+          mayar_invoice_id: string
+          amount: number
+          tier: string
+          status: string
+          payment_method: string | null
+          created_at: string
+          completed_at: string | null
+          webhook_verified_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          mayar_invoice_id: string
+          amount: number
+          tier: string
+          status?: string
+          payment_method?: string | null
+          created_at?: string
+          completed_at?: string | null
+          webhook_verified_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          mayar_invoice_id?: string
+          amount?: number
+          tier?: string
+          status?: string
+          payment_method?: string | null
+          created_at?: string
+          completed_at?: string | null
+          webhook_verified_at?: string | null
+          updated_at?: string
+        }
+      }
+      invoice_usage: {
+        Row: {
+          id: string
+          user_id: string
+          month_year: string
+          invoice_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month_year: string
+          invoice_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month_year?: string
+          invoice_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -351,3 +456,15 @@ export type InvoiceItemUpdate = Database['public']['Tables']['invoice_items']['U
 export type UserSettings = Database['public']['Tables']['user_settings_deprecated']['Row']
 export type UserSettingsInsert = Database['public']['Tables']['user_settings_deprecated']['Insert']
 export type UserSettingsUpdate = Database['public']['Tables']['user_settings_deprecated']['Update']
+
+export type UserSubscription = Database['public']['Tables']['user_subscriptions']['Row']
+export type UserSubscriptionInsert = Database['public']['Tables']['user_subscriptions']['Insert']
+export type UserSubscriptionUpdate = Database['public']['Tables']['user_subscriptions']['Update']
+
+export type PaymentTransaction = Database['public']['Tables']['payment_transactions']['Row']
+export type PaymentTransactionInsert = Database['public']['Tables']['payment_transactions']['Insert']
+export type PaymentTransactionUpdate = Database['public']['Tables']['payment_transactions']['Update']
+
+export type InvoiceUsage = Database['public']['Tables']['invoice_usage']['Row']
+export type InvoiceUsageInsert = Database['public']['Tables']['invoice_usage']['Insert']
+export type InvoiceUsageUpdate = Database['public']['Tables']['invoice_usage']['Update']

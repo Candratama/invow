@@ -1,10 +1,10 @@
-import Navigation from "@/components/landing-page/Navigation";
-import HeroSection from "@/components/landing-page/HeroSection";
-import FeaturesSection from "@/components/landing-page/FeaturesSection";
-import PricingSection from "@/components/landing-page/PricingSection";
-import BenefitsSection from "@/components/landing-page/BenefitsSection";
-import CTASection from "@/components/landing-page/CTASection";
-import Footer from "@/components/landing-page/Footer";
+import Navigation from "@/components/landing-page/navigation";
+import HeroSection from "@/components/landing-page/hero-section";
+import FeaturesSection from "@/components/landing-page/features-section";
+import PricingSection from "@/components/landing-page/pricing-section";
+import BenefitsSection from "@/components/landing-page/benefits-section";
+import CTASection from "@/components/landing-page/cta-section";
+import Footer from "@/components/landing-page/footer";
 
 export default function LandingPage() {
   return (

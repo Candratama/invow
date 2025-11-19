@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { Invoice, StoreSettings, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID } from "./utils";
-import { invoicesService, storesService } from "./db/services";
+import { invoicesService, storesService, subscriptionService } from "./db/services";
 
 interface InvoiceStore {
   // Current invoice being edited
@@ -32,7 +32,7 @@ interface InvoiceStore {
 
   setStoreSettings: (settings: StoreSettings | null) => void;
 
-  saveCompleted: () => void;
+  saveCompleted: () => Promise<{ success: boolean; error?: string }>;
   loadCompleted: (id: string) => void;
   deleteCompleted: (id: string) => Promise<void>;
   setCompletedInvoices: (invoices: Invoice[]) => void;
@@ -117,7 +117,37 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
         const current = get().currentInvoice;
         const userId = get().userId;
         if (!current || !userId) {
-          return;
+          return { success: false, error: "No invoice or user ID" };
+        }
+
+        // Check if user can generate invoice (subscription limit check)
+        try {
+          const { data: canGenerate, error: checkError } = 
+            await subscriptionService.canGenerateInvoice(userId);
+
+          if (checkError) {
+            console.error("Error checking invoice limit:", checkError);
+            return { 
+              success: false, 
+              error: "Failed to verify subscription status. Please try again." 
+            };
+          }
+
+          if (!canGenerate) {
+            // Get remaining invoices for better error message
+            const { data: remaining } = await subscriptionService.getRemainingInvoices(userId);
+            return { 
+              success: false, 
+              error: "You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices.",
+              remaining: remaining ?? 0
+            };
+          }
+        } catch (error) {
+          console.error("Unexpected error checking invoice limit:", error);
+          return { 
+            success: false, 
+            error: "Failed to verify subscription status. Please try again." 
+          };
         }
 
         // First, save to memory for immediate UI update
@@ -154,7 +184,13 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
           const { data: defaultStore } = await storesService.getDefaultStore();
           if (!defaultStore) {
             console.error("No default store found for saving invoice");
-            return;
+            // Remove from memory if no store found
+            set({
+              completedInvoices: get().completedInvoices.filter(
+                (c) => c.id !== completed.id,
+              ),
+            });
+            return { success: false, error: "No store found. Please set up your store first." };
           }
 
           // Prepare invoice data for database
@@ -198,9 +234,20 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
                 (c) => c.id !== completed.id,
               ),
             });
-          } else {
-            console.log("✅ Invoice saved to database successfully");
+            return { success: false, error: "Failed to save invoice. Please try again." };
           }
+
+          // Increment invoice count after successful save
+          const { error: incrementError } = await subscriptionService.incrementInvoiceCount(userId);
+          
+          if (incrementError) {
+            console.error("Failed to increment invoice count:", incrementError);
+            // Don't fail the whole operation, just log the error
+            // The invoice was saved successfully
+          }
+
+          console.log("✅ Invoice saved to database successfully");
+          return { success: true };
         } catch (error) {
           console.error("Error saving invoice:", error);
           // Remove from memory if database save failed
@@ -209,6 +256,7 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
               (c) => c.id !== completed.id,
             ),
           });
+          return { success: false, error: "An unexpected error occurred. Please try again." };
         }
       },
 
