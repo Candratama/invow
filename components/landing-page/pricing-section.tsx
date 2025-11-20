@@ -14,7 +14,7 @@ const pricingTiers = [
       "Cek pendapatan",
     ],
     ctaText: "Cobain Dulu",
-    ctaVariant: "outline" as const,
+    ctaVariant: "default" as const,
     isPopular: false,
   },
   {

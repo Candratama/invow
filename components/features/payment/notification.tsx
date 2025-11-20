@@ -70,7 +70,7 @@ export default function PaymentNotification({
     <>
       {/* Backdrop - only for mobile */}
       <div
-        className="fixed inset-0 bg-black/20 z-50 md:hidden"
+        className="fixed inset-0 bg-black/20 z-[60] md:hidden"
         onClick={handleClose}
         aria-hidden="true"
       />
@@ -78,7 +78,7 @@ export default function PaymentNotification({
       {/* Toast Container */}
       <div
         className={cn(
-          "fixed z-50 w-full max-w-md mx-auto transition-all duration-300 ease-out",
+          "fixed z-[60] w-full max-w-md mx-auto transition-all duration-300 ease-out",
           // Mobile: Bottom toast
           "bottom-4 left-4 right-4",
           // Desktop: Top-right toast

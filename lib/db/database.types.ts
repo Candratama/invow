@@ -366,39 +366,42 @@ export interface Database {
           id: string
           user_id: string
           mayar_invoice_id: string
+          mayar_transaction_id: string | null
           amount: number
           tier: string
           status: string
           payment_method: string | null
           created_at: string
           completed_at: string | null
-          webhook_verified_at: string | null
+          verified_at: string | null
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
           mayar_invoice_id: string
+          mayar_transaction_id?: string | null
           amount: number
           tier: string
           status?: string
           payment_method?: string | null
           created_at?: string
           completed_at?: string | null
-          webhook_verified_at?: string | null
+          verified_at?: string | null
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
           mayar_invoice_id?: string
+          mayar_transaction_id?: string | null
           amount?: number
           tier?: string
           status?: string
           payment_method?: string | null
           created_at?: string
           completed_at?: string | null
-          webhook_verified_at?: string | null
+          verified_at?: string | null
           updated_at?: string
         }
       }

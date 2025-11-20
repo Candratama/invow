@@ -1,0 +1,2 @@
+- never create useless md file like summary or something
+- always use related mcp to answer or docs, do not speculate the answer 

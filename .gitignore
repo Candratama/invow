@@ -8,7 +8,6 @@
 
 # testing
 /coverage
-/tests
 
 # next.js
 /.next/
@@ -48,9 +47,9 @@ next-env.d.ts
 /public/workbox-*.js.map
 /public/worker-*.js.map
 
-# Kiro IDE
-.kiro/
-.kirotmp/
+# AI
+.kiro
+.claude
 
 # Temporary files
 tmp/

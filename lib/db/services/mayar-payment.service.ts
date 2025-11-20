@@ -1,11 +1,11 @@
 /**
  * Mayar Payment Service
- * Handles payment processing and webhook verification with Mayar payment gateway
+ * Handles payment processing with Mayar payment gateway using redirect-based verification
  */
 
 import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import crypto from "crypto";
+import { safeLog, maskId } from "@/lib/utils/safe-logger";
 
 interface CreateInvoiceResponse {
   invoiceId: string;
@@ -15,7 +15,6 @@ interface CreateInvoiceResponse {
 
 const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id";
 const MAYAR_API_KEY = process.env.MAYAR_API_KEY;
-const MAYAR_WEBHOOK_SECRET = process.env.MAYAR_WEBHOOK_SECRET;
 
 import { TIER_PRICES } from "@/lib/config/pricing";
 
@@ -25,9 +24,53 @@ export class MayarPaymentService {
   private supabase: SupabaseClient;
   private maxRetries = 3;
   private retryDelayMs = 1000;
+  
+  // Cache for Mayar API responses to avoid duplicate calls
+  private static transactionCache = new Map<string, {
+    data: unknown[];
+    timestamp: number;
+  }>();
+  
+  // Cache TTL: 30 seconds
+  private static CACHE_TTL_MS = 30000;
+  
+  // In-flight requests to prevent duplicate simultaneous calls
+  private static inflightRequests = new Map<string, Promise<unknown[]>>();
 
   constructor(supabaseClient?: SupabaseClient) {
     this.supabase = supabaseClient || createClient();
+  }
+  
+  /**
+   * Clear expired cache entries
+   */
+  private static clearExpiredCache() {
+    const now = Date.now();
+    for (const [key, value] of this.transactionCache.entries()) {
+      if (now - value.timestamp > this.CACHE_TTL_MS) {
+        this.transactionCache.delete(key);
+      }
+    }
+  }
+  
+  /**
+   * Clear all cache entries (useful for testing or manual refresh)
+   */
+  public static clearCache() {
+    this.transactionCache.clear();
+    this.inflightRequests.clear();
+    console.log("[Mayar Payment Service] Cache cleared");
+  }
+  
+  /**
+   * Get cache statistics (useful for monitoring)
+   */
+  public static getCacheStats() {
+    return {
+      cacheSize: this.transactionCache.size,
+      inflightRequests: this.inflightRequests.size,
+      cacheTTL: this.CACHE_TTL_MS,
+    };
   }
 
   /**
@@ -62,12 +105,53 @@ export class MayarPaymentService {
       const expiredAt = new Date();
       expiredAt.setDate(expiredAt.getDate() + 30);
       
+      // Construct redirect URL with payment_redirect parameter
+      // Use environment variable for base URL (NEXT_PUBLIC_APP_URL)
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
+      // Ensure HTTPS protocol in production environment
+      let redirectBaseUrl = baseUrl;
+      if (process.env.NODE_ENV === 'production' && !baseUrl.startsWith('https://')) {
+        redirectBaseUrl = baseUrl.replace(/^http:\/\//, 'https://');
+      }
+      
+      safeLog.payment('Creating invoice', { userId, tier });
+      
+      // IMPORTANT: Create payment record FIRST before calling Mayar API
+      // This allows us to use our own payment ID in the redirect URL
+      // since Mayar doesn't automatically append transaction parameters
+      const { data: paymentRecord, error: dbError } = await this.supabase
+        .from("payment_transactions")
+        .insert({
+          user_id: userId,
+          mayar_invoice_id: null, // Will be updated after Mayar API call
+          amount,
+          tier,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (dbError || !paymentRecord) {
+        console.error(
+          `[Invoice Creation] Failed to create payment record:`,
+          dbError?.message
+        );
+        throw new Error(`Failed to create payment record: ${dbError?.message}`);
+      }
+      
+      safeLog.payment('Payment record created', { paymentId: paymentRecord.id });
+      
+      // Use our payment record ID in the redirect URL
+      // This way we can look up the payment when user returns
+      const redirectUrl = `${redirectBaseUrl}/dashboard?payment_redirect=true&payment_id=${paymentRecord.id}`;
+      
       // Call Mayar API to create invoice
       const response = await this.callMayarAPI("/invoice/create", "POST", {
         name: userName,
         mobile: '081234567890', // Default mobile, can be updated later
         email: userEmail,
-        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?payment=success`,
+        redirectUrl: redirectUrl,
         description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Tier Subscription - 30 Days`,
         expiredAt: expiredAt.toISOString(),
         items: [
@@ -85,7 +169,7 @@ export class MayarPaymentService {
       // IMPORTANT: Mayar returns TWO IDs:
       // - id: Product ID (used for product management)
       // - transactionId: Transaction ID (used for payment tracking)
-      // We MUST use transactionId because webhook sends id = transactionId
+      // We MUST use transactionId because it's used for payment verification
       const transactionId = responseData?.transactionId as string;
       const paymentUrl = responseData?.link as string;
 
@@ -93,26 +177,31 @@ export class MayarPaymentService {
         throw new Error("Invalid response from Mayar API - missing transactionId or link");
       }
       
-      // Invoice created (IDs logged only in development)
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Invoice created:", transactionId?.substring(0, 8) + "...");
-      }
+      // Log invoice creation with transaction ID
+      safeLog.payment('Invoice created successfully', {
+        userId,
+        invoiceId: transactionId,
+        tier,
+        amount,
+      });
 
-      // Create payment transaction record in Supabase
-      // Use transactionId because webhook will send id = transactionId
-      const { error: dbError } = await this.supabase
+      // Update payment record with Mayar transaction ID
+      const { error: updateError } = await this.supabase
         .from("payment_transactions")
-        .insert({
-          user_id: userId,
+        .update({
           mayar_invoice_id: transactionId,
-          amount,
-          tier,
-          status: "pending",
-        });
+        })
+        .eq("id", paymentRecord.id);
 
-      if (dbError) {
-        throw new Error(`Failed to create payment record: ${dbError.message}`);
+      if (updateError) {
+        console.error(
+          `[Invoice Creation] Failed to update payment record with Mayar invoice ID:`,
+          updateError.message
+        );
+        throw new Error(`Failed to update payment record: ${updateError.message}`);
       }
+      
+      safeLog.payment('Payment record updated with invoice ID', { invoiceId: transactionId });
 
       return {
         data: {
@@ -131,187 +220,346 @@ export class MayarPaymentService {
   }
 
   /**
-   * Verify webhook signature from Mayar
-   * @param payload - Webhook payload
-   * @param signature - Signature from Mayar
-   * @returns True if signature is valid
+   * Verify payment with Mayar API and process subscription update using payment record ID
+   * This is called after user is redirected from Mayar payment page
+   * @param userId - User ID
+   * @param paymentRecordId - Our payment record ID from redirect URL
+   * @returns Verification result with subscription details
    */
-  verifyWebhookSignature(payload: unknown, signature: string): boolean {
-    try {
-      if (!MAYAR_WEBHOOK_SECRET) {
-        console.error("MAYAR_WEBHOOK_SECRET is not configured");
-        return false;
-      }
-
-      // Convert payload to JSON string for signature verification
-      const payloadString =
-        typeof payload === "string" ? payload : JSON.stringify(payload);
-
-      // Create HMAC SHA256 signature
-      const expectedSignature = crypto
-        .createHmac("sha256", MAYAR_WEBHOOK_SECRET)
-        .update(payloadString)
-        .digest("hex");
-
-      // Compare signatures (constant-time comparison to prevent timing attacks)
-      return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature),
-      );
-    } catch (error) {
-      console.error("Webhook signature verification failed:", error);
-      return false;
-    }
-  }
-
-  /**
-   * Handle successful payment
-   * @param mayarInvoiceId - Mayar invoice ID (can be transaction ID or product ID)
-   * @param alternativeId - Alternative ID to try if first one fails
-   * @param paymentMethod - Payment method used (e.g., "QRIS", "Bank Transfer")
-   * @returns Success status
-   */
-  async handlePaymentSuccess(
-    mayarInvoiceId: string,
-    alternativeId?: string,
-    paymentMethod?: string
+  async verifyAndProcessPaymentByRecordId(
+    userId: string,
+    paymentRecordId: string,
   ): Promise<{
-    success: boolean;
-    error: Error | null;
+    data?: {
+      subscription: {
+        tier: string;
+        expiresAt: string;
+      };
+    };
+    error?: Error;
   }> {
     try {
-      // Try to get payment transaction with primary ID
-      let { data: transaction, error: fetchError } = await this.supabase
+      safeLog.payment('Verification started', { paymentId: paymentRecordId });
+
+      // 1. Find payment record by our payment ID and user ID
+      const { data: payment, error: findError } = await this.supabase
         .from("payment_transactions")
         .select("*")
-        .eq("mayar_invoice_id", mayarInvoiceId)
+        .eq("id", paymentRecordId)
+        .eq("user_id", userId)
         .maybeSingle();
 
-      // If not found and we have alternative ID, try that
-      if (!transaction && alternativeId) {
-        // Trying alternative ID (no sensitive data logged)
-        const result = await this.supabase
-          .from("payment_transactions")
-          .select("*")
-          .eq("mayar_invoice_id", alternativeId)
-          .maybeSingle();
-        
-        transaction = result.data;
-        fetchError = result.error;
+      if (findError) {
+        console.error("[Payment Verification] Database error:", findError);
+        return { error: new Error("Failed to query payment record") };
       }
 
-      if (fetchError) {
-        throw new Error(
-          `Payment transaction not found: ${fetchError.message}`,
-        );
+      if (!payment) {
+        safeLog.error('Payment record not found', { paymentId: maskId(paymentRecordId) });
+        return { error: new Error("Payment record not found or access denied") };
       }
 
-      if (!transaction) {
-        throw new Error(`Payment transaction not found with ID: ${mayarInvoiceId}${alternativeId ? ` or ${alternativeId}` : ''}`);
-      }
-      
-      // Payment transaction found (no sensitive data logged)
-
-      // Update payment transaction status
-      const updateData: {
-        status: string;
-        completed_at: string;
-        webhook_verified_at: string;
-        payment_method?: string;
-      } = {
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        webhook_verified_at: new Date().toISOString(),
-      };
-
-      // Add payment method if provided
-      if (paymentMethod) {
-        updateData.payment_method = paymentMethod;
+      // 2. Check if we have a Mayar invoice ID
+      if (!payment.mayar_invoice_id) {
+        safeLog.error('Payment record has no Mayar invoice ID');
+        return { error: new Error("Payment is not yet initialized. Please try again.") };
       }
 
-      const { error: updateError } = await this.supabase
-        .from("payment_transactions")
-        .update(updateData)
-        .eq("id", transaction.id);
-
-      if (updateError) {
-        throw new Error(`Failed to update payment status: ${updateError.message}`);
-      }
-
-      // Upgrade user subscription
-      const { SubscriptionService } = await import("./subscription.service");
-      const subscriptionService = new SubscriptionService(this.supabase);
-      const { error: upgradeError } = await subscriptionService.upgradeToTier(
-        transaction.user_id,
-        transaction.tier,
-      );
-
-      if (upgradeError) {
-        throw new Error(`Failed to upgrade subscription: ${upgradeError.message}`);
-      }
-
-      return { success: true, error: null };
+      // 3. Use the existing verification method with the Mayar invoice ID
+      return await this.verifyAndProcessPayment(userId, payment.mayar_invoice_id);
     } catch (error) {
+      console.error("[Payment Verification] Unexpected error:", error);
       return {
-        success: false,
-        error: error instanceof Error ? error : new Error("Unknown error"),
+        error:
+          error instanceof Error
+            ? error
+            : new Error("An unexpected error occurred"),
       };
     }
   }
 
   /**
-   * Handle failed payment
-   * @param mayarInvoiceId - Mayar invoice ID
-   * @returns Success status
+   * Verify payment with Mayar API and process subscription update
+   * This is called after user is redirected from Mayar payment page
+   * @param userId - User ID
+   * @param invoiceId - Mayar invoice ID from redirect URL
+   * @returns Verification result with subscription details
    */
-  async handlePaymentFailed(mayarInvoiceId: string): Promise<{
-    success: boolean;
-    error: Error | null;
+  async verifyAndProcessPayment(
+    userId: string,
+    invoiceId: string,
+  ): Promise<{
+    data?: {
+      subscription: {
+        tier: string;
+        expiresAt: string;
+      };
+    };
+    error?: Error;
   }> {
     try {
-      // Get payment transaction
-      const { data: transaction, error: fetchError } = await this.supabase
+      safeLog.payment('Verification started', { invoiceId });
+
+      // 1. Find payment record in database by invoice ID and user ID
+      const { data: payment, error: findError } = await this.supabase
         .from("payment_transactions")
         .select("*")
-        .eq("mayar_invoice_id", mayarInvoiceId)
-        .single();
+        .eq("mayar_invoice_id", invoiceId)
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (fetchError) {
-        throw new Error(
-          `Payment transaction not found: ${fetchError.message}`,
-        );
+      if (findError) {
+        console.error("[Payment Verification] Database error:", findError);
+        return { error: new Error("Failed to query payment record") };
       }
 
-      if (!transaction) {
-        throw new Error("Payment transaction not found");
+      if (!payment) {
+        safeLog.error('Payment not found for invoice');
+        return { error: new Error("Payment record not found") };
       }
 
-      // Update payment transaction status
+      // 2. Check if payment is already processed (idempotency)
+      if (payment.status === "completed") {
+        safeLog.info('Payment already processed');
+
+        // Return current subscription details
+        const { data: subscription } = await this.supabase
+          .from("user_subscriptions")
+          .select("tier, subscription_end_date")
+          .eq("user_id", userId)
+          .single();
+
+        if (subscription) {
+          return {
+            data: {
+              subscription: {
+                tier: subscription.tier,
+                expiresAt: subscription.subscription_end_date || "",
+              },
+            },
+          };
+        }
+
+        return { error: new Error("Subscription not found") };
+      }
+
+      // 3. Verify payment status with Mayar API
+      safeLog.info('Querying Mayar API for invoice');
+
+      const transactions = await this.getMayarTransactionByInvoiceId(invoiceId);
+
+      if (!transactions || transactions.length === 0) {
+        safeLog.error('Transaction not found in Mayar');
+        return {
+          error: new Error(
+            "Transaction not found in Mayar. Please wait a moment and try again.",
+          ),
+        };
+      }
+
+      const transaction = transactions[0] as Record<string, unknown>;
+
+      // 4. Validate payment status is "paid"
+      if (transaction.status !== "paid") {
+        safeLog.error(`Payment status is ${transaction.status}, not paid`);
+        return {
+          error: new Error(
+            `Payment is ${transaction.status}. Please complete the payment first.`,
+          ),
+        };
+      }
+
+      safeLog.payment('Payment verified as paid', { invoiceId, status: 'paid' });
+
+      // 5. Update payment record with transaction details
       const { error: updateError } = await this.supabase
         .from("payment_transactions")
         .update({
-          status: "failed",
-          webhook_verified_at: new Date().toISOString(),
+          status: "completed",
+          mayar_transaction_id: transaction.paymentLinkTransactionId as string,
+          payment_method: transaction.paymentMethod as string,
+          completed_at: new Date().toISOString(),
+          verified_at: new Date().toISOString(),
         })
-        .eq("id", transaction.id);
+        .eq("id", payment.id);
 
       if (updateError) {
-        throw new Error(`Failed to update payment status: ${updateError.message}`);
+        console.error(
+          "[Payment Verification] Failed to update payment record:",
+          updateError,
+        );
+        return {
+          error: new Error(
+            "Failed to update payment record. Please contact support.",
+          ),
+        };
       }
 
-      // Log failure
-      console.error(
-        `Payment failed for invoice ${mayarInvoiceId}, user ${transaction.user_id}`,
-      );
+      // 6. Upgrade user subscription
+      const { SubscriptionService } = await import("./subscription.service");
+      const subscriptionService = new SubscriptionService(this.supabase);
+      const { success, error: upgradeError } =
+        await subscriptionService.upgradeToTier(userId, payment.tier);
 
-      return { success: true, error: null };
-    } catch (error) {
-      console.error("Error handling payment failure:", error);
+      if (upgradeError || !success) {
+        console.error(
+          "[Payment Verification] Failed to upgrade subscription:",
+          upgradeError,
+        );
+        return {
+          error: new Error(
+            "Payment verified but subscription upgrade failed. Please contact support.",
+          ),
+        };
+      }
+
+      // 7. Get updated subscription details
+      const { data: updatedSubscription } = await this.supabase
+        .from("user_subscriptions")
+        .select("tier, subscription_end_date")
+        .eq("user_id", userId)
+        .single();
+
+      if (!updatedSubscription) {
+        return { error: new Error("Failed to retrieve updated subscription") };
+      }
+
+      safeLog.payment('Verification success', { 
+        invoiceId, 
+        tier: updatedSubscription.tier,
+        status: 'completed'
+      });
+
       return {
-        success: false,
-        error: error instanceof Error ? error : new Error("Unknown error"),
+        data: {
+          subscription: {
+            tier: updatedSubscription.tier,
+            expiresAt: updatedSubscription.subscription_end_date || "",
+          },
+        },
+      };
+    } catch (error) {
+      console.error("[Payment Verification] Unexpected error:", error);
+      return {
+        error:
+          error instanceof Error
+            ? error
+            : new Error("An unexpected error occurred"),
       };
     }
+  }
+
+  /**
+   * Query Mayar transactions by invoice ID with caching and deduplication
+   * Fetches transactions from Mayar API and filters by invoice ID
+   * @param invoiceId - Mayar invoice ID to search for
+   * @returns Array of matching transactions
+   */
+  private async getMayarTransactionByInvoiceId(
+    invoiceId: string,
+  ): Promise<unknown[]> {
+    // Clear expired cache entries
+    MayarPaymentService.clearExpiredCache();
+    
+    // Check cache first
+    const cacheKey = `transactions_${invoiceId}`;
+    const cached = MayarPaymentService.transactionCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < MayarPaymentService.CACHE_TTL_MS) {
+      safeLog.info('Using cached transaction result');
+      return cached.data;
+    }
+    
+    // Check if there's already an in-flight request for this invoice
+    const inflightKey = `inflight_${invoiceId}`;
+    const inflightRequest = MayarPaymentService.inflightRequests.get(inflightKey);
+    
+    if (inflightRequest) {
+      safeLog.info('Waiting for in-flight transaction request');
+      return inflightRequest as Promise<unknown[]>;
+    }
+    
+    // Create new request
+    const requestPromise = this.fetchMayarTransactions(invoiceId);
+    
+    // Store in-flight request
+    MayarPaymentService.inflightRequests.set(inflightKey, requestPromise);
+    
+    try {
+      const result = await requestPromise;
+      
+      // Cache the result
+      MayarPaymentService.transactionCache.set(cacheKey, {
+        data: result,
+        timestamp: Date.now(),
+      });
+      
+      return result;
+    } finally {
+      // Remove from in-flight requests
+      MayarPaymentService.inflightRequests.delete(inflightKey);
+    }
+  }
+  
+  /**
+   * Fetch transactions from Mayar API with retry logic
+   * @param invoiceId - Mayar invoice ID to search for
+   * @returns Array of matching transactions
+   */
+  private async fetchMayarTransactions(invoiceId: string): Promise<unknown[]> {
+    const maxRetries = 2;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Call Mayar API to get latest transactions
+        const response = await this.callMayarAPI("/transactions", "GET");
+        
+        // Extract transactions from response
+        // Mayar API returns { data: [...] } structure
+        const responseData = response.data as { data?: unknown[] } | unknown[];
+        const transactions = Array.isArray(responseData) 
+          ? responseData 
+          : (responseData as { data?: unknown[] })?.data || [];
+
+        safeLog.info(`Found ${transactions.length} total transactions from API`);
+
+        // Filter transactions by invoice ID
+        // Mayar transactions can match on either paymentLinkId or paymentLinkTransactionId
+        const matchingTransactions = transactions.filter((t: unknown) => {
+          const transaction = t as Record<string, unknown>;
+          return (
+            transaction.paymentLinkId === invoiceId ||
+            transaction.paymentLinkTransactionId === invoiceId
+          );
+        });
+
+        safeLog.info(`Found ${matchingTransactions.length} matching transactions`);
+
+        return matchingTransactions;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Unknown error");
+        
+        // Don't retry on rate limit errors (429)
+        if (lastError.message.includes("429")) {
+          safeLog.error('Rate limit hit for transaction query');
+          throw lastError;
+        }
+        
+        // Log retry attempt
+        if (attempt < maxRetries) {
+          const backoffDelay = 1000 * Math.pow(2, attempt); // Exponential backoff: 1s, 2s
+          safeLog.info(`Retry ${attempt + 1}/${maxRetries} after ${backoffDelay}ms`);
+          
+          // Wait before retrying with exponential backoff
+          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+        }
+      }
+    }
+
+    // All retries failed
+    safeLog.error(`Failed after ${maxRetries} retries`, lastError);
+    throw lastError || new Error("Failed to query Mayar transactions");
   }
 
   /**
@@ -343,25 +591,37 @@ export class MayarPaymentService {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(
+          const error = new Error(
             `Mayar API error: ${response.status} - ${JSON.stringify(errorData)}`,
           );
+          
+          // Don't retry on rate limit (429) or client errors (4xx)
+          if (response.status === 429 || (response.status >= 400 && response.status < 500)) {
+            throw error;
+          }
+          
+          throw error;
         }
 
         return await response.json();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error("Unknown error");
 
-        // Don't retry on client errors (4xx)
-        if (error instanceof Error && error.message.includes("400")) {
+        // Don't retry on rate limit (429) or client errors (4xx)
+        if (error instanceof Error && (
+          error.message.includes("429") || 
+          error.message.includes("400") ||
+          error.message.includes("401") ||
+          error.message.includes("403") ||
+          error.message.includes("404")
+        )) {
           throw error;
         }
 
-        // Retry on server errors (5xx) or network errors
+        // Retry on server errors (5xx) or network errors with exponential backoff
         if (attempt < this.maxRetries - 1) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, this.retryDelayMs * (attempt + 1)),
-          );
+          const backoffDelay = this.retryDelayMs * Math.pow(2, attempt); // Exponential backoff
+          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
         }
       }
     }
