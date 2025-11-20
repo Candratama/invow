@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, WindSong } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { UserDataLoader } from "@/components/features/dashboard/user-data-loader";
+import { QueryProvider } from "@/lib/providers/query-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 const windsong = WindSong({
@@ -62,10 +62,11 @@ export default function RootLayout({
         className={`${inter.className} ${windsong.variable}`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <UserDataLoader />
-          <div className="min-h-screen bg-background">{children}</div>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <div className="min-h-screen bg-background">{children}</div>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

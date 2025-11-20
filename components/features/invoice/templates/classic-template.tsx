@@ -573,7 +573,7 @@ export function ClassicInvoiceTemplate({
                   fontSize: "11pt",
                   marginBottom: "0px",
                   fontWeight: "bold",
-                  textAlign: "right",
+                  textAlign: "center",
                   width: "100%",
                 }}
               >
@@ -585,7 +585,7 @@ export function ClassicInvoiceTemplate({
                   fontSize: "10pt",
                   color: "#374151",
                   marginBottom: "8px",
-                  textAlign: "right",
+                  textAlign: "center",
                   width: "100%",
                 }}
               >

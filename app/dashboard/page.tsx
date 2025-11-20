@@ -10,12 +10,15 @@ import { UserMenu } from "@/components/features/dashboard/user-menu";
 import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
+import { Pagination } from "@/components/ui/pagination";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { calculateRevenueMetrics } from "@/lib/utils/revenue";
+import { useInvoices, useSubscriptionStatus, useDeleteInvoice } from "@/lib/hooks/use-dashboard-data";
+import { useStoreSettings } from "@/lib/hooks/use-store-settings";
 
 function PreviewView({
   onBack,
@@ -24,7 +27,8 @@ function PreviewView({
   onBack: () => void;
   onComplete: () => void;
 }) {
-  const { currentInvoice, storeSettings, saveCompleted } = useInvoiceStore();
+  const { currentInvoice, saveCompleted } = useInvoiceStore();
+  const { data: storeSettings } = useStoreSettings();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDownloadJPEG = async () => {
@@ -43,7 +47,7 @@ function PreviewView({
         }
       }
 
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
+      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings ?? null);
 
       // Notify completion
       onComplete();
@@ -81,7 +85,7 @@ function PreviewView({
       </header>
       <InvoicePreview
         invoice={currentInvoice as Invoice}
-        storeSettings={storeSettings}
+        storeSettings={storeSettings ?? null}
         onDownloadJPEG={handleDownloadJPEG}
         isGenerating={isGenerating}
       />
@@ -91,17 +95,54 @@ function PreviewView({
 
 export default function HomePage() {
   const [view, setView] = useState<"home" | "form" | "preview">("home");
+  const [currentPage, setCurrentPage] = useState(1);
+  
   const {
-    completedInvoices,
     initializeNewInvoice,
     loadCompleted,
-    deleteCompleted,
-    isLoading,
-    isInitialLoad,
   } = useInvoiceStore();
 
   // Get auth state
   const { user, loading: authLoading } = useAuth();
+
+  // React Query hooks - automatic caching and background refetching
+  const { data: invoicesData, isLoading: invoicesLoading, isError } = useInvoices(currentPage, 10);
+  const { data: subscriptionStatus } = useSubscriptionStatus();
+  
+  // Mutation hook for deleting invoices with optimistic updates
+  const deleteInvoice = useDeleteInvoice();
+
+  // Calculate revenue metrics from cached invoice data
+  const completedInvoices = invoicesData?.invoices.map(inv => ({
+    id: inv.id,
+    invoiceNumber: inv.invoice_number,
+    invoiceDate: new Date(inv.invoice_date),
+    dueDate: new Date(inv.invoice_date),
+    customer: {
+      name: inv.customer_name,
+      email: inv.customer_email || "",
+      status: (inv.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
+      address: inv.customer_address || ""
+    },
+    items: inv.invoice_items.map(item => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      price: item.price,
+      subtotal: item.subtotal,
+    })),
+    subtotal: inv.subtotal,
+    shippingCost: inv.shipping_cost,
+    total: inv.total,
+    note: inv.note || undefined,
+    status: 'completed' as const,
+    createdAt: new Date(inv.created_at),
+    updatedAt: new Date(inv.updated_at),
+    syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined
+  })) || [];
+
+  const revenueMetrics = calculateRevenueMetrics(completedInvoices);
+  const isLoading = invoicesLoading && !invoicesData;
 
   // Show loading while checking auth
   if (authLoading) {
@@ -140,10 +181,17 @@ export default function HomePage() {
     setView("form");
   };
 
-  const handleDeleteCompleted = (e: React.MouseEvent, invoiceId: string) => {
+  const handleDeleteCompleted = async (e: React.MouseEvent, invoiceId: string) => {
     e.stopPropagation();
     if (confirm("Delete this invoice?")) {
-      deleteCompleted(invoiceId);
+      try {
+        await deleteInvoice.mutateAsync(invoiceId);
+        // Success - optimistic update already handled by the mutation hook
+      } catch (error) {
+        // Error message - rollback already handled by the mutation hook
+        const errorMessage = error instanceof Error ? error.message : "Failed to delete invoice";
+        alert(`Failed to delete invoice: ${errorMessage}`);
+      }
     }
   };
 
@@ -214,25 +262,29 @@ export default function HomePage() {
 
           {/* Revenue Cards */}
           <RevenueCards
-            metrics={calculateRevenueMetrics(completedInvoices)}
-            isLoading={isLoading && isInitialLoad}
+            metrics={revenueMetrics}
+            subscriptionStatus={subscriptionStatus || null}
+            isLoading={isLoading}
           />
 
           {/* Invoices List */}
           <>
-            {isLoading && isInitialLoad ? (
+            {isLoading ? (
               <InvoicesListSkeleton />
+            ) : isError ? (
+              <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
+                <p className="text-red-500">Failed to load invoices</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Please try refreshing the page
+                </p>
+              </div>
             ) : completedInvoices.length > 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
                 <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
                   Your Invoices
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
-                  {completedInvoices
-                    .slice()
-                    .reverse()
-                    .slice(0, 10)
-                    .map((invoice) => (
+                  {completedInvoices.map((invoice) => (
                       <div
                         key={invoice.id}
                         className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -275,6 +327,15 @@ export default function HomePage() {
                       </div>
                     ))}
                 </div>
+
+                {/* Pagination */}
+                {invoicesData && invoicesData.totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={invoicesData.totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                )}
               </div>
             ) : (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">

@@ -17,8 +17,10 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ItemRow } from "@/components/features/invoice/item-row";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { ClassicInvoiceTemplate } from "@/components/features/invoice/templates";
-import { subscriptionService } from "@/lib/db/services";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useCreateInvoice, useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
+import { useStoreSettings } from "@/lib/hooks/use-store-settings";
+import { storesService } from "@/lib/db/services";
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -60,12 +62,11 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<{
-    remainingInvoices: number;
-    invoiceLimit: number;
-    tier: string;
-  } | null>(null);
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  
+  // Use React Query hooks for subscription status, store settings, and invoice creation
+  const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStatus();
+  const { data: storeSettings } = useStoreSettings();
+  const createInvoice = useCreateInvoice();
 
   // Initialize invoice if not exists
   useEffect(() => {
@@ -73,40 +74,6 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       initializeNewInvoice();
     }
   }, [currentInvoice, initializeNewInvoice]);
-
-  // Fetch subscription status
-  useEffect(() => {
-    const fetchSubscriptionStatus = async () => {
-      if (!user?.id) {
-        setIsLoadingSubscription(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await subscriptionService.getSubscriptionStatus(user.id);
-        
-        if (error) {
-          console.error("Error fetching subscription status:", error);
-          setIsLoadingSubscription(false);
-          return;
-        }
-
-        if (data) {
-          setSubscriptionStatus({
-            remainingInvoices: data.remainingInvoices,
-            invoiceLimit: data.invoiceLimit,
-            tier: data.tier,
-          });
-        }
-      } catch (error) {
-        console.error("Unexpected error fetching subscription status:", error);
-      } finally {
-        setIsLoadingSubscription(false);
-      }
-    };
-
-    fetchSubscriptionStatus();
-  }, [user?.id]);
 
   // Main form
   const form = useForm<InvoiceFormData>({
@@ -233,32 +200,66 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       // Small delay to ensure DOM is ready
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const { storeSettings, saveCompleted } =
-        useInvoiceStore.getState();
+      // Save invoice using React Query mutation
+      if (currentInvoice.id && user?.id) {
+        try {
+          // Get default store
+          const { data: defaultStore, error: storeError } = await storesService.getDefaultStore();
+          
+          if (storeError || !defaultStore) {
+            alert("No store found. Please set up your store first.");
+            setIsDownloading(false);
+            return;
+          }
 
-      // Check subscription limit and save invoice
-      if (currentInvoice.id) {
-        const result = await saveCompleted();
-        if (!result.success) {
-          alert(result.error || "Failed to save invoice");
+          // Prepare invoice data for mutation
+          const invoiceData = {
+            invoice: {
+              id: currentInvoice.id,
+              store_id: defaultStore.id,
+              invoice_number: currentInvoice.invoiceNumber || '',
+              invoice_date: currentInvoice.invoiceDate?.toISOString() || new Date().toISOString(),
+              customer_name: currentInvoice.customer?.name || '',
+              customer_email: currentInvoice.customer?.email || '',
+              customer_address: currentInvoice.customer?.address || '',
+              customer_status: currentInvoice.customer?.status || 'Customer',
+              subtotal: currentInvoice.subtotal || 0,
+              shipping_cost: currentInvoice.shippingCost || 0,
+              total: currentInvoice.total || 0,
+              note: currentInvoice.note || '',
+              status: 'synced' as const,
+            },
+            items: (currentInvoice.items || []).map((item, index) => ({
+              id: item.id,
+              description: item.description,
+              quantity: item.quantity,
+              price: item.price,
+              subtotal: item.subtotal,
+              position: index,
+            })),
+          };
+
+          // Use mutation to save invoice with optimistic updates
+          await createInvoice.mutateAsync(invoiceData);
+          
+          // Success feedback is shown via optimistic update (< 500ms)
+        } catch (error) {
+          console.error("Failed to save invoice:", error);
+          
+          // Display appropriate error messages
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          if (errorMessage.includes('limit reached')) {
+            alert("You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices.");
+          } else {
+            alert(errorMessage || "Failed to save invoice. Please try again.");
+          }
+          
           setIsDownloading(false);
           return;
         }
-
-        // Refresh subscription status after successful save
-        if (user?.id) {
-          const { data } = await subscriptionService.getSubscriptionStatus(user.id);
-          if (data) {
-            setSubscriptionStatus({
-              remainingInvoices: data.remainingInvoices,
-              invoiceLimit: data.invoiceLimit,
-              tier: data.tier,
-            });
-          }
-        }
       }
 
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings);
+      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings ?? null);
 
       if (onComplete) {
         onComplete();
@@ -510,6 +511,21 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             </div>
           )}
 
+          {/* Show mutation error if any */}
+          {createInvoice.isError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle size={18} className="text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-red-800">
+                  Failed to save invoice
+                </p>
+                <p className="text-red-700 mt-0.5">
+                  {createInvoice.error instanceof Error ? createInvoice.error.message : 'An error occurred while saving the invoice'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <Button
             type="button"
             onClick={handleQuickDownload}
@@ -633,7 +649,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
         currentInvoice.items.length > 0 && (
           <ClassicInvoiceTemplate
             invoice={currentInvoice as Invoice}
-            storeSettings={useInvoiceStore.getState().storeSettings}
+            storeSettings={storeSettings ?? null}
           />
         )}
     </div>

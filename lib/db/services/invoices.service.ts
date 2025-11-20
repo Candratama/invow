@@ -69,6 +69,95 @@ export class InvoicesService {
   }
 
   /**
+   * Get paginated invoices with items (optimized with JOIN)
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Number of invoices per page
+   * @param status - Optional filter by status
+   * @returns Paginated invoices with items and total count
+   */
+  async getInvoicesPaginated(
+    page: number = 1,
+    pageSize: number = 10,
+    status?: "draft" | "pending" | "synced",
+  ): Promise<{
+    data: {
+      invoices: InvoiceWithItems[];
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    } | null;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Calculate offset
+      const offset = (page - 1) * pageSize;
+
+      // Build query with items included (single query with JOIN)
+      let query = this.supabase
+        .from("invoices")
+        .select(
+          `
+          *,
+          invoice_items (*)
+        `,
+          { count: "exact" }
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }); // DESC order - newest first
+
+      if (status) {
+        query = query.eq("status", status);
+      }
+
+      // Apply pagination
+      query = query.range(offset, offset + pageSize - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) throw new Error(error.message);
+
+      // Sort items by position for each invoice
+      const invoices = (data || []).map((invoice) => {
+        const typedInvoice = invoice as InvoiceWithItems;
+        if (typedInvoice.invoice_items) {
+          typedInvoice.invoice_items.sort(
+            (a: InvoiceItem, b: InvoiceItem) => a.position - b.position
+          );
+        }
+        return typedInvoice;
+      });
+
+      const total = count || 0;
+      const totalPages = Math.ceil(total / pageSize);
+
+      return {
+        data: {
+          invoices,
+          total,
+          page,
+          pageSize,
+          totalPages,
+        },
+        error: null,
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
    * Get a single invoice with its items
    * @param invoiceId - Invoice ID
    * @returns Invoice with items

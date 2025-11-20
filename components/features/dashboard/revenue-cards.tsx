@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Eye, EyeOff, TrendingUp, FileText } from "lucide-react";
 import { RevenueMetrics } from "@/lib/utils/revenue";
 import { formatCurrency } from "@/lib/utils";
 import { RevenueCardSkeleton } from "@/components/skeletons/revenue-card-skeleton";
-import { subscriptionService } from "@/lib/db/services";
-import { useAuth } from "@/lib/auth/auth-context";
 
 interface RevenueCardsProps {
   metrics: RevenueMetrics;
+  subscriptionStatus: {
+    remainingInvoices: number;
+    invoiceLimit: number;
+    tier: string;
+  } | null;
   isLoading?: boolean;
 }
 
@@ -26,42 +29,8 @@ function formatCurrencyWithDots(amount: number): string {
   return formatted; // Fallback to original if format doesn't match
 }
 
-export function RevenueCards({ metrics, isLoading = false }: RevenueCardsProps) {
+export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }: RevenueCardsProps) {
   const [isAmountVisible, setIsAmountVisible] = useState(true);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<{
-    remainingInvoices: number;
-    invoiceLimit: number;
-    tier: string;
-  } | null>(null);
-  const { user } = useAuth();
-
-  // Fetch subscription status
-  useEffect(() => {
-    const fetchSubscriptionStatus = async () => {
-      if (!user?.id) return;
-
-      try {
-        const { data, error } = await subscriptionService.getSubscriptionStatus(user.id);
-        
-        if (error) {
-          console.error("Error fetching subscription status:", error);
-          return;
-        }
-
-        if (data) {
-          setSubscriptionStatus({
-            remainingInvoices: data.remainingInvoices,
-            invoiceLimit: data.invoiceLimit,
-            tier: data.tier,
-          });
-        }
-      } catch (error) {
-        console.error("Unexpected error fetching subscription status:", error);
-      }
-    };
-
-    fetchSubscriptionStatus();
-  }, [user?.id]);
 
   // Show skeleton when loading
   if (isLoading) {
