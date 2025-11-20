@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { Logo } from "@/components/ui/logo";
 
 export default function Navigation() {
   const [scrollY, setScrollY] = useState(0);
@@ -27,26 +28,7 @@ export default function Navigation() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary"
-            >
-              <circle cx="11" cy="4" r="2" />
-              <circle cx="18" cy="8" r="2" />
-              <circle cx="20" cy="16" r="2" />
-              <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
-            </svg>
-            <span className="text-2xl font-bold text-gray-900">Invow</span>
-          </div>
+          <Logo size={32} />
           <Link href="/dashboard">
             <Button className="bg-primary hover:bg-primary/90">
               Yuk Mulai!

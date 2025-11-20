@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Trash2, Plus, CheckCircle } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 import { InvoiceForm } from "@/components/features/invoice/invoice-form";
 import { InvoicePreview } from "@/components/features/invoice/invoice-preview";
 import { FABButton } from "@/components/ui/fab-button";
@@ -189,26 +190,7 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary"
-            >
-              <circle cx="11" cy="4" r="2" />
-              <circle cx="18" cy="8" r="2" />
-              <circle cx="20" cy="16" r="2" />
-              <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
-            </svg>
-            Invow
-          </h1>
+          <Logo />
           <UserMenu />
         </div>
       </header>
