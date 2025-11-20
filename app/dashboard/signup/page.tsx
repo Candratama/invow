@@ -34,9 +34,11 @@ function SignupForm() {
     if (success && user) {
       // Redirect to return URL if provided, otherwise to dashboard
       const destination = returnUrl || "/dashboard";
-      setTimeout(() => router.push(destination), 1000);
+      setTimeout(() => {
+        window.location.href = destination;
+      }, 1000);
     }
-  }, [success, user, router, returnUrl]);
+  }, [success, user, returnUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

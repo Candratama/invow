@@ -37,7 +37,8 @@ function LoginForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push(redirectTo);
+      // Use hard redirect to ensure proper navigation after login
+      window.location.href = redirectTo;
     }
   };
 
