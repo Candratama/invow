@@ -20,7 +20,7 @@ import { ClassicInvoiceTemplate } from "@/components/features/invoice/templates"
 import { useAuth } from "@/lib/auth/auth-context";
 import { useCreateInvoice, useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
 import { useStoreSettings } from "@/lib/hooks/use-store-settings";
-import { storesService } from "@/lib/db/services";
+import { useDefaultStore } from "@/lib/hooks/use-default-store";
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -66,6 +66,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   // Use React Query hooks for subscription status, store settings, and invoice creation
   const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStatus();
   const { data: storeSettings } = useStoreSettings();
+  const { data: defaultStore } = useDefaultStore();
   const createInvoice = useCreateInvoice();
 
   // Initialize invoice if not exists
@@ -203,10 +204,8 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       // Save invoice using React Query mutation
       if (currentInvoice.id && user?.id) {
         try {
-          // Get default store
-          const { data: defaultStore, error: storeError } = await storesService.getDefaultStore();
-          
-          if (storeError || !defaultStore) {
+          // Check if default store is available (already cached by React Query)
+          if (!defaultStore) {
             alert("No store found. Please set up your store first.");
             setIsDownloading(false);
             return;

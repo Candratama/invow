@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Edit2, Trash2, Star } from "lucide-react";
-import { storesService, storeContactsService } from "@/lib/db/services";
+import { storeContactsService } from "@/lib/db/services";
 import type { StoreContact } from "@/lib/db/database.types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +15,8 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { SignatureCanvas } from "@/components/ui/signature-pad";
 import SignaturePad from "signature_pad";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth/auth-context";
 import { storeSettingsQueryKey } from "@/lib/hooks/use-store-settings";
+import { useDefaultStore } from "@/lib/hooks/use-default-store";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -33,7 +33,6 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _onClose = onClose;
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<StoreContact | null>(
     null,
@@ -51,18 +50,8 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
     },
   });
 
-  // React Query: Fetch store
-  const { data: storeData } = useQuery({
-    queryKey: ['default-store'],
-    queryFn: async () => {
-      const { data, error } = await storesService.getDefaultStore();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-  });
-
+  // React Query: Fetch store using shared hook
+  const { data: storeData } = useDefaultStore();
   const storeId = storeData?.id || null;
 
   // React Query: Fetch contacts

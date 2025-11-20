@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { storeSettingsQueryKey } from "@/lib/hooks/use-store-settings";
+import { useQuery } from "@tanstack/react-query";
 
 const optionalText = z.string().optional().or(z.literal(""));
 
@@ -52,7 +53,6 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
   const [logo, setLogo] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [storeId, setStoreId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,47 +75,40 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
     },
   });
 
-  // Load store data
+  // Use React Query to fetch store data
+  const { data: store, isLoading } = useQuery({
+    queryKey: storeSettingsQueryKey,
+    queryFn: async () => {
+      const { data, error } = await storesService.getDefaultStore();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Update form when store data is loaded
   useEffect(() => {
-    async function loadStore() {
-      setLoading(true);
-      try {
-        const { data: store, error } = await storesService.getDefaultStore();
+    if (store) {
+      setStoreId(store.id);
+      setLogo(store.logo || "");
 
-        if (error) {
-          console.error("Failed to load store:", error);
-          return;
-        }
-
-        if (store) {
-          setStoreId(store.id);
-          setLogo(store.logo || "");
-
-          form.reset({
-            name: store.name,
-            address: store.address,
-            whatsapp: store.whatsapp.replace(/^\+62/, ""),
-            phone: store.phone || "",
-            email: store.email || "",
-            website: store.website || "",
-            storeDescription: store.store_description || "",
-            tagline: store.tagline || "",
-            storeNumber: store.store_number || "",
-            paymentMethod: store.payment_method || "",
-            brandColor: store.brand_color,
-            invoicePrefix: store.invoice_prefix || "INV",
-            storeCode: store.store_code,
-          });
-        }
-      } catch (error) {
-        console.error("Error loading store:", error);
-      } finally {
-        setLoading(false);
-      }
+      form.reset({
+        name: store.name,
+        address: store.address,
+        whatsapp: store.whatsapp.replace(/^\+62/, ""),
+        phone: store.phone || "",
+        email: store.email || "",
+        website: store.website || "",
+        storeDescription: store.store_description || "",
+        tagline: store.tagline || "",
+        storeNumber: store.store_number || "",
+        paymentMethod: store.payment_method || "",
+        brandColor: store.brand_color,
+        invoicePrefix: store.invoice_prefix || "INV",
+        storeCode: store.store_code,
+      });
     }
-
-    loadStore();
-  }, [form]);
+  }, [store, form]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -209,7 +202,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500">Loading store settings...</div>
