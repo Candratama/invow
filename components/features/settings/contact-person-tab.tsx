@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { SignatureCanvas } from "@/components/ui/signature-pad";
 import SignaturePad from "signature_pad";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth/auth-context";
+import { storeSettingsQueryKey } from "@/lib/hooks/use-store-settings";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -29,9 +32,8 @@ interface ContactPersonTabProps {
 export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _onClose = onClose;
-  const [contacts, setContacts] = useState<StoreContact[]>([]);
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<StoreContact | null>(
     null,
@@ -40,7 +42,6 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
   const [signatureDraft, setSignatureDraft] = useState<string | undefined>();
   const [isSignatureSheetOpen, setIsSignatureSheetOpen] = useState(false);
   const signaturePadRef = useRef<SignaturePad | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
@@ -50,27 +51,81 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
     },
   });
 
-  // Load store and contacts
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const { data: store } = await storesService.getDefaultStore();
-        if (store) {
-          setStoreId(store.id);
-          const { data: contactsData } =
-            await storeContactsService.getContacts(store.id);
-          setContacts(contactsData || []);
-        }
-      } catch (error) {
-        console.error("Error loading contacts:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
+  // React Query: Fetch store
+  const { data: storeData } = useQuery({
+    queryKey: ['default-store'],
+    queryFn: async () => {
+      const { data, error } = await storesService.getDefaultStore();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
 
-    loadData();
-  }, []);
+  const storeId = storeData?.id || null;
+
+  // React Query: Fetch contacts
+  const { data: contacts = [], isLoading: loading } = useQuery({
+    queryKey: ['store-contacts', storeId],
+    queryFn: async () => {
+      if (!storeId) return [];
+      const { data, error } = await storeContactsService.getContacts(storeId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!storeId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Mutation: Create contact
+  const createContactMutation = useMutation({
+    mutationFn: async (contactData: { store_id: string; name: string; title: string | null; signature: string | null; is_primary: boolean }) => {
+      const { data, error } = await storeContactsService.createContact(contactData);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
+    },
+  });
+
+  // Mutation: Update contact
+  const updateContactMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name: string; title: string | null; signature: string | null } }) => {
+      const { error } = await storeContactsService.updateContact(id, data);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
+    },
+  });
+
+  // Mutation: Delete contact
+  const deleteContactMutation = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await storeContactsService.deleteContact(contactId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
+    },
+  });
+
+  // Mutation: Set primary contact
+  const setPrimaryMutation = useMutation({
+    mutationFn: async ({ storeId, contactId }: { storeId: string; contactId: string }) => {
+      const { error } = await storeContactsService.setPrimaryContact(storeId, contactId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['store-contacts', storeId] });
+      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
+    },
+  });
 
   const handleAddContact = () => {
     setEditingContact(null);
@@ -95,13 +150,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
     if (!window.confirm(`Delete contact "${contact.name}"?`)) return;
 
     try {
-      const { error } = await storeContactsService.deleteContact(contact.id);
-      if (error) {
-        alert(`Failed to delete contact: ${error.message}`);
-        return;
-      }
-
-      setContacts((prev) => prev.filter((c) => c.id !== contact.id));
+      await deleteContactMutation.mutateAsync(contact.id);
       alert("Contact deleted successfully!");
     } catch (error) {
       console.error("Error deleting contact:", error);
@@ -113,22 +162,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
     if (!storeId) return;
 
     try {
-      const { error } = await storeContactsService.setPrimaryContact(
-        storeId,
-        contact.id,
-      );
-      if (error) {
-        alert(`Failed to set primary contact: ${error.message}`);
-        return;
-      }
-
-      // Update local state
-      setContacts((prev) =>
-        prev.map((c) => ({
-          ...c,
-          is_primary: c.id === contact.id,
-        })),
-      );
+      await setPrimaryMutation.mutateAsync({ storeId, contactId: contact.id });
     } catch (error) {
       console.error("Error setting primary contact:", error);
       alert("Failed to set primary contact. Please try again.");
@@ -169,58 +203,28 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
       return;
     }
 
-    setSaving(true);
     try {
       if (editingContact) {
         // Update existing contact
-        const { error } = await storeContactsService.updateContact(
-          editingContact.id,
-          {
+        await updateContactMutation.mutateAsync({
+          id: editingContact.id,
+          data: {
             name: data.name,
             title: data.title || null,
             signature: signature || null,
           },
-        );
-
-        if (error) {
-          alert(`Failed to update contact: ${error.message}`);
-          return;
-        }
-
-        // Update local state
-        setContacts((prev) =>
-          prev.map((c) =>
-            c.id === editingContact.id
-              ? {
-                  ...c,
-                  name: data.name,
-                  title: data.title || null,
-                  signature: signature || null,
-                }
-              : c,
-          ),
-        );
+        });
 
         alert("Contact updated successfully!");
       } else {
         // Create new contact
-        const { data: newContact, error } =
-          await storeContactsService.createContact({
-            store_id: storeId,
-            name: data.name,
-            title: data.title || null,
-            signature: signature || null,
-            is_primary: contacts.length === 0, // First contact is primary
-          });
-
-        if (error) {
-          alert(`Failed to create contact: ${error.message}`);
-          return;
-        }
-
-        if (newContact) {
-          setContacts((prev) => [...prev, newContact]);
-        }
+        await createContactMutation.mutateAsync({
+          store_id: storeId,
+          name: data.name,
+          title: data.title || null,
+          signature: signature || null,
+          is_primary: contacts.length === 0, // First contact is primary
+        });
 
         alert("Contact added successfully!");
       }
@@ -232,8 +236,6 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
     } catch (error) {
       console.error("Error saving contact:", error);
       alert("Failed to save contact. Please try again.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -442,9 +444,9 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
                 type="submit"
                 form="contact-form"
                 className="flex-1"
-                disabled={saving}
+                disabled={createContactMutation.isPending || updateContactMutation.isPending}
               >
-                {saving ? "Saving..." : editingContact ? "Update" : "Add Contact"}
+                {(createContactMutation.isPending || updateContactMutation.isPending) ? "Saving..." : editingContact ? "Update" : "Add Contact"}
               </Button>
             </div>
           </form>

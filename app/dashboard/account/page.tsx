@@ -11,48 +11,24 @@ import PaymentSuccessHandler from "@/components/features/payment/success-handler
 import { StoreSettingsTab } from "@/components/features/settings/store-settings-tab";
 import { ContactPersonTab } from "@/components/features/settings/contact-person-tab";
 import { UserPreferencesTab } from "@/components/features/settings/user-preferences-tab";
-
-interface SubscriptionData {
-  tier: "free" | "starter" | "pro";
-  invoiceLimit: number;
-  currentMonthCount: number;
-  remainingInvoices: number;
-}
+import { useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AccountPage() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [refreshTrigger, setRefreshTrigger] = useState(false);
   const [activeTab, setActiveTab] = useState<"subscription" | "store" | "contacts" | "preferences">("subscription");
+
+  // Use React Query for subscription data - automatic caching and background refetching
+  const { data: subscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/");
     }
   }, [user, loading, router]);
-
-  // Fetch subscription data to determine if user needs upgrade button
-  const fetchSubscription = async () => {
-    try {
-      const response = await fetch("/api/subscriptions/current");
-      if (response.ok) {
-        const data: SubscriptionData = await response.json();
-        setSubscription(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch subscription:", err);
-    } finally {
-      setSubscriptionLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchSubscription();
-    }
-  }, [user]);
 
   if (loading) {
     return <LoadingSpinner message="Loading account..." />;
@@ -76,8 +52,8 @@ export default function AccountPage() {
   const handlePaymentSuccess = () => {
     // Trigger subscription refresh after successful payment
     setRefreshTrigger((prev) => !prev);
-    // Also refetch for the upgrade button logic
-    fetchSubscription();
+    // Invalidate React Query cache to refetch subscription data
+    queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
   };
   
   return (

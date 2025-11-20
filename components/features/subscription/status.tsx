@@ -1,16 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { RefreshCw, Zap, Crown, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface SubscriptionData {
-  tier: "free" | "starter" | "pro";
-  invoiceLimit: number;
-  currentMonthCount: number;
-  remainingInvoices: number;
-  resetDate?: string; // ISO date string
-}
+import { useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SubscriptionStatusProps {
   className?: string;
@@ -21,57 +15,27 @@ export default function SubscriptionStatus({
   className = "",
   triggerRefresh = false,
 }: SubscriptionStatusProps) {
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch subscription data
-  const fetchSubscription = async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setError(null);
-
-    try {
-      const response = await fetch("/api/subscriptions/current");
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch subscription");
-      }
-
-      const data: SubscriptionData = await response.json();
-      setSubscription(data);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  // Initial fetch on mount
-  useEffect(() => {
-    fetchSubscription();
-  }, []);
+  const queryClient = useQueryClient();
+  
+  // Use React Query for subscription data - automatic caching and background refetching
+  const { 
+    data: subscription, 
+    isLoading, 
+    error,
+    refetch,
+    isFetching
+  } = useSubscriptionStatus();
 
   // Refresh when external trigger changes (e.g., after payment)
   useEffect(() => {
     if (triggerRefresh) {
-      fetchSubscription();
+      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
     }
-  }, [triggerRefresh]);
+  }, [triggerRefresh, queryClient]);
 
   // Manual refresh handler
   const handleRefresh = () => {
-    fetchSubscription(true);
+    refetch();
   };
 
   // Get tier display info
@@ -135,7 +99,9 @@ export default function SubscriptionStatus({
     return (
       <div className={`rounded-lg border bg-card p-6 shadow-sm ${className}`}>
         <div className="space-y-3">
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-red-600">
+            {error instanceof Error ? error.message : 'Failed to load subscription'}
+          </p>
           <Button variant="outline" size="sm" onClick={handleRefresh}>
             Retry
           </Button>
@@ -173,11 +139,11 @@ export default function SubscriptionStatus({
             variant="ghost"
             size="icon"
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isFetching}
             className="h-8 w-8"
           >
             <RefreshCw
-              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
             />
           </Button>
         </div>

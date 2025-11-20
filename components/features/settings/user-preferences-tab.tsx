@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { userPreferencesService, storesService } from "@/lib/db/services";
-import type { Store } from "@/lib/db/database.types";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth/auth-context";
 
 const preferencesSchema = z.object({
   preferred_language: z.enum(["en", "id", "es", "fr", "de", "zh", "ja", "ko"]),
@@ -104,9 +105,8 @@ const currencies = [
 ];
 
 export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [stores, setStores] = useState<Store[]>([]);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [detectingTimezone, setDetectingTimezone] = useState(false);
 
   // Function to detect user's timezone
@@ -189,82 +189,35 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
     },
   });
 
-  // Load preferences and stores
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        // Load preferences
-        const { data: prefs } = await userPreferencesService.getPreferences();
+  // React Query: Fetch user preferences
+  const { data: preferences, isLoading: loadingPreferences } = useQuery({
+    queryKey: ['user-preferences'],
+    queryFn: async () => {
+      const { data, error } = await userPreferencesService.getPreferences();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-        if (prefs) {
-          form.reset({
-            preferred_language: prefs.preferred_language as "en" | "id" | "es" | "fr" | "de" | "zh" | "ja" | "ko",
-            timezone: prefs.timezone,
-            date_format: prefs.date_format,
-            currency: prefs.currency,
-            default_store_id: prefs.default_store_id || undefined,
-          });
-        } else {
-          // Auto-detect timezone for new users
-          try {
-            const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const timezoneExists = timezones.some(tz => tz.value === detectedTimezone);
+  // React Query: Fetch stores
+  const { data: stores = [], isLoading: loadingStores } = useQuery({
+    queryKey: ['stores'],
+    queryFn: async () => {
+      const { data, error } = await storesService.getStores();
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
 
-            if (timezoneExists) {
-              form.setValue("timezone", detectedTimezone);
-            } else {
-              // Find fallback based on UTC offset (same logic as detectUserTimezone but silent)
-              const offset = new Date().getTimezoneOffset();
-              const isNegative = offset <= 0;
-              const hours = Math.floor(Math.abs(offset) / 60);
-              const minutes = Math.abs(offset) % 60;
+  const loading = loadingPreferences || loadingStores;
 
-              let fallbackTimezone = "UTC";
-
-              if (!isNegative && hours === 7 && minutes === 0) {
-                fallbackTimezone = "Asia/Jakarta";
-              } else if (!isNegative && hours === 8 && minutes === 0) {
-                fallbackTimezone = "Asia/Singapore";
-              } else if (!isNegative && hours === 5 && minutes === 30) {
-                fallbackTimezone = "Indian/Mumbai";
-              } else if (!isNegative && hours === 9 && minutes === 0) {
-                fallbackTimezone = "Asia/Tokyo";
-              } else if (isNegative && hours === 5 && minutes === 0) {
-                fallbackTimezone = "America/New_York";
-              } else if (isNegative && hours === 8 && minutes === 0) {
-                fallbackTimezone = "America/Los_Angeles";
-              } else if (isNegative && hours === 6 && minutes === 0) {
-                fallbackTimezone = "America/Chicago";
-              } else if (isNegative && hours === 0 && minutes === 0) {
-                fallbackTimezone = "Europe/London";
-              } else if (!isNegative && hours === 1 && minutes === 0) {
-                fallbackTimezone = "Europe/Paris";
-              }
-
-              form.setValue("timezone", fallbackTimezone);
-            }
-          } catch (error) {
-            console.error("Error auto-detecting timezone:", error);
-          }
-        }
-
-        // Load stores for default store selector
-        const { data: storesData } = await storesService.getStores();
-        setStores(storesData || []);
-      } catch (error) {
-        console.error("Error loading preferences:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
-  }, [form]);
-
-  const onSubmit = async (data: PreferencesFormData) => {
-    setSaving(true);
-    try {
+  // Mutation: Save preferences
+  const savePreferencesMutation = useMutation({
+    mutationFn: async (data: PreferencesFormData) => {
       const { error } = await userPreferencesService.upsertPreferences({
         preferred_language: data.preferred_language,
         timezone: data.timezone,
@@ -272,19 +225,76 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
         currency: data.currency,
         default_store_id: data.default_store_id || null,
       });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
+    },
+  });
 
-      if (error) {
-        alert(`Failed to save preferences: ${error.message}`);
-        return;
+  // Load preferences into form when data is available
+  useEffect(() => {
+    if (preferences) {
+      form.reset({
+        preferred_language: preferences.preferred_language as "en" | "id" | "es" | "fr" | "de" | "zh" | "ja" | "ko",
+        timezone: preferences.timezone,
+        date_format: preferences.date_format,
+        currency: preferences.currency,
+        default_store_id: preferences.default_store_id || undefined,
+      });
+    } else if (!loadingPreferences) {
+      // Auto-detect timezone for new users
+      try {
+        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const timezoneExists = timezones.some(tz => tz.value === detectedTimezone);
+
+        if (timezoneExists) {
+          form.setValue("timezone", detectedTimezone);
+        } else {
+          // Find fallback based on UTC offset
+          const offset = new Date().getTimezoneOffset();
+          const isNegative = offset <= 0;
+          const hours = Math.floor(Math.abs(offset) / 60);
+          const minutes = Math.abs(offset) % 60;
+
+          let fallbackTimezone = "UTC";
+
+          if (!isNegative && hours === 7 && minutes === 0) {
+            fallbackTimezone = "Asia/Jakarta";
+          } else if (!isNegative && hours === 8 && minutes === 0) {
+            fallbackTimezone = "Asia/Singapore";
+          } else if (!isNegative && hours === 5 && minutes === 30) {
+            fallbackTimezone = "Indian/Mumbai";
+          } else if (!isNegative && hours === 9 && minutes === 0) {
+            fallbackTimezone = "Asia/Tokyo";
+          } else if (isNegative && hours === 5 && minutes === 0) {
+            fallbackTimezone = "America/New_York";
+          } else if (isNegative && hours === 8 && minutes === 0) {
+            fallbackTimezone = "America/Los_Angeles";
+          } else if (isNegative && hours === 6 && minutes === 0) {
+            fallbackTimezone = "America/Chicago";
+          } else if (isNegative && hours === 0 && minutes === 0) {
+            fallbackTimezone = "Europe/London";
+          } else if (!isNegative && hours === 1 && minutes === 0) {
+            fallbackTimezone = "Europe/Paris";
+          }
+
+          form.setValue("timezone", fallbackTimezone);
+        }
+      } catch (error) {
+        console.error("Error auto-detecting timezone:", error);
       }
+    }
+  }, [preferences, loadingPreferences, form]);
 
+  const onSubmit = async (data: PreferencesFormData) => {
+    try {
+      await savePreferencesMutation.mutateAsync(data);
       alert("Preferences saved successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving preferences:", error);
       alert("Failed to save preferences. Please try again.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -472,9 +482,9 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
             form="preferences-form"
             className="flex-1"
             size="lg"
-            disabled={saving}
+            disabled={savePreferencesMutation.isPending}
           >
-            {saving ? "Saving..." : "Save Preferences"}
+            {savePreferencesMutation.isPending ? "Saving..." : "Save Preferences"}
           </Button>
         </div>
       </div>

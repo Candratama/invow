@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { storeSettingsQueryKey } from "@/lib/hooks/use-store-settings";
 
 const optionalText = z.string().optional().or(z.literal(""));
 
@@ -46,6 +48,7 @@ interface StoreSettingsTabProps {
 }
 
 export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
+  const queryClient = useQueryClient();
   const [logo, setLogo] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -192,6 +195,9 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
         alert(`Failed to save store: ${error.message}`);
         return;
       }
+
+      // Invalidate React Query cache to refetch store settings
+      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
 
       alert("Store settings saved successfully!");
       onClose();
