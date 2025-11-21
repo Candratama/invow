@@ -5,7 +5,7 @@ export function InvoicesListSkeleton() {
       <div className="h-6 w-32 bg-gray-200 rounded mb-4 animate-pulse" />
 
       {/* Invoice items */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 lg:gap-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}

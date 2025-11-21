@@ -21,7 +21,7 @@ export const storeSettingsQueryKey = ['store-settings'] as const;
  */
 export function useStoreSettings() {
   const { user } = useAuth();
-
+  
   return useQuery({
     queryKey: storeSettingsQueryKey,
     queryFn: async (): Promise<StoreSettings | null> => {
@@ -67,6 +67,7 @@ export function useStoreSettings() {
       return storeSettings;
     },
     enabled: !!user?.id,
-    staleTime: 30 * 60 * 1000, // 30 minutes - store settings rarely change
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduced from 30 for fresher data
+    refetchOnWindowFocus: true, // Refetch when window regains focus for multi-tab consistency
   });
 }

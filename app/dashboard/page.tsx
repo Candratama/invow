@@ -313,7 +313,7 @@ export default function HomePage() {
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
                   Your Invoices
                 </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 lg:gap-3">
                   {completedInvoices.map((invoice) => (
                     <InvoiceCard
                       key={invoice.id}

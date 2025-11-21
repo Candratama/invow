@@ -57,7 +57,7 @@ export function ClassicInvoiceTemplate({
     taxPercentage
   );
   
-  const brandColor = storeSettings?.brandColor || "#d4af37";
+  const brandColor = storeSettings?.brandColor || "#EFBF04";
   const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
   const contactLine = [storeSettings?.whatsapp, storeSettings?.email]
     .map((entry) => (typeof entry === "string" ? entry.trim() : ""))

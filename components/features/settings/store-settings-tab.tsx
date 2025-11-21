@@ -189,7 +189,10 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
       }
 
       // Invalidate React Query cache to refetch store settings
-      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
+      await queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
+      
+      // Wait a bit to ensure refetch completes before closing dialog
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       toast.success("Store settings saved successfully!");
       onClose();

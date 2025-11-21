@@ -21,8 +21,8 @@ export async function generateJPEGFromInvoice(
       throw new Error("Invoice content element not found");
     }
 
-    // Wait a bit for fonts and images to load
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // Wait for fonts, images, and styles (including brand color) to fully render
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Fetch user export quality preference
     let qualityLimitKB: 50 | 100 | 150 = 100; // Default to Medium

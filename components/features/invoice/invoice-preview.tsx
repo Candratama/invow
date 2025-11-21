@@ -69,7 +69,21 @@ export function InvoicePreview({
 
   const total = calculation.total;
   const taxAmount = calculation.taxAmount;
-  const brandColor = storeSettings?.brandColor || "#d4af37";
+  
+  // Show loading state while storeSettings is being fetched
+  if (storeSettings === null) {
+    return (
+      <div className="min-h-screen bg-gray-100 lg:bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-12 w-12 text-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading store settings...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const brandColor = storeSettings.brandColor || "#10b981";
+  
   const splitCurrency = (value: number) => {
     const normalized = formatCurrency(value)
       .replace(/\u00A0/g, " ")

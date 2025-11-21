@@ -17,7 +17,7 @@
         --popover-foreground:
             0 0% 3.9%;
         --primary:
-            45 93% 47%; /* Gold color */
+            45 65% 50%; /* Gold/Yellow */
         --primary-foreground:
             0 0% 100%; /* White text */
         --secondary:
@@ -41,7 +41,7 @@
         --input:
             0 0% 89.8%;
         --ring:
-            45 93% 47%; /* Gold ring */
+            45 93% 47%; /* Gold/Yellow ring to match primary */
         --radius:
             0.5rem;
         --chart-1:
