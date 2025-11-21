@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { Invoice, StoreSettings } from "../types";
 import { sanitizeFilename } from "../utils";
 import { exportAsJPEG, ImageExportError } from "./image-export.service";
@@ -64,17 +65,17 @@ export async function generateJPEGFromInvoice(
     console.log(`✅ JPEG generated and downloaded successfully (${fileSizeKB}KB)`);
     
     // Show success message to user
-    alert(`Invoice exported successfully!\nFile size: ${fileSizeKB}KB`);
+    toast.success(`Invoice exported successfully! (${fileSizeKB}KB)`);
   } catch (error) {
     console.error("❌ JPEG generation error:", error);
     
     // Handle export errors with user-friendly messages
     if (error instanceof ImageExportError) {
-      alert(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`);
     } else if (error instanceof Error) {
-      alert(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`);
     } else {
-      alert("Export failed: An unexpected error occurred");
+      toast.error("Export failed: An unexpected error occurred");
     }
     
     throw error;

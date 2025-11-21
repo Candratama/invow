@@ -24,6 +24,40 @@ interface PaginatedInvoicesResponse {
 }
 
 /**
+ * Custom hook to fetch ALL invoices for revenue calculation
+ * This is separate from paginated invoices to avoid re-calculating revenue on page change
+ * 
+ * Features:
+ * - Fetches all invoices (no pagination)
+ * - Automatic caching with 5-minute stale time
+ * - Used only for revenue metrics calculation
+ * 
+ * @returns React Query result with all invoices
+ */
+export function useAllInvoices() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['invoices', 'all'] as const,
+    queryFn: async () => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await invoicesService.getInvoices('synced');
+
+      if (error) {
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
  * Custom hook to fetch paginated invoices with React Query
  * 
  * Features:

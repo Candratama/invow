@@ -4,15 +4,25 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Download, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Download, Loader2, AlertTriangle, Eye } from "lucide-react";
+import { toast } from "sonner";
 import { useInvoiceStore } from "@/lib/store";
 import { InvoiceItem, Invoice } from "@/lib/types";
-import { formatCurrency, parseLocalDate, formatDateForInput, generateInvoiceNumber } from "@/lib/utils";
+import { formatCurrency, parseLocalDate, formatDateForInput, generateInvoiceNumber, formatDate, generateUUID } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ItemRow } from "@/components/features/invoice/item-row";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
@@ -52,18 +62,20 @@ interface InvoiceFormProps {
 export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   const {
     currentInvoice,
+    setCurrentInvoice,
     updateCurrentInvoice,
     addInvoiceItem,
     updateInvoiceItem,
     removeInvoiceItem,
     calculateTotals,
-    initializeNewInvoice,
   } = useInvoiceStore();
 
   const { user } = useAuth();
+  
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   
   // Tax preferences state
   const [taxEnabled, setTaxEnabled] = useState(false);
@@ -75,28 +87,64 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   const { data: defaultStore } = useDefaultStore();
   const createInvoice = useCreateInvoice();
 
-  // Initialize invoice if not exists and generate proper invoice number
+  // Initialize invoice when component mounts
   useEffect(() => {
     const initInvoice = async () => {
-      if (!currentInvoice) {
-        initializeNewInvoice();
-      } else if (currentInvoice && !currentInvoice.invoiceNumber?.includes('-')) {
-        // If invoice number doesn't have proper format, regenerate it
-        if (user?.id && defaultStore?.id && currentInvoice.invoiceDate) {
-          const dateStr = formatDateForInput(new Date(currentInvoice.invoiceDate));
-          const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
-          const newInvoiceNumber = generateInvoiceNumber(
-            new Date(currentInvoice.invoiceDate),
-            user.id,
-            sequence || 1
-          );
-          updateCurrentInvoice({ invoiceNumber: newInvoiceNumber });
-        }
+      // Wait for both user and defaultStore to be available
+      if (!user?.id || !defaultStore?.id) {
+        console.log('⏳ Waiting for user or store...', { userId: user?.id, storeId: defaultStore?.id });
+        return;
+      }
+
+      // Check if we need to initialize or fix existing invoice
+      const needsInit = !currentInvoice;
+      const needsFix = currentInvoice?.invoiceNumber?.includes('XXXXXXXX');
+
+      if (!needsInit && !needsFix) {
+        console.log('✅ Invoice already properly initialized');
+        return;
+      }
+
+      console.log('🚀 Initializing/fixing invoice with userId:', user.id);
+
+      // Get sequence number for today
+      const today = new Date();
+      const dateStr = formatDateForInput(today);
+      const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
+      
+      // Generate invoice number with actual user ID
+      const invoiceNumber = generateInvoiceNumber(today, user.id, sequence || 1);
+      
+      console.log('✅ Generated invoice number:', invoiceNumber);
+
+      if (needsInit) {
+        // Initialize new invoice with proper invoice number
+        const newInvoice: Partial<Invoice> = {
+          id: generateUUID(),
+          invoiceNumber,
+          invoiceDate: today,
+          dueDate: today,
+          customer: { name: "", email: "", status: "Customer" },
+          items: [],
+          subtotal: 0,
+          shippingCost: 0,
+          total: 0,
+          status: "draft",
+          createdAt: today,
+          updatedAt: today,
+        };
+
+        setCurrentInvoice(newInvoice);
+        console.log('✨ New invoice initialized');
+      } else if (needsFix) {
+        // Fix existing invoice number
+        updateCurrentInvoice({ invoiceNumber });
+        console.log('🔧 Invoice number fixed');
       }
     };
     
     initInvoice();
-  }, [currentInvoice, initializeNewInvoice, user?.id, defaultStore?.id, updateCurrentInvoice]);
+  }, [user?.id, defaultStore?.id, currentInvoice, setCurrentInvoice, updateCurrentInvoice]);
 
   // Fetch tax preferences on mount
   useEffect(() => {
@@ -193,11 +241,13 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           const dateStr = String(value);
           const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
           const newInvoiceNumber = generateInvoiceNumber(newDate, user.id, sequence || 1);
+          console.log('📅 Date changed, new invoice number:', newInvoiceNumber);
           updateCurrentInvoice({
             [field]: newDate,
             invoiceNumber: newInvoiceNumber,
           });
         } else {
+          console.warn('⚠️ Cannot regenerate invoice number: user or store not available');
           updateCurrentInvoice({
             [field]: newDate,
           });
@@ -247,7 +297,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       !currentInvoice.items ||
       currentInvoice.items.length === 0
     ) {
-      alert("Please add at least one item to the invoice");
+      toast.error("Please add at least one item to the invoice");
       return;
     }
 
@@ -261,7 +311,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
         try {
           // Check if default store is available (already cached by React Query)
           if (!defaultStore) {
-            alert("No store found. Please set up your store first.");
+            toast.error("No store found. Please set up your store first.");
             setIsDownloading(false);
             return;
           }
@@ -317,9 +367,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           // Display appropriate error messages
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           if (errorMessage.includes('limit reached')) {
-            alert("You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices.");
+            toast.error("You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices.");
           } else {
-            alert(errorMessage || "Failed to save invoice. Please try again.");
+            toast.error(errorMessage || "Failed to save invoice. Please try again.");
           }
           
           setIsDownloading(false);
@@ -334,7 +384,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       }
     } catch (error) {
       console.error("Download error:", error);
-      alert("Failed to download invoice. Please try Preview instead.");
+      toast.error("Failed to download invoice. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -520,7 +570,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                 </div>
 
                 <div className="flex justify-between items-center text-base">
-                  <span className="text-gray-600">Ongkos Kirim</span>
+                  <span className="text-gray-600">Shipping</span>
                   <CurrencyInput
                     value={currentInvoice.shippingCost || 0}
                     onChange={(value) => {
@@ -612,30 +662,165 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             </div>
           )}
 
-          <Button
-            type="button"
-            onClick={handleQuickDownload}
-            disabled={
-              !currentInvoice.items ||
-              currentInvoice.items.length === 0 ||
-              isDownloading ||
-              (!isLoadingSubscription && subscriptionStatus?.remainingInvoices === 0)
-            }
-            className="gap-2 w-full"
-            size="lg"
-          >
-            {isDownloading ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                Downloading...
-              </>
-            ) : (
-              <>
-                <Download size={20} />
-                Download JPEG
-              </>
-            )}
-          </Button>
+          <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                disabled={
+                  !currentInvoice.items ||
+                  currentInvoice.items.length === 0 ||
+                  isDownloading ||
+                  (!isLoadingSubscription && subscriptionStatus?.remainingInvoices === 0)
+                }
+                className="gap-2 w-full"
+                size="lg"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Eye size={20} />
+                    Review & Download
+                  </>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Review Invoice Details</DialogTitle>
+                <DialogDescription>
+                  Please review the invoice details before downloading
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 py-4">
+                {/* Invoice Info */}
+                <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-500">Invoice Number</p>
+                    <p className="text-sm font-semibold">{currentInvoice.invoiceNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Date</p>
+                    <p className="text-sm font-semibold">
+                      {formatDate(new Date(currentInvoice.invoiceDate || new Date()))}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Customer</p>
+                    <p className="text-sm font-semibold">{currentInvoice.customer?.name || 'No customer'}</p>
+                    {currentInvoice.customer?.address && (
+                      <p className="text-xs text-gray-600">{currentInvoice.customer.address}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Items ({currentInvoice.items?.length || 0})
+                  </p>
+                  <div className="space-y-2">
+                    {currentInvoice.items?.map((item) => (
+                      <div key={item.id} className="flex justify-between items-start text-sm">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="font-medium truncate">{item.description}</p>
+                          <p className="text-xs text-gray-600">
+                            {item.quantity} × {formatCurrency(item.price)}
+                          </p>
+                        </div>
+                        <p className="font-semibold whitespace-nowrap">
+                          {formatCurrency(item.subtotal)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="p-3 bg-gray-50 rounded-lg space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium">
+                      {formatCurrency(currentInvoice.subtotal || 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Shipping</span>
+                    <span className="font-medium">
+                      {formatCurrency(currentInvoice.shippingCost || 0)}
+                    </span>
+                  </div>
+                  {taxEnabled && taxPercentage > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tax ({taxPercentage}%)</span>
+                      <span className="font-medium">
+                        {formatCurrency(calculateTotal(
+                          currentInvoice.subtotal || 0,
+                          currentInvoice.shippingCost || 0,
+                          taxEnabled,
+                          taxPercentage
+                        ).taxAmount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-bold pt-1.5 border-t border-gray-300">
+                    <span>Total</span>
+                    <span className="text-primary">
+                      {formatCurrency(calculateTotal(
+                        currentInvoice.subtotal || 0,
+                        currentInvoice.shippingCost || 0,
+                        taxEnabled,
+                        taxPercentage
+                      ).total)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Note if exists */}
+                {currentInvoice.note && (
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs font-medium text-gray-700 mb-1">Note</p>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                      {currentInvoice.note}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsReviewDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsReviewDialogOpen(false);
+                    handleQuickDownload();
+                  }}
+                  disabled={isDownloading}
+                  className="gap-2"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Download JPEG
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

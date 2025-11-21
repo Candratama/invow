@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { toast } from "sonner";
 import { Plus, Edit2, Trash2, Star } from "lucide-react";
 import { storeContactsService } from "@/lib/db/services";
 import type { StoreContact } from "@/lib/db/database.types";
@@ -140,10 +141,10 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
 
     try {
       await deleteContactMutation.mutateAsync(contact.id);
-      alert("Contact deleted successfully!");
+      toast.success("Contact deleted successfully!");
     } catch (error) {
       console.error("Error deleting contact:", error);
-      alert("Failed to delete contact. Please try again.");
+      toast.error("Failed to delete contact. Please try again.");
     }
   };
 
@@ -154,7 +155,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
       await setPrimaryMutation.mutateAsync({ storeId, contactId: contact.id });
     } catch (error) {
       console.error("Error setting primary contact:", error);
-      alert("Failed to set primary contact. Please try again.");
+      toast.error("Failed to set primary contact. Please try again.");
     }
   };
 
@@ -172,13 +173,13 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
     let latestSignature = signatureDraft;
     if (!latestSignature && signaturePadRef.current) {
       if (signaturePadRef.current.isEmpty()) {
-        alert("Please draw a signature first.");
+        toast.error("Please draw a signature first.");
         return;
       }
       latestSignature = signaturePadRef.current.toDataURL("image/png");
     }
     if (!latestSignature) {
-      alert("Please draw a signature first.");
+      toast.error("Please draw a signature first.");
       return;
     }
     setSignature(latestSignature);
@@ -188,7 +189,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
 
   const onSubmit = async (data: ContactFormData) => {
     if (!storeId) {
-      alert("Store not found. Please refresh and try again.");
+      toast.error("Store not found. Please refresh and try again.");
       return;
     }
 
@@ -204,7 +205,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
           },
         });
 
-        alert("Contact updated successfully!");
+        toast.success("Contact updated successfully!");
       } else {
         // Create new contact
         await createContactMutation.mutateAsync({
@@ -215,7 +216,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
           is_primary: contacts.length === 0, // First contact is primary
         });
 
-        alert("Contact added successfully!");
+        toast.success("Contact added successfully!");
       }
 
       setIsEditOpen(false);
@@ -224,7 +225,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
       setSignature("");
     } catch (error) {
       console.error("Error saving contact:", error);
-      alert("Failed to save contact. Please try again.");
+      toast.error("Failed to save contact. Please try again.");
     }
   };
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Plus, CheckCircle } from "lucide-react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Logo } from "@/components/ui/logo";
 import { InvoiceForm } from "@/components/features/invoice/invoice-form";
 import { InvoicePreview } from "@/components/features/invoice/invoice-preview";
@@ -11,13 +12,14 @@ import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Pagination } from "@/components/ui/pagination";
+import { InvoiceCard } from "@/components/features/dashboard/invoice-card";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
-import { formatDate, formatCurrency, parseLocalDate } from "@/lib/utils";
+import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { calculateRevenueMetrics } from "@/lib/utils/revenue";
-import { useInvoices, useSubscriptionStatus, useDeleteInvoice } from "@/lib/hooks/use-dashboard-data";
+import { useAllInvoices, useInvoices, useSubscriptionStatus, useDeleteInvoice } from "@/lib/hooks/use-dashboard-data";
 import { useStoreSettings } from "@/lib/hooks/use-store-settings";
 
 function PreviewView({
@@ -41,7 +43,7 @@ function PreviewView({
       if (currentInvoice.id) {
         const result = await saveCompleted();
         if (!result.success) {
-          alert(result.error || "Failed to save invoice");
+          toast.error(result.error || "Failed to save invoice");
           setIsGenerating(false);
           return;
         }
@@ -53,7 +55,7 @@ function PreviewView({
       onComplete();
     } catch (error) {
       console.error("Error generating JPEG:", error);
-      alert("Failed to generate JPEG. Please try again.");
+      toast.error("Failed to generate JPEG. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -106,13 +108,39 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
 
   // React Query hooks - automatic caching and background refetching
+  const { data: allInvoicesData, isLoading: allInvoicesLoading } = useAllInvoices();
   const { data: invoicesData, isLoading: invoicesLoading, isError } = useInvoices(currentPage, 10);
   const { data: subscriptionStatus } = useSubscriptionStatus();
   
   // Mutation hook for deleting invoices with optimistic updates
   const deleteInvoice = useDeleteInvoice();
 
-  // Calculate revenue metrics from cached invoice data
+  // Calculate revenue metrics from ALL invoices (not paginated)
+  const allCompletedInvoices = allInvoicesData?.map(inv => ({
+    id: inv.id,
+    invoiceNumber: inv.invoice_number,
+    invoiceDate: parseLocalDate(inv.invoice_date),
+    dueDate: parseLocalDate(inv.invoice_date),
+    customer: {
+      name: inv.customer_name,
+      email: inv.customer_email || "",
+      status: (inv.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
+      address: inv.customer_address || ""
+    },
+    items: [], // Not needed for revenue calculation
+    subtotal: inv.subtotal,
+    shippingCost: inv.shipping_cost,
+    total: inv.total,
+    note: inv.note || undefined,
+    status: 'completed' as const,
+    createdAt: new Date(inv.created_at),
+    updatedAt: new Date(inv.updated_at),
+    syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined
+  })) || [];
+
+  const revenueMetrics = calculateRevenueMetrics(allCompletedInvoices);
+
+  // Transform paginated invoices for display
   const completedInvoices = invoicesData?.invoices.map(inv => ({
     id: inv.id,
     invoiceNumber: inv.invoice_number,
@@ -141,8 +169,8 @@ export default function HomePage() {
     syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined
   })) || [];
 
-  const revenueMetrics = calculateRevenueMetrics(completedInvoices);
   const isLoading = invoicesLoading && !invoicesData;
+  const isRevenueLoading = allInvoicesLoading && !allInvoicesData;
 
   // Show loading while checking auth
   if (authLoading) {
@@ -190,7 +218,7 @@ export default function HomePage() {
       } catch (error) {
         // Error message - rollback already handled by the mutation hook
         const errorMessage = error instanceof Error ? error.message : "Failed to delete invoice";
-        alert(`Failed to delete invoice: ${errorMessage}`);
+        toast.error(`Failed to delete invoice: ${errorMessage}`);
       }
     }
   };
@@ -264,7 +292,7 @@ export default function HomePage() {
           <RevenueCards
             metrics={revenueMetrics}
             subscriptionStatus={subscriptionStatus || null}
-            isLoading={isLoading}
+            isLoading={isRevenueLoading}
           />
 
           {/* Invoices List */}
@@ -285,47 +313,13 @@ export default function HomePage() {
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
                   {completedInvoices.map((invoice) => (
-                      <div
-                        key={invoice.id}
-                        className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between p-3">
-                          <button
-                            onClick={() => handleOpenCompleted(invoice.id)}
-                            className="flex-1 min-w-0 pr-2 text-left"
-                          >
-                            <div className="font-medium text-gray-900 truncate">
-                              {invoice.invoiceNumber}
-                            </div>
-                            <div className="text-sm text-gray-600 truncate">
-                              {invoice.customer.name || "No customer"}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {invoice.items?.length || 0} item
-                              {invoice.items?.length !== 1 ? "s" : ""} •{" "}
-                              {formatDate(invoice.invoiceDate)}
-                            </div>
-                          </button>
-                          <div className="ml-3 flex-shrink-0 flex flex-col items-end gap-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle size={18} className="text-primary" />
-                              <button
-                                onClick={(e) =>
-                                  handleDeleteCompleted(e, invoice.id)
-                                }
-                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 text-red-600 transition-colors"
-                                aria-label="Delete invoice"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {formatCurrency(invoice.total || 0)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                    <InvoiceCard
+                      key={invoice.id}
+                      invoice={invoice}
+                      onOpen={handleOpenCompleted}
+                      onDelete={handleDeleteCompleted}
+                    />
+                  ))}
                 </div>
 
                 {/* Pagination */}

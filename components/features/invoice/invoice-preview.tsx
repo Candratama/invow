@@ -1,10 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Eye } from "lucide-react";
 import { Invoice, StoreSettings } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { userPreferencesService } from "@/lib/db/services/user-preferences.service";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
 
@@ -33,6 +42,7 @@ export function InvoicePreview({
   // State for tax preferences
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch user preferences on mount
   useEffect(() => {
@@ -654,24 +664,149 @@ export function InvoicePreview({
       {/* Download Button - Fixed at bottom on mobile, centered on desktop */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 lg:static lg:border-t-0 lg:mt-8 lg:p-0">
         <div className="max-w-5xl mx-auto lg:max-w-md">
-          <Button
-            onClick={onDownloadJPEG}
-            disabled={isGenerating}
-            className="w-full gap-2"
-            size="lg"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Download size={20} />
-                Download as JPEG
-              </>
-            )}
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                disabled={isGenerating}
+                className="w-full gap-2"
+                size="lg"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Eye size={20} />
+                    Review & Download
+                  </>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Review Invoice Details</DialogTitle>
+                <DialogDescription>
+                  Please review the invoice details before downloading
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 py-4">
+                {/* Invoice Info */}
+                <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-500">Invoice Number</p>
+                    <p className="text-sm font-semibold">{invoiceNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Date</p>
+                    <p className="text-sm font-semibold">
+                      {formatDate(new Date(invoiceDate))}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Customer</p>
+                    <p className="text-sm font-semibold">{customer.name}</p>
+                    {customer.address && (
+                      <p className="text-xs text-gray-600">{customer.address}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Items ({items.length})
+                  </p>
+                  <div className="space-y-2">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex justify-between items-start text-sm">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="font-medium truncate">{item.description}</p>
+                          <p className="text-xs text-gray-600">
+                            {item.quantity} × {formatCurrency(item.price)}
+                          </p>
+                        </div>
+                        <p className="font-semibold whitespace-nowrap">
+                          {formatCurrency(item.subtotal)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="p-3 bg-gray-50 rounded-lg space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium">
+                      {formatCurrency(subtotal)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Shipping</span>
+                    <span className="font-medium">
+                      {formatCurrency(shippingCost)}
+                    </span>
+                  </div>
+                  {taxEnabled && taxPercentage > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tax ({taxPercentage}%)</span>
+                      <span className="font-medium">
+                        {formatCurrency(taxAmount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-bold pt-1.5 border-t border-gray-300">
+                    <span>Total</span>
+                    <span style={{ color: brandColor }}>
+                      {formatCurrency(total)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Note if exists */}
+                {invoice.note && (
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs font-medium text-gray-700 mb-1">Note</p>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                      {invoice.note}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    onDownloadJPEG();
+                  }}
+                  disabled={isGenerating}
+                  className="gap-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Download JPEG
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

@@ -112,7 +112,7 @@ export class InvoicesService {
           { count: "exact" }
         )
         .eq("user_id", user.id)
-        .order("invoice_date", { ascending: false }); // DESC order - newest first by invoice date
+        .order("created_at", { ascending: false }); // DESC order - newest created first
 
       if (status) {
         query = query.eq("status", status);

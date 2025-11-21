@@ -23,7 +23,7 @@ interface InvoiceStore {
   removeInvoiceItem: (id: string) => void;
 
   // Initialize new invoice
-  initializeNewInvoice: () => void;
+  initializeNewInvoice: (userId?: string) => void;
 
   // Calculate totals
   calculateTotals: () => void;
@@ -96,10 +96,12 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
     get().updateCurrentInvoice({ items });
   },
 
-  initializeNewInvoice: () => {
+  initializeNewInvoice: (userId?: string) => {
+    // Use passed userId or fallback to store userId
+    const finalUserId = userId || get().userId;
     const newInvoice: Partial<Invoice> = {
       id: generateUUID(),
-      invoiceNumber: generateInvoiceNumber(),
+      invoiceNumber: generateInvoiceNumber(new Date(), finalUserId || undefined, 1),
       invoiceDate: new Date(),
       dueDate: new Date(), // Keep for backward compatibility
       customer: { name: "", email: "", status: "Customer" },

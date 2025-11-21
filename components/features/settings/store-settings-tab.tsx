@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { toast } from "sonner";
 import { Camera, Upload, X } from "lucide-react";
 import { storesService } from "@/lib/db/services";
 import { compressImage, validateImageFile } from "@/lib/utils";
@@ -123,7 +124,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
       });
 
       if (!validation.valid) {
-        alert(`Invalid image: ${validation.error}`);
+        toast.error(`Invalid image: ${validation.error}`);
         return;
       }
 
@@ -131,7 +132,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
       setLogo(compressed);
     } catch (error) {
       console.error("Error processing image:", error);
-      alert("Failed to process image. Please try a different image.");
+      toast.error("Failed to process image. Please try a different image.");
     } finally {
       setUploading(false);
     }
@@ -146,7 +147,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
 
   const onSubmit = async (data: StoreFormData) => {
     if (!storeId) {
-      alert("Store not found. Please refresh and try again.");
+      toast.error("Store not found. Please refresh and try again.");
       return;
     }
 
@@ -183,18 +184,18 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
       });
 
       if (error) {
-        alert(`Failed to save store: ${error.message}`);
+        toast.error(`Failed to save store: ${error.message}`);
         return;
       }
 
       // Invalidate React Query cache to refetch store settings
       queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
 
-      alert("Store settings saved successfully!");
+      toast.success("Store settings saved successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving store:", error);
-      alert("Failed to save store settings. Please try again.");
+      toast.error("Failed to save store settings. Please try again.");
     } finally {
       setSaving(false);
     }

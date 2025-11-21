@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { toast } from "sonner";
 import { userPreferencesService, storesService } from "@/lib/db/services";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -121,7 +122,7 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
       if (taxEnabled) {
         const percentageNum = parseFloat(taxPercentage);
         if (isNaN(percentageNum) || percentageNum < 0 || percentageNum > 100) {
-          alert("Tax percentage must be between 0 and 100");
+          toast.error("Tax percentage must be between 0 and 100");
           return;
         }
       }
@@ -147,11 +148,11 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
         throw new Error("Failed to save tax settings: " + taxError.message);
       }
 
-      alert("Preferences saved successfully!");
+      toast.success("Preferences saved successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving preferences:", error);
-      alert(error instanceof Error ? error.message : "Failed to save preferences. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to save preferences. Please try again.");
     }
   };
 
