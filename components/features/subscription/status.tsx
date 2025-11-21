@@ -129,8 +129,8 @@ export default function SubscriptionStatus({
               {tierInfo.icon}
             </div>
             <div>
-              <h3 className="text-lg font-semibold">{tierInfo.name} Plan</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="text-lg lg:text-xl font-semibold">{tierInfo.name} Plan</h3>
+              <p className="text-xs lg:text-sm text-muted-foreground">
                 Current subscription
               </p>
             </div>
@@ -150,7 +150,7 @@ export default function SubscriptionStatus({
 
         {/* Invoice usage */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-sm lg:text-base">
             <span className="text-muted-foreground">Invoices this month</span>
             <span className="font-medium">
               {subscription.currentMonthCount} / {subscription.invoiceLimit}
@@ -172,7 +172,7 @@ export default function SubscriptionStatus({
           </div>
 
           {/* Remaining invoices */}
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-sm lg:text-base">
             <span className="text-muted-foreground">Remaining</span>
             <span
               className={`font-semibold ${
@@ -191,7 +191,7 @@ export default function SubscriptionStatus({
         {/* Reset/Expiry date */}
         {subscription.resetDate && (
           <div className="pt-3 border-t">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs lg:text-sm text-muted-foreground">
               {subscription.tier === 'free' ? 'Resets on' : 'Expires on'} {formatResetDate(new Date(subscription.resetDate))}
             </p>
           </div>

@@ -89,7 +89,7 @@ export function Pagination({
         size="sm"
         onClick={handlePrevious}
         disabled={isFirstPage}
-        className="h-10 w-10 p-0"
+        className="h-11 w-11 p-0"
         aria-label="Previous page"
       >
         <ChevronLeft size={18} />
@@ -118,7 +118,7 @@ export function Pagination({
               onClick={() => handlePageClick(pageNum)}
               disabled={isActive}
               className={cn(
-                "h-10 w-10 rounded-md text-sm font-medium transition-colors",
+                "h-11 w-11 rounded-md text-sm font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 isActive
                   ? "bg-primary text-primary-foreground pointer-events-none"
@@ -139,7 +139,7 @@ export function Pagination({
         size="sm"
         onClick={handleNext}
         disabled={isLastPage}
-        className="h-10 w-10 p-0"
+        className="h-11 w-11 p-0"
         aria-label="Next page"
       >
         <ChevronRight size={18} />

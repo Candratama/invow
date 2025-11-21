@@ -75,11 +75,11 @@ export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }:
           <div className="flex justify-start mb-3">
             <TrendingUp className="w-8 h-8 text-primary-foreground/60" />
           </div>
-          <p className="text-sm font-medium text-primary-foreground/80 mb-2">
+          <p className="text-base lg:text-lg font-semibold text-primary-foreground/90 mb-2">
             This Month
           </p>
           <div className="mb-4">
-            <h3 className="text-3xl lg:text-4xl font-bold mb-1">
+            <h3 className="text-2xl lg:text-3xl font-bold mb-1">
               {displayMonthlyRevenue}
             </h3>
             <p className="text-sm text-primary-foreground/80">

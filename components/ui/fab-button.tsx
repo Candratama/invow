@@ -14,7 +14,7 @@ export function FABButton({ onClick, icon, className }: FABButtonProps) {
     <button
       onClick={onClick}
       className={cn(
-        "fixed bottom-6 right-6 w-fab h-fab bg-primary hover:bg-yellow-600 active:bg-yellow-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50 touch-manipulation",
+        "fixed bottom-6 right-6 w-fab h-fab bg-primary hover:bg-yellow-600 active:bg-yellow-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50 touch-manipulation font-medium",
         "hover:scale-105 active:scale-95",
         className
       )}

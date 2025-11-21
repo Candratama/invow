@@ -75,7 +75,8 @@ function PreviewView({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button
             onClick={onBack}
-            className="text-primary font-medium hover:text-primary/80 transition-colors"
+            className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5"
+            aria-label="Go back"
           >
             ← Back
           </button>
@@ -234,7 +235,8 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button
               onClick={() => setView("home")}
-              className="text-primary font-medium hover:text-primary/80 transition-colors"
+              className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5"
+              aria-label="Go back"
             >
               ← Back
             </button>
@@ -275,7 +277,7 @@ export default function HomePage() {
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
         <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
           <div className="text-left mb-8 lg:mb-12 lg:text-center">
-            <p className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
+            <p className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
               Welcome back,
               {user?.email
                 ? ` ${user.email
@@ -308,9 +310,9 @@ export default function HomePage() {
               </div>
             ) : completedInvoices.length > 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
-                <h3 className="font-semibold text-gray-900 mb-3 lg:text-xl lg:mb-4">
+                <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
                   Your Invoices
-                </h3>
+                </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-3">
                   {completedInvoices.map((invoice) => (
                     <InvoiceCard

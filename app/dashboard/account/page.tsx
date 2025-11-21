@@ -68,12 +68,12 @@ export default function AccountPage() {
           <div className="max-w-2xl mx-auto flex items-center justify-between">
             <button
               onClick={() => router.back()}
-              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+              className="flex items-center justify-center w-11 h-11 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
               aria-label="Go back"
             >
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
               Account Settings
             </h1>
             <div className="w-10" />
@@ -92,7 +92,7 @@ export default function AccountPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-3.5 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? "text-primary border-b-2 border-primary"
                     : "text-gray-600 hover:text-gray-900"
@@ -113,7 +113,7 @@ export default function AccountPage() {
             {/* Subscription Status */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="p-6">
-                <h2 className="font-semibold text-lg mb-4">Subscription</h2>
+                <h2 className="text-base lg:text-lg font-semibold mb-4">Subscription</h2>
                 <SubscriptionStatus 
                   className="border-0 shadow-none p-0" 
                   triggerRefresh={refreshTrigger}
@@ -167,7 +167,7 @@ export default function AccountPage() {
 
             {/* Account Info */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="font-semibold text-lg mb-4">Account Information</h2>
+              <h2 className="text-base lg:text-lg font-semibold mb-4">Account Information</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -196,7 +196,7 @@ export default function AccountPage() {
 
             {/* Sign Out */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="font-semibold text-lg mb-4 text-red-600">Sign Out</h2>
+              <h2 className="text-base lg:text-lg font-semibold mb-4 text-red-600">Sign Out</h2>
               <p className="text-sm text-gray-600 mb-4">
                 You&apos;ll need to log in again to access your account after signing out.
               </p>

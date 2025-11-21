@@ -48,7 +48,7 @@ export default function AccountPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">
+          <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
             Account Settings
           </h1>
           <div className="w-10" />
@@ -58,7 +58,7 @@ export default function AccountPage() {
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6 lg:px-6 lg:py-8">
         {/* Account Info */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="font-semibold text-lg mb-4">Account Information</h2>
+          <h2 className="text-base lg:text-lg font-semibold mb-4">Account Information</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -88,7 +88,7 @@ export default function AccountPage() {
         
         {/* Sign Out */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="font-semibold text-lg mb-4 text-red-600">Sign Out</h2>
+          <h2 className="text-base lg:text-lg font-semibold mb-4 text-red-600">Sign Out</h2>
           <p className="text-sm text-gray-600 mb-4">
             You&apos;ll need to log in again to access your account after signing out.
           </p>

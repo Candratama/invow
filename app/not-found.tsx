@@ -20,13 +20,13 @@ export default function NotFound() {
 
         {/* Content */}
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
             Page Not Found
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg lg:text-xl text-gray-600">
             Sorry, we couldn&apos;t find the page you&apos;re looking for.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm lg:text-base text-gray-500">
             The page may have been moved, deleted, or you may have entered an incorrect URL.
           </p>
         </div>
@@ -51,7 +51,7 @@ export default function NotFound() {
 
         {/* Help text */}
         <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm lg:text-base text-gray-500">
             Need help?{" "}
             <Link href="/dashboard" className="text-primary hover:underline font-medium">
               Sign in to your dashboard

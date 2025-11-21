@@ -30,7 +30,7 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           <Logo size={32} />
           <Link href="/dashboard">
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-primary hover:bg-primary/90 text-sm lg:text-base font-medium">
               Yuk Mulai!
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

@@ -30,21 +30,21 @@ export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
         onClick={() => onOpen(invoice.id)}
         className="w-full text-left py-3 px-4"
       >
-        <div className="font-bold text-gray-900 truncate mb-1 pr-20">
+        <div className="text-base lg:text-lg font-bold text-gray-900 truncate mb-1 pr-20">
           {invoice.customer.name || "No customer"}
         </div>
-        <div className="text-sm text-gray-600 truncate mb-2">
+        <div className="text-sm lg:text-base text-gray-600 truncate mb-2">
           {invoice.invoiceNumber}
         </div>
 
         {/* Bottom row: Date and Amount aligned */}
         <div className="flex items-center justify-between">
-          <div className="text-xs text-gray-500">
+          <div className="text-xs lg:text-sm text-gray-500">
             {invoice.items?.length || 0} item
             {invoice.items?.length !== 1 ? "s" : ""} •{" "}
             {formatDate(invoice.invoiceDate)}
           </div>
-          <div className="text-sm font-medium text-gray-900">
+          <div className="text-sm lg:text-base font-medium text-gray-900">
             {formatCurrency(invoice.total || 0)}
           </div>
         </div>

@@ -16,7 +16,7 @@ export function Logo({ size = 24, showText = true, className = "" }: LogoProps) 
         height={size}
         className="rounded-sm"
       />
-      {showText && <span className="text-xl font-semibold text-gray-900">Invow</span>}
+      {showText && <span className="text-xl lg:text-2xl font-semibold text-gray-900">Invow</span>}
     </div>
   );
 }

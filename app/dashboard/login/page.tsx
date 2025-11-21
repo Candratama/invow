@@ -55,7 +55,7 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-sm p-6 lg:p-8">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
               Welcome Back
             </h1>
             <p className="text-gray-600">Sign in to access your invoices</p>
@@ -108,11 +108,11 @@ function LoginForm() {
           <div className="mt-6 text-center space-y-2">
             <Link
               href="/dashboard/forgot-password"
-              className="text-sm text-primary hover:underline block"
+              className="text-sm lg:text-base text-primary hover:underline block"
             >
               Forgot password?
             </Link>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm lg:text-base text-gray-600">
               Don&apos;t have an account?{" "}
               <Link href="/dashboard/signup" className="text-primary hover:underline">
                 Sign up

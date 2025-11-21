@@ -219,7 +219,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
         >
           {/* Logo Upload */}
           <div>
-            <Label>Store Logo</Label>
+            <Label className="text-sm font-medium">Store Logo</Label>
             <div className="mt-2">
               {logo ? (
                 <div className="relative inline-block">
@@ -234,10 +234,10 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
-                    className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                    className="absolute -top-2 -right-2 w-11 h-11 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
                     aria-label="Remove logo"
                   >
-                    <X size={16} />
+                    <X size={18} />
                   </button>
                 </div>
               ) : (
@@ -247,10 +247,10 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
                       <Camera size={32} className="text-gray-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <p className="text-sm lg:text-base text-gray-600 mb-2">
                         Upload your store logo
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs lg:text-sm text-gray-500">
                         Max 5MB • Will be compressed to 100KB
                       </p>
                     </div>
@@ -284,21 +284,21 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
           {/* Store Name & Code */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="storeName">Store Name *</Label>
+              <Label htmlFor="storeName" className="text-sm font-medium">Store Name *</Label>
               <Input
                 id="storeName"
                 {...form.register("name")}
                 placeholder="Enter your store name"
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.name.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="storeCode">Store Code *</Label>
+              <Label htmlFor="storeCode" className="text-sm font-medium">Store Code *</Label>
               <Input
                 id="storeCode"
                 {...form.register("storeCode")}
@@ -310,11 +310,11 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
                   form.setValue("storeCode", e.target.value);
                 }}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs lg:text-sm text-gray-500 mt-1">
                 2-6 uppercase letters/numbers for invoice numbering
               </p>
               {form.formState.errors.storeCode && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.storeCode.message}
                 </p>
               )}
@@ -323,7 +323,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
 
           {/* Store Description */}
           <div>
-            <Label htmlFor="storeDescription">Store Description</Label>
+            <Label htmlFor="storeDescription" className="text-sm font-medium">Store Description</Label>
             <Textarea
               id="storeDescription"
               {...form.register("storeDescription")}
@@ -335,7 +335,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
           {/* Tagline & Store Number */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="tagline">Tagline</Label>
+              <Label htmlFor="tagline" className="text-sm font-medium">Tagline</Label>
               <Input
                 id="tagline"
                 {...form.register("tagline")}
@@ -344,7 +344,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
             </div>
 
             <div>
-              <Label htmlFor="storeNumber">Store Number / ID</Label>
+              <Label htmlFor="storeNumber" className="text-sm font-medium">Store Number / ID</Label>
               <Input
                 id="storeNumber"
                 {...form.register("storeNumber")}
@@ -355,7 +355,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
 
           {/* Address */}
           <div>
-            <Label htmlFor="address">Store Address *</Label>
+            <Label htmlFor="address" className="text-sm font-medium">Store Address *</Label>
             <Textarea
               id="address"
               {...form.register("address")}
@@ -363,7 +363,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
               rows={4}
             />
             {form.formState.errors.address && (
-              <p className="text-sm text-red-500 mt-1">
+              <p className="text-xs text-red-600 mt-1">
                 {form.formState.errors.address.message}
               </p>
             )}
@@ -372,7 +372,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
           {/* Contact Info */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="whatsapp">WhatsApp Number *</Label>
+              <Label htmlFor="whatsapp" className="text-sm font-medium">WhatsApp Number *</Label>
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 font-medium">+62</span>
                 <Input
@@ -384,14 +384,14 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
                 />
               </div>
               {form.formState.errors.whatsapp && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.whatsapp.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -403,7 +403,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="email">Contact Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">Contact Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -411,14 +411,14 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
                 placeholder="store@example.com"
               />
               {form.formState.errors.email && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.email.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="website" className="text-sm font-medium">Website</Label>
               <Input
                 id="website"
                 type="url"
@@ -430,7 +430,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
 
           {/* Payment Method */}
           <div>
-            <Label htmlFor="paymentMethod">Preferred Payment Method</Label>
+            <Label htmlFor="paymentMethod" className="text-sm font-medium">Preferred Payment Method</Label>
             <Input
               id="paymentMethod"
               {...form.register("paymentMethod")}
@@ -441,7 +441,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
           {/* Brand Color & Invoice Prefix */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="brandColor">Brand Color *</Label>
+              <Label htmlFor="brandColor" className="text-sm font-medium">Brand Color *</Label>
               <div className="flex items-center gap-3">
                 <Input
                   id="brandColor"
@@ -459,21 +459,21 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
                 />
               </div>
               {form.formState.errors.brandColor && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.brandColor.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="invoicePrefix">Invoice Prefix</Label>
+              <Label htmlFor="invoicePrefix" className="text-sm font-medium">Invoice Prefix</Label>
               <Input
                 id="invoicePrefix"
                 {...form.register("invoicePrefix")}
                 placeholder="INV"
                 maxLength={10}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs lg:text-sm text-gray-500 mt-1">
                 Used in invoice numbers (e.g., INV-ABC-20251031-001)
               </p>
             </div>

@@ -12,7 +12,7 @@ export function UserMenu() {
   return (
     <Link
       href="/dashboard/account"
-      className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 transition-colors"
+      className="w-11 h-11 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 transition-colors"
       aria-label="Account settings"
     >
       <User size={20} />

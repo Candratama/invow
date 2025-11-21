@@ -36,8 +36,8 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-sm p-6 lg:p-8">
           <div className="text-center">
             <div className="text-green-600 text-4xl mb-4">✓</div>
-            <h2 className="text-xl font-bold mb-2">Check Your Email</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-xl lg:text-2xl font-bold mb-2">Check Your Email</h2>
+            <p className="text-sm lg:text-base text-gray-600 mb-6">
               We&apos;ve sent a password reset link to <strong>{email}</strong>
             </p>
             <Link href="/dashboard/login" className="text-primary hover:underline">
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-sm p-6 lg:p-8">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
               Reset Password
             </h1>
             <p className="text-gray-600">
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <Link
               href="/dashboard/login"
-              className="text-sm text-gray-600 hover:text-gray-900"
+              className="text-sm lg:text-base text-gray-600 hover:text-gray-900"
             >
               ← Back to login
             </Link>

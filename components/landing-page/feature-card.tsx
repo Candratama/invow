@@ -12,8 +12,8 @@ export default function FeatureCard({ icon: Icon, title, description }: FeatureC
       <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
         <Icon className="h-6 w-6 text-primary" />
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-      <p className="text-gray-600">{description}</p>
+      <h3 className="text-xl lg:text-2xl font-semibold text-gray-900 mb-3">{title}</h3>
+      <p className="text-sm lg:text-base text-gray-600">{description}</p>
     </div>
   );
 }

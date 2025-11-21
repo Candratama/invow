@@ -5,26 +5,26 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 text-sm lg:text-base font-medium",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm lg:text-base font-medium",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 text-sm font-medium",
+        ghost: "hover:bg-accent hover:text-accent-foreground text-sm font-medium",
+        link: "text-primary underline-offset-4 hover:underline text-sm font-medium",
       },
       size: {
-        default: "h-12 px-4 py-2", // Increased from h-10 for mobile
-        sm: "h-10 rounded-md px-3",
-        lg: "h-14 rounded-md px-8", // Larger for mobile primary actions
-        icon: "h-12 w-12", // Minimum thumb target
-        fab: "h-fab w-fab", // Floating action button
+        default: "h-12 px-4 py-2", // 48px - meets 44px minimum touch target
+        sm: "h-11 rounded-md px-3", // 44px - minimum touch target
+        lg: "h-14 rounded-md px-8", // 56px - larger for mobile primary actions
+        icon: "h-12 w-12", // 48px - minimum thumb target
+        fab: "h-fab w-fab", // 56px - floating action button
       },
     },
     defaultVariants: {

@@ -39,13 +39,13 @@ export default function PricingCard({ tier }: PricingCardProps) {
         </div>
       )}
       <div className="mb-6">
-        <h3 className="text-xl font-semibold text-gray-900">{tier.name}</h3>
-        <p className="mt-2 text-sm text-gray-600">{tier.description}</p>
+        <h3 className="text-xl lg:text-2xl font-semibold text-gray-900">{tier.name}</h3>
+        <p className="mt-2 text-sm lg:text-base text-gray-600">{tier.description}</p>
         <div className="mt-6 flex items-baseline">
-          <span className="text-2xl font-bold tracking-tight text-gray-900">
+          <span className="text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">
             {tier.price}
           </span>
-          <span className="ml-2 text-sm font-medium text-gray-600">
+          <span className="ml-2 text-sm lg:text-base font-medium text-gray-600">
             /{tier.period}
           </span>
         </div>

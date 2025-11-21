@@ -97,7 +97,7 @@ export function TaxSettings({
     return (
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-semibold">Tax Settings</Label>
+          <Label className="text-lg lg:text-xl font-semibold">Tax Settings</Label>
           <p className="text-sm text-gray-600 mt-1">
             Enable and configure tax calculation for invoices
           </p>
@@ -114,7 +114,7 @@ export function TaxSettings({
 
       {/* Tax Percentage Input */}
       <div className="space-y-2">
-        <Label htmlFor="tax-percentage">Tax Percentage (%)</Label>
+        <Label htmlFor="tax-percentage" className="text-sm font-medium">Tax Percentage (%)</Label>
         <div className="relative">
           <Input
             id="tax-percentage"

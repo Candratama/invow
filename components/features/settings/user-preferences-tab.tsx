@@ -173,7 +173,7 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
           id="preferences-form"
         >
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold">User Preferences</h3>
+            <h2 className="text-lg lg:text-xl font-semibold">User Preferences</h2>
             <p className="text-sm text-gray-600">
               These settings apply to your entire account across all stores
             </p>
@@ -181,7 +181,7 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
 
           {/* Currency */}
           <div>
-            <Label htmlFor="currency">Currency</Label>
+            <Label htmlFor="currency" className="text-sm font-medium">Currency</Label>
             <Select
               value={form.watch("currency")}
               onValueChange={(value) => form.setValue("currency", value)}
@@ -205,7 +205,7 @@ export function UserPreferencesTab({ onClose }: UserPreferencesTabProps) {
           {/* Default Store (for multi-store users) */}
           {stores.length > 1 && (
             <div>
-              <Label htmlFor="defaultStore">Default Store</Label>
+              <Label htmlFor="defaultStore" className="text-sm font-medium">Default Store</Label>
               <Select
                 value={form.watch("default_store_id") || ""}
                 onValueChange={(value) =>

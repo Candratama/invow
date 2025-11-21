@@ -206,9 +206,8 @@ export function InvoicePreview({
                 }}
               >
                 <div
+                  className="text-2xl lg:text-3xl font-bold"
                   style={{
-                    fontSize: "31pt",
-                    fontWeight: "bold",
                     color: brandColor,
                     marginBottom: "5px",
                   }}
@@ -264,9 +263,8 @@ export function InvoicePreview({
                 }}
               >
                 <div
+                  className="text-base font-bold"
                   style={{
-                    fontSize: "15pt",
-                    fontWeight: "bold",
                     color: "#111827",
                     marginBottom: "4px",
                   }}
@@ -289,14 +287,13 @@ export function InvoicePreview({
             {/* Items Table */}
             <div style={{ marginBottom: "20px" }}>
               <div
+                className="text-sm font-medium"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   backgroundColor: brandColor,
                   padding: "8px",
                   color: "#ffffff",
-                  fontWeight: "bold",
-                  fontSize: "10pt",
                   textTransform: "uppercase",
                 }}
               >
@@ -317,22 +314,22 @@ export function InvoicePreview({
                 return (
                   <div
                     key={item.id}
+                    className="text-sm"
                     style={{
                       display: "flex",
                       alignItems: "center",
                       borderBottom: "1px solid #e5e7eb",
                       padding: "8px",
-                      fontSize: "11pt",
                       backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                     }}
                   >
-                    <div style={{ width: "8%", textAlign: "center" }}>
+                    <div className="text-xs text-gray-500" style={{ width: "8%", textAlign: "center" }}>
                       {index + 1}
                     </div>
                     <div
+                      className="text-sm font-bold"
                       style={{
                         width: "44%",
-                        fontWeight: "bold",
                         color: "#111827",
                       }}
                     >
@@ -506,12 +503,11 @@ export function InvoicePreview({
                   </div>
                 )}
                 <div
+                  className="text-base lg:text-lg font-semibold"
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     paddingTop: "16px",
-                    fontSize: "19pt",
-                    fontWeight: "bold",
                     borderTop: `2px solid ${brandColor}`,
                   }}
                 >
@@ -696,10 +692,6 @@ export function InvoicePreview({
                 {/* Invoice Info */}
                 <div className="p-3 bg-gray-50 rounded-lg space-y-2">
                   <div>
-                    <p className="text-xs text-gray-500">Invoice Number</p>
-                    <p className="text-sm font-semibold">{invoiceNumber}</p>
-                  </div>
-                  <div>
                     <p className="text-xs text-gray-500">Date</p>
                     <p className="text-sm font-semibold">
                       {formatDate(new Date(invoiceDate))}
@@ -723,12 +715,12 @@ export function InvoicePreview({
                     {items.map((item) => (
                       <div key={item.id} className="flex justify-between items-start text-sm">
                         <div className="flex-1 min-w-0 pr-2">
-                          <p className="font-medium truncate">{item.description}</p>
-                          <p className="text-xs text-gray-600">
+                          <p className="text-sm font-medium truncate">{item.description}</p>
+                          <p className="text-xs text-gray-500">
                             {item.quantity} × {formatCurrency(item.price)}
                           </p>
                         </div>
-                        <p className="font-semibold whitespace-nowrap">
+                        <p className="text-sm font-semibold whitespace-nowrap">
                           {formatCurrency(item.subtotal)}
                         </p>
                       </div>

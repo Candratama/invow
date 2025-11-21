@@ -81,7 +81,7 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
     return (
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-semibold">Export Quality</Label>
+          <Label className="text-lg lg:text-xl font-semibold">Export Quality</Label>
           <p className="text-sm text-gray-600 mt-1">
             Choose the maximum file size for exported invoice images
           </p>
@@ -96,7 +96,7 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-base font-semibold">Export Quality</Label>
+        <Label className="text-lg lg:text-xl font-semibold">Export Quality</Label>
         <p className="text-sm text-gray-600 mt-1">
           Choose the maximum file size for exported invoice images
         </p>

@@ -69,17 +69,17 @@ export function ItemRow({ item, onEdit, onDelete }: ItemRowProps) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-gray-900 truncate mb-1">
+            <h4 className="text-sm lg:text-base font-medium text-gray-900 truncate mb-1">
               {item.description}
             </h4>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs lg:text-sm text-gray-500">
               {item.quantity} × {formatCurrency(item.price)}
             </p>
           </div>
           
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <p className="font-semibold text-gray-900">
+              <p className="text-sm lg:text-base font-semibold text-gray-900">
                 {formatCurrency(item.subtotal)}
               </p>
             </div>

@@ -194,9 +194,8 @@ export function ClassicInvoiceTemplate({
             }}
           >
             <div
+              className="text-2xl lg:text-3xl font-bold"
               style={{
-                fontSize: "31pt",
-                fontWeight: "bold",
                 color: brandColor,
                 marginBottom: "5px",
               }}
@@ -249,9 +248,8 @@ export function ClassicInvoiceTemplate({
               Bill To:
             </div>
             <div
+              className="text-base font-bold"
               style={{
-                fontSize: "15pt",
-                fontWeight: "bold",
                 color: "#111827",
                 marginBottom: "4px",
               }}
@@ -315,9 +313,9 @@ export function ClassicInvoiceTemplate({
                   {index + 1}
                 </div>
                 <div
+                  className="text-sm font-bold"
                   style={{
                     width: "40%",
-                    fontWeight: "bold",
                     color: "#111827",
                     textAlign: "left",
                   }}
@@ -504,13 +502,12 @@ export function ClassicInvoiceTemplate({
               </span>
             </div>
             <div
+              className="text-base lg:text-lg font-semibold"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "16px",
                 gap: "16px",
-                fontSize: "19pt",
-                fontWeight: "bold",
                 borderTop: `2px solid ${brandColor}`,
               }}
             >

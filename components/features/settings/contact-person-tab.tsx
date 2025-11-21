@@ -243,8 +243,8 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Contact Persons</h3>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg lg:text-xl font-semibold">Contact Persons</h2>
+            <p className="text-sm lg:text-base text-gray-600">
               Manage store administrators and their signatures
             </p>
           </div>
@@ -257,7 +257,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
         {/* Contacts List */}
         {contacts.length === 0 ? (
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <p className="text-gray-600 mb-4">No contacts yet</p>
+            <p className="text-sm lg:text-base text-gray-600 mb-4">No contacts yet</p>
             <Button onClick={handleAddContact} variant="outline">
               Add Your First Contact
             </Button>
@@ -272,7 +272,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{contact.name}</h4>
+                      <h4 className="text-base lg:text-lg font-medium">{contact.name}</h4>
                       {contact.is_primary && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                           <Star size={12} fill="currentColor" />
@@ -281,7 +281,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
                       )}
                     </div>
                     {contact.title && (
-                      <p className="text-sm text-gray-600">{contact.title}</p>
+                      <p className="text-sm lg:text-base text-gray-600">{contact.title}</p>
                     )}
                     {contact.signature && (
                       <div className="mt-2 p-2 border rounded bg-gray-50">
@@ -300,23 +300,26 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
                     {!contact.is_primary && (
                       <button
                         onClick={() => handleSetPrimary(contact)}
-                        className="p-2 text-gray-400 hover:text-primary transition-colors"
+                        className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-primary transition-colors rounded-md hover:bg-gray-100"
                         title="Set as primary"
+                        aria-label="Set as primary contact"
                       >
                         <Star size={18} />
                       </button>
                     )}
                     <button
                       onClick={() => handleEditContact(contact)}
-                      className="p-2 text-gray-400 hover:text-primary transition-colors"
+                      className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-primary transition-colors rounded-md hover:bg-gray-100"
                       title="Edit"
+                      aria-label="Edit contact"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDeleteContact(contact)}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      className="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-gray-100"
                       title="Delete"
+                      aria-label="Delete contact"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -345,21 +348,21 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
             id="contact-form"
           >
             <div>
-              <Label htmlFor="contactName">Name *</Label>
+              <Label htmlFor="contactName" className="text-sm font-medium">Name *</Label>
               <Input
                 id="contactName"
                 {...form.register("name")}
                 placeholder="Enter contact name"
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.name.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="contactTitle">Title / Position</Label>
+              <Label htmlFor="contactTitle" className="text-sm font-medium">Title / Position</Label>
               <Input
                 id="contactTitle"
                 {...form.register("title")}
@@ -369,7 +372,7 @@ export function ContactPersonTab({ onClose }: ContactPersonTabProps) {
 
             {/* Signature */}
             <div className="space-y-3">
-              <Label>Signature</Label>
+              <Label className="text-sm font-medium">Signature</Label>
               {signature ? (
                 <div className="border rounded-lg bg-white p-4 flex flex-col items-center gap-3">
                   <Image
