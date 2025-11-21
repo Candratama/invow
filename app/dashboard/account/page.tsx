@@ -61,27 +61,28 @@ export default function AccountPage() {
       {/* Payment Success/Failure Handler */}
       <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
       
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-            aria-label="Go back"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-lg font-semibold text-gray-900">
-            Account Settings
-          </h1>
-          <div className="w-10" />
+      {/* Sticky Header + Tabs */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        {/* Header */}
+        <div className="border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-lg font-semibold text-gray-900">
+              Account Settings
+            </h1>
+            <div className="w-10" />
+          </div>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 lg:px-6 lg:py-8">
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="flex overflow-x-auto border-b border-gray-200">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-around">
             {[
               { id: "subscription" as const, label: "Subscription" },
               { id: "store" as const, label: "Store" },
@@ -91,7 +92,7 @@ export default function AccountPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[100px] px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? "text-primary border-b-2 border-primary"
                     : "text-gray-600 hover:text-gray-900"
@@ -102,6 +103,9 @@ export default function AccountPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      <main className="max-w-4xl mx-auto px-4 py-6 lg:px-6 lg:py-8">
 
         {/* Tab Content */}
         {activeTab === "subscription" && (
