@@ -64,3 +64,33 @@ export interface PendingRequest {
   timestamp: Date;
   retryCount: number;
 }
+
+// Export Quality Types
+export type ExportQualityValue = 50 | 100 | 150;
+export type ExportQualityLabel = 'small' | 'medium' | 'high';
+
+export interface ExportQualityOption {
+  label: ExportQualityLabel;
+  sizeKB: ExportQualityValue;
+  displayName: string;
+}
+
+// Export quality constants
+export const EXPORT_QUALITY_OPTIONS: ExportQualityOption[] = [
+  { label: 'small', sizeKB: 50, displayName: 'Small (~50KB)' },
+  { label: 'medium', sizeKB: 100, displayName: 'Medium (~100KB)' },
+  { label: 'high', sizeKB: 150, displayName: 'High (~150KB)' },
+];
+
+// Tax Calculation Types
+export interface TaxCalculation {
+  subtotal: number;
+  shippingCost: number;
+  taxAmount: number;
+  total: number;
+}
+
+// Export Options
+export interface ExportOptions {
+  qualityLimitKB: ExportQualityValue;
+}

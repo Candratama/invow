@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { Invoice, InvoiceItem } from "./types";
-import { generateInvoiceNumber, generateUUID } from "./utils";
+import { generateInvoiceNumber, generateUUID, parseLocalDate } from "./utils";
 
 interface InvoiceStore {
   // Current invoice being edited (form state)
@@ -97,10 +97,9 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
   },
 
   initializeNewInvoice: () => {
-    const userId = get().userId;
     const newInvoice: Partial<Invoice> = {
       id: generateUUID(),
-      invoiceNumber: generateInvoiceNumber(userId || undefined),
+      invoiceNumber: generateInvoiceNumber(),
       invoiceDate: new Date(),
       dueDate: new Date(), // Keep for backward compatibility
       customer: { name: "", email: "", status: "Customer" },
@@ -160,8 +159,8 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
     const invoice: Partial<Invoice> = {
       id: data.id,
       invoiceNumber: data.invoice_number,
-      invoiceDate: new Date(data.invoice_date),
-      dueDate: new Date(data.invoice_date),
+      invoiceDate: parseLocalDate(data.invoice_date),
+      dueDate: parseLocalDate(data.invoice_date),
       customer: {
         name: data.customer_name,
         email: data.customer_email || "",
@@ -177,7 +176,7 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
       })),
       subtotal: data.subtotal,
       shippingCost: data.shipping_cost,
-      total: data.total,
+      total: data.total, // Total already includes tax from database
       note: data.note || undefined,
       status: 'completed' as const,
       createdAt: new Date(data.created_at),

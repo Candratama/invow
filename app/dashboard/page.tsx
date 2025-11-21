@@ -14,7 +14,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { calculateRevenueMetrics } from "@/lib/utils/revenue";
 import { useInvoices, useSubscriptionStatus, useDeleteInvoice } from "@/lib/hooks/use-dashboard-data";
@@ -116,8 +116,8 @@ export default function HomePage() {
   const completedInvoices = invoicesData?.invoices.map(inv => ({
     id: inv.id,
     invoiceNumber: inv.invoice_number,
-    invoiceDate: new Date(inv.invoice_date),
-    dueDate: new Date(inv.invoice_date),
+    invoiceDate: parseLocalDate(inv.invoice_date),
+    dueDate: parseLocalDate(inv.invoice_date),
     customer: {
       name: inv.customer_name,
       email: inv.customer_email || "",
@@ -303,7 +303,7 @@ export default function HomePage() {
                             <div className="text-xs text-gray-500 mt-1">
                               {invoice.items?.length || 0} item
                               {invoice.items?.length !== 1 ? "s" : ""} •{" "}
-                              {formatDate(new Date(invoice.updatedAt))}
+                              {formatDate(invoice.invoiceDate)}
                             </div>
                           </button>
                           <div className="ml-3 flex-shrink-0 flex flex-col items-end gap-2">

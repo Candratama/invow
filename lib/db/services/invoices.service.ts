@@ -112,7 +112,7 @@ export class InvoicesService {
           { count: "exact" }
         )
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }); // DESC order - newest first
+        .order("invoice_date", { ascending: false }); // DESC order - newest first by invoice date
 
       if (status) {
         query = query.eq("status", status);
@@ -634,6 +634,44 @@ export class InvoicesService {
       if (error) throw new Error(error.message);
 
       return { data, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Get next invoice sequence number for a specific date and store
+   * Returns the count of invoices created on that date + 1
+   */
+  async getNextInvoiceSequence(storeId: string, invoiceDate: string): Promise<{
+    data: number | null;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Count invoices for this store on this specific date
+      const { count, error } = await this.supabase
+        .from("invoices")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", storeId)
+        .eq("invoice_date", invoiceDate);
+
+      if (error) throw new Error(error.message);
+
+      // Next sequence is count + 1
+      const nextSequence = (count || 0) + 1;
+
+      return { data: nextSequence, error: null };
     } catch (error) {
       return {
         data: null,

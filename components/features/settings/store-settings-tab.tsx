@@ -118,10 +118,8 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
     try {
       // Comprehensive image validation
       const validation = await validateImageFile(file, {
-        maxSizeBytes: 5 * 1024 * 1024, // 5MB
-        allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
-        maxDimensions: { width: 2000, height: 2000 },
-        minDimensions: { width: 50, height: 50 }
+        maxSizeKB: 5000, // 5MB
+        allowedTypes: ['image/jpeg', 'image/png', 'image/webp']
       });
 
       if (!validation.valid) {
@@ -482,8 +480,8 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
         </form>
       </div>
 
-      {/* Fixed Action Buttons */}
-      <div className="flex-shrink-0 border-t border-gray-200 bg-white p-4 lg:p-6">
+      {/* Fixed Action Buttons - Sticky at bottom */}
+      <div className="sticky bottom-0 flex-shrink-0 border-t border-gray-200 bg-white p-4 lg:p-6 shadow-lg">
         <div className="flex gap-3 lg:max-w-3xl lg:mx-auto">
           <Button
             type="button"
@@ -497,7 +495,7 @@ export function StoreSettingsTab({ onClose }: StoreSettingsTabProps) {
           <Button
             type="submit"
             form="store-settings-form"
-            className="flex-1"
+            className="flex-1 bg-primary text-white hover:bg-primary/90"
             size="lg"
             disabled={saving}
           >

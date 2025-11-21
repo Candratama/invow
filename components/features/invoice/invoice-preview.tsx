@@ -1,9 +1,12 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Invoice, StoreSettings } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { userPreferencesService } from "@/lib/db/services/user-preferences.service";
+import { calculateTotal } from "@/lib/utils/invoice-calculation";
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -23,10 +26,39 @@ export function InvoicePreview({
     items,
     subtotal,
     shippingCost,
-    total,
     invoiceNumber,
     invoiceDate,
   } = invoice;
+
+  // State for tax preferences
+  const [taxEnabled, setTaxEnabled] = useState(false);
+  const [taxPercentage, setTaxPercentage] = useState(0);
+
+  // Fetch user preferences on mount
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const { data } = await userPreferencesService.getUserPreferences();
+        setTaxEnabled(data.tax_enabled);
+        setTaxPercentage(data.tax_percentage ?? 0);
+      } catch (error) {
+        console.error("Failed to fetch user preferences:", error);
+      }
+    };
+
+    fetchPreferences();
+  }, []);
+
+  // Calculate tax and total
+  const calculation = calculateTotal(
+    subtotal,
+    shippingCost,
+    taxEnabled,
+    taxPercentage
+  );
+
+  const total = calculation.total;
+  const taxAmount = calculation.taxAmount;
   const brandColor = storeSettings?.brandColor || "#d4af37";
   const splitCurrency = (value: number) => {
     const normalized = formatCurrency(value)
@@ -435,6 +467,34 @@ export function InvoicePreview({
                     </span>
                   </span>
                 </div>
+                {taxEnabled && taxPercentage > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      paddingTop: "6px",
+                      paddingBottom: "6px",
+                      fontSize: "10pt",
+                      color: "#6b7280",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <span>Tax ({taxPercentage}%):</span>
+                    <span
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                        minWidth: "140px",
+                      }}
+                    >
+                      <span>{splitCurrency(taxAmount).symbol}</span>
+                      <span style={{ flex: 1, textAlign: "right" }}>
+                        {splitCurrency(taxAmount).amount}
+                      </span>
+                    </span>
+                  </div>
+                )}
                 <div
                   style={{
                     display: "flex",

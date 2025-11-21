@@ -26,6 +26,9 @@ export interface Database {
           date_format: string
           currency: string
           default_store_id: string | null
+          export_quality_kb: 50 | 100 | 150
+          tax_enabled: boolean
+          tax_percentage: number | null
           created_at: string
           updated_at: string
         }
@@ -37,6 +40,9 @@ export interface Database {
           date_format?: string
           currency?: string
           default_store_id?: string | null
+          export_quality_kb?: 50 | 100 | 150
+          tax_enabled?: boolean
+          tax_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -48,6 +54,9 @@ export interface Database {
           date_format?: string
           currency?: string
           default_store_id?: string | null
+          export_quality_kb?: 50 | 100 | 150
+          tax_enabled?: boolean
+          tax_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -183,6 +192,7 @@ export interface Database {
           customer_status: string | null
           subtotal: number
           shipping_cost: number
+          tax_amount: number
           total: number
           note: string | null
           status: 'draft' | 'pending' | 'synced'
@@ -202,6 +212,7 @@ export interface Database {
           customer_status?: string | null
           subtotal?: number
           shipping_cost?: number
+          tax_amount?: number
           total?: number
           note?: string | null
           status?: 'draft' | 'pending' | 'synced'
@@ -221,6 +232,7 @@ export interface Database {
           customer_status?: string | null
           subtotal?: number
           shipping_cost?: number
+          tax_amount?: number
           total?: number
           note?: string | null
           status?: 'draft' | 'pending' | 'synced'

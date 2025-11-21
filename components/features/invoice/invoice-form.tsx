@@ -7,7 +7,7 @@ import * as z from "zod";
 import { Plus, Download, Loader2, AlertTriangle } from "lucide-react";
 import { useInvoiceStore } from "@/lib/store";
 import { InvoiceItem, Invoice } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, parseLocalDate, formatDateForInput, generateInvoiceNumber } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,8 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useCreateInvoice, useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
 import { useStoreSettings } from "@/lib/hooks/use-store-settings";
 import { useDefaultStore } from "@/lib/hooks/use-default-store";
+import { calculateTotal } from "@/lib/utils/invoice-calculation";
+import { userPreferencesService, invoicesService } from "@/lib/db/services";
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -63,18 +65,53 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   
+  // Tax preferences state
+  const [taxEnabled, setTaxEnabled] = useState(false);
+  const [taxPercentage, setTaxPercentage] = useState(0);
+  
   // Use React Query hooks for subscription status, store settings, and invoice creation
   const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStatus();
   const { data: storeSettings } = useStoreSettings();
   const { data: defaultStore } = useDefaultStore();
   const createInvoice = useCreateInvoice();
 
-  // Initialize invoice if not exists
+  // Initialize invoice if not exists and generate proper invoice number
   useEffect(() => {
-    if (!currentInvoice) {
-      initializeNewInvoice();
-    }
-  }, [currentInvoice, initializeNewInvoice]);
+    const initInvoice = async () => {
+      if (!currentInvoice) {
+        initializeNewInvoice();
+      } else if (currentInvoice && !currentInvoice.invoiceNumber?.includes('-')) {
+        // If invoice number doesn't have proper format, regenerate it
+        if (user?.id && defaultStore?.id && currentInvoice.invoiceDate) {
+          const dateStr = formatDateForInput(new Date(currentInvoice.invoiceDate));
+          const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
+          const newInvoiceNumber = generateInvoiceNumber(
+            new Date(currentInvoice.invoiceDate),
+            user.id,
+            sequence || 1
+          );
+          updateCurrentInvoice({ invoiceNumber: newInvoiceNumber });
+        }
+      }
+    };
+    
+    initInvoice();
+  }, [currentInvoice, initializeNewInvoice, user?.id, defaultStore?.id, updateCurrentInvoice]);
+
+  // Fetch tax preferences on mount
+  useEffect(() => {
+    const fetchTaxPreferences = async () => {
+      try {
+        const { data } = await userPreferencesService.getUserPreferences();
+        setTaxEnabled(data.tax_enabled);
+        setTaxPercentage(data.tax_percentage ?? 0);
+      } catch (error) {
+        console.error("Failed to fetch tax preferences:", error);
+      }
+    };
+
+    fetchTaxPreferences();
+  }, []);
 
   // Main form
   const form = useForm<InvoiceFormData>({
@@ -82,8 +119,8 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     defaultValues: {
       invoiceNumber: currentInvoice?.invoiceNumber || "",
       invoiceDate: currentInvoice?.invoiceDate
-        ? new Date(currentInvoice.invoiceDate).toISOString().split("T")[0]
-        : new Date().toISOString().split("T")[0],
+        ? formatDateForInput(new Date(currentInvoice.invoiceDate))
+        : formatDateForInput(new Date()),
       customerName: currentInvoice?.customer?.name || "",
       customerAddress: currentInvoice?.customer?.address || "",
       customerStatus: currentInvoice?.customer?.status || "Customer",
@@ -91,22 +128,22 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     },
   });
 
-  // Update form when currentInvoice changes (e.g., when invoice number is generated)
+  // Update form when currentInvoice changes (e.g., when invoice number is generated or loaded from history)
   useEffect(() => {
     if (currentInvoice) {
       form.reset({
         invoiceNumber: currentInvoice.invoiceNumber || "",
         invoiceDate: currentInvoice.invoiceDate
-          ? new Date(currentInvoice.invoiceDate).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
+          ? formatDateForInput(new Date(currentInvoice.invoiceDate))
+          : formatDateForInput(new Date()),
         customerName: currentInvoice.customer?.name || "",
         customerAddress: currentInvoice.customer?.address || "",
         customerStatus: currentInvoice.customer?.status || "Customer",
         shippingCost: currentInvoice.shippingCost || 0,
+        note: currentInvoice.note || "",
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentInvoice?.invoiceNumber]);
+  }, [currentInvoice, form]);
 
   // Item form
   const itemForm = useForm<ItemFormData>({
@@ -147,9 +184,27 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
         },
       });
     } else if (field === "invoiceDate") {
-      updateCurrentInvoice({
-        [field]: new Date(value),
-      });
+      // Parse date string as local date to avoid timezone issues
+      const newDate = parseLocalDate(String(value));
+      
+      // Regenerate invoice number based on new date with sequence
+      const regenerateInvoiceNumber = async () => {
+        if (user?.id && defaultStore?.id) {
+          const dateStr = String(value);
+          const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
+          const newInvoiceNumber = generateInvoiceNumber(newDate, user.id, sequence || 1);
+          updateCurrentInvoice({
+            [field]: newDate,
+            invoiceNumber: newInvoiceNumber,
+          });
+        } else {
+          updateCurrentInvoice({
+            [field]: newDate,
+          });
+        }
+      };
+      
+      regenerateInvoiceNumber();
     } else {
       updateCurrentInvoice({
         [field]: value,
@@ -212,19 +267,33 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           }
 
           // Prepare invoice data for mutation
+          // Format date as YYYY-MM-DD for database (no time component)
+          const invoiceDate = currentInvoice.invoiceDate 
+            ? formatDateForInput(new Date(currentInvoice.invoiceDate))
+            : formatDateForInput(new Date());
+          
+          // Calculate tax and total
+          const calculation = calculateTotal(
+            currentInvoice.subtotal || 0,
+            currentInvoice.shippingCost || 0,
+            taxEnabled,
+            taxPercentage
+          );
+          
           const invoiceData = {
             invoice: {
               id: currentInvoice.id,
               store_id: defaultStore.id,
               invoice_number: currentInvoice.invoiceNumber || '',
-              invoice_date: currentInvoice.invoiceDate?.toISOString() || new Date().toISOString(),
+              invoice_date: invoiceDate,
               customer_name: currentInvoice.customer?.name || '',
               customer_email: currentInvoice.customer?.email || '',
               customer_address: currentInvoice.customer?.address || '',
               customer_status: currentInvoice.customer?.status || 'Customer',
-              subtotal: currentInvoice.subtotal || 0,
-              shipping_cost: currentInvoice.shippingCost || 0,
-              total: currentInvoice.total || 0,
+              subtotal: calculation.subtotal,
+              shipping_cost: calculation.shippingCost,
+              tax_amount: calculation.taxAmount,
+              total: calculation.total,
               note: currentInvoice.note || '',
               status: 'synced' as const,
             },
@@ -432,38 +501,56 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
         </div>
 
         {/* Totals Section */}
-        {currentInvoice.items && currentInvoice.items.length > 0 && (
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="space-y-3">
-              <div className="flex justify-between text-base">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">
-                  {formatCurrency(currentInvoice.subtotal || 0)}
-                </span>
-              </div>
+        {currentInvoice.items && currentInvoice.items.length > 0 && (() => {
+          const calculation = calculateTotal(
+            currentInvoice.subtotal || 0,
+            currentInvoice.shippingCost || 0,
+            taxEnabled,
+            taxPercentage
+          );
+          
+          return (
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="space-y-3">
+                <div className="flex justify-between text-base">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium">
+                    {formatCurrency(calculation.subtotal)}
+                  </span>
+                </div>
 
-              <div className="flex justify-between items-center text-base">
-                <span className="text-gray-600">Ongkos Kirim</span>
-                <CurrencyInput
-                  value={currentInvoice.shippingCost || 0}
-                  onChange={(value) => {
-                    handleFormChange("shippingCost", value);
-                    calculateTotals();
-                  }}
-                  className="w-32 h-8 text-sm text-right"
-                  placeholder="0"
-                />
-              </div>
+                <div className="flex justify-between items-center text-base">
+                  <span className="text-gray-600">Ongkos Kirim</span>
+                  <CurrencyInput
+                    value={currentInvoice.shippingCost || 0}
+                    onChange={(value) => {
+                      handleFormChange("shippingCost", value);
+                      calculateTotals();
+                    }}
+                    className="w-32 h-8 text-sm text-right"
+                    placeholder="0"
+                  />
+                </div>
 
-              <div className="border-t pt-3 flex justify-between text-xl font-bold">
-                <span>Total</span>
-                <span className="text-primary">
-                  {formatCurrency(currentInvoice.total || 0)}
-                </span>
+                {taxEnabled && taxPercentage > 0 && (
+                  <div className="flex justify-between text-base">
+                    <span className="text-gray-600">Tax ({taxPercentage}%)</span>
+                    <span className="font-medium">
+                      {formatCurrency(calculation.taxAmount)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="border-t pt-3 flex justify-between text-xl font-bold">
+                  <span>Total</span>
+                  <span className="text-primary">
+                    {formatCurrency(calculation.total)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Fixed Bottom Actions - Green Zone */}

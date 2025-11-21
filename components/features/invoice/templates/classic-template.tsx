@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { InvoiceTemplateProps } from "../types";
+import { calculateTotal } from "@/lib/utils/invoice-calculation";
+import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Classic Invoice Template
@@ -24,10 +26,37 @@ export function ClassicInvoiceTemplate({
     items,
     subtotal,
     shippingCost,
-    total,
     invoiceNumber,
     invoiceDate,
   } = invoice;
+  
+  // Tax preferences state
+  const [taxEnabled, setTaxEnabled] = useState(false);
+  const [taxPercentage, setTaxPercentage] = useState(0);
+
+  // Fetch tax preferences on mount
+  useEffect(() => {
+    const fetchTaxPreferences = async () => {
+      try {
+        const { data } = await userPreferencesService.getUserPreferences();
+        setTaxEnabled(data.tax_enabled);
+        setTaxPercentage(data.tax_percentage ?? 0);
+      } catch (error) {
+        console.error("Failed to fetch tax preferences:", error);
+      }
+    };
+
+    fetchTaxPreferences();
+  }, []);
+
+  // Calculate totals with tax
+  const calculation = calculateTotal(
+    subtotal,
+    shippingCost,
+    taxEnabled,
+    taxPercentage
+  );
+  
   const brandColor = storeSettings?.brandColor || "#d4af37";
   const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
   const contactLine = [storeSettings?.whatsapp, storeSettings?.email]
@@ -45,9 +74,10 @@ export function ClassicInvoiceTemplate({
       amount: amount || normalized.replace(symbol || "", "").trim(),
     };
   };
-  const subtotalCurrency = splitCurrency(subtotal);
-  const shippingCurrency = splitCurrency(shippingCost);
-  const totalCurrency = splitCurrency(total);
+  const subtotalCurrency = splitCurrency(calculation.subtotal);
+  const taxCurrency = splitCurrency(calculation.taxAmount);
+  const shippingCurrency = splitCurrency(calculation.shippingCost);
+  const totalCurrency = splitCurrency(calculation.total);
 
   return (
     <div
@@ -417,6 +447,35 @@ export function ClassicInvoiceTemplate({
                 </span>
               </span>
             </div>
+            {taxEnabled && taxPercentage > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  paddingTop: "6px",
+                  paddingBottom: "16px",
+                  fontSize: "12pt",
+                  color: "#6b7280",
+                  borderBottom: "1px solid #e5e7eb",
+                }}
+              >
+                <span>Tax ({taxPercentage}%):</span>
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    paddingLeft: "24px",
+                    minWidth: "140px",
+                  }}
+                >
+                  <span>{taxCurrency.symbol}</span>
+                  <span style={{ textAlign: "right", flex: 1 }}>
+                    {taxCurrency.amount}
+                  </span>
+                </span>
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
