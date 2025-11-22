@@ -128,8 +128,9 @@ export function ClassicInvoiceTemplate({
                 src={storeSettings.logo}
                 alt="Store Logo"
                 style={{
-                  width: "72px",
-                  height: "72px",
+                  height: "100%",
+                  width: "auto",
+                  maxWidth: "100px",
                   objectFit: "contain",
                   marginRight: "12px",
                   flexShrink: 0,
@@ -629,7 +630,7 @@ export function ClassicInvoiceTemplate({
                   fontSize: "11pt",
                   marginBottom: "0px",
                   fontWeight: "bold",
-                  textAlign: "center",
+                  textAlign: "right",
                   width: "100%",
                 }}
               >
@@ -641,7 +642,7 @@ export function ClassicInvoiceTemplate({
                   fontSize: "10pt",
                   color: "#374151",
                   marginBottom: "8px",
-                  textAlign: "center",
+                  textAlign: "right",
                   width: "100%",
                 }}
               >

@@ -6,11 +6,13 @@
  */
 
 export { ClassicInvoiceTemplate } from './classic-template';
-
-// Future templates can be added here:
-// export { ModernInvoiceTemplate } from './modern-template';
-// export { MinimalInvoiceTemplate } from './minimal-template';
-// export { ColorfulInvoiceTemplate } from './colorful-template';
+export { SimpleInvoiceTemplate } from './simple-template';
+export { ModernInvoiceTemplate } from './modern-template';
+export { ElegantInvoiceTemplate } from './elegant-template';
+export { BoldInvoiceTemplate } from './bold-template';
+export { CompactInvoiceTemplate } from './compact-template';
+export { CreativeInvoiceTemplate } from './creative-template';
+export { CorporateInvoiceTemplate } from './corporate-template';
 
 /**
  * Template Registry
@@ -18,9 +20,13 @@ export { ClassicInvoiceTemplate } from './classic-template';
  */
 export const INVOICE_TEMPLATES = {
   classic: 'ClassicInvoiceTemplate',
-  // modern: 'ModernInvoiceTemplate',
-  // minimal: 'MinimalInvoiceTemplate',
-  // colorful: 'ColorfulInvoiceTemplate',
+  simple: 'SimpleInvoiceTemplate',
+  modern: 'ModernInvoiceTemplate',
+  elegant: 'ElegantInvoiceTemplate',
+  bold: 'BoldInvoiceTemplate',
+  compact: 'CompactInvoiceTemplate',
+  creative: 'CreativeInvoiceTemplate',
+  corporate: 'CorporateInvoiceTemplate',
 } as const;
 
 export type InvoiceTemplateId = keyof typeof INVOICE_TEMPLATES;

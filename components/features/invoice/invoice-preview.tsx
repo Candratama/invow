@@ -624,7 +624,7 @@ export function InvoicePreview({
                         height: "auto",
                         maxHeight: "80px",
                         objectFit: "contain",
-                        objectPosition: "right center",
+                        objectPosition: "right",
                         marginBottom: "8px",
                         display: "block",
                       }}
