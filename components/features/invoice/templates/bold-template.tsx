@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Bold Invoice Template
- * 
+ *
  * A strong and impactful invoice template with:
  * - Large bold typography
  * - Thick borders and dividers
@@ -54,7 +54,7 @@ export function BoldInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || "#dc2626";
+  const brandColor = storeSettings?.brandColor || "#10b981";
 
   return (
     <div
@@ -455,9 +455,18 @@ export function BoldInvoiceTemplate({
                 {storeSettings?.address && (
                   <div>{storeSettings.address.replace(/\n/g, " • ")}</div>
                 )}
-                <div>
-                  {storeSettings?.whatsapp} • {storeSettings?.email}
-                </div>
+                {(storeSettings?.whatsapp || storeSettings?.email) && (
+                  <div>
+                    {storeSettings?.whatsapp}
+                    {storeSettings?.whatsapp && storeSettings?.email && " • "}
+                    {storeSettings?.email}
+                  </div>
+                )}
+                {storeSettings?.tagline && (
+                  <div style={{ fontStyle: "italic", marginTop: "8px" }}>
+                    {storeSettings.tagline}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Corporate Invoice Template
- * 
+ *
  * A formal and professional invoice template with:
  * - Very structured layout
  * - Traditional business look
@@ -32,6 +32,7 @@ export function CorporateInvoiceTemplate({
 
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   useEffect(() => {
     const fetchTaxPreferences = async () => {
@@ -47,6 +48,31 @@ export function CorporateInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
+  useEffect(() => {
+    // Get primary color from CSS variable
+    const hslToHex = (h: number, s: number, l: number) => {
+      l /= 100;
+      const a = (s * Math.min(l, 1 - l)) / 100;
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+          .toString(16)
+          .padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary")
+      .trim();
+
+    if (primaryColor) {
+      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
+      setDefaultBrandColor(hslToHex(h, s, l));
+    }
+  }, []);
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -54,7 +80,7 @@ export function CorporateInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || "#1e40af";
+  const brandColor = storeSettings?.brandColor || defaultBrandColor;
 
   return (
     <div
@@ -136,7 +162,9 @@ export function CorporateInvoiceTemplate({
                 )}
               </div>
             </div>
-            <div style={{ textAlign: "right", fontSize: "9pt", color: "#6b7280" }}>
+            <div
+              style={{ textAlign: "right", fontSize: "9pt", color: "#6b7280" }}
+            >
               {storeSettings?.address && (
                 <div style={{ whiteSpace: "pre-wrap" }}>
                   {storeSettings.address}

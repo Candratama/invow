@@ -135,12 +135,25 @@
 
     /* Ensure minimum touch targets */
     button,
-    input,
     select,
     textarea,
     [role="button"] {
         min-height: 44px;
         min-width: 44px;
+    }
+
+    /* Exception for small UI components */
+    [role="switch"],
+    [role="radio"],
+    [role="checkbox"],
+    [role="slider"] {
+        min-height: unset;
+        min-width: unset;
+    }
+
+    /* Input fields should have min-height but not min-width */
+    input:not([type="radio"]):not([type="checkbox"]) {
+        min-height: 44px;
     }
 
     /* Improve tap highlighting */

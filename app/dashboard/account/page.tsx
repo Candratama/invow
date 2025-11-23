@@ -1,34 +1,190 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, useCallback, lazy } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import { ArrowLeft } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import SubscriptionStatus from "@/components/features/subscription/status";
-import UpgradeButton from "@/components/features/subscription/upgrade-button";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
-import { StoreSettingsTab } from "@/components/features/settings/store-settings-tab";
-import { ContactPersonTab } from "@/components/features/settings/contact-person-tab";
-import { UserPreferencesTab } from "@/components/features/settings/user-preferences-tab";
-import { useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-export default function AccountPage() {
+// Lazy load tabs for better performance
+const SubscriptionTab = lazy(() =>
+  import("@/components/features/settings/subscription-tab").then((mod) => ({
+    default: mod.SubscriptionTab,
+  }))
+);
+const BusinessInfoTab = lazy(() =>
+  import("@/components/features/settings/business-info-tab").then((mod) => ({
+    default: mod.BusinessInfoTab,
+  }))
+);
+const InvoiceSettingsTab = lazy(() =>
+  import("@/components/features/settings/invoice-settings-tab").then((mod) => ({
+    default: mod.InvoiceSettingsTab,
+  }))
+);
+
+type TabId = "subscription" | "business" | "invoice";
+
+interface Tab {
+  id: TabId;
+  label: string;
+}
+
+const TABS: Tab[] = [
+  { id: "subscription", label: "Subscription" },
+  { id: "business", label: "Business Info" },
+  { id: "invoice", label: "Invoice Settings" },
+];
+
+function AccountPageContent() {
   const router = useRouter();
-  const { user, signOut, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const { user, loading } = useAuth();
   const queryClient = useQueryClient();
-  const [refreshTrigger, setRefreshTrigger] = useState(false);
-  const [activeTab, setActiveTab] = useState<"subscription" | "store" | "contacts" | "preferences">("subscription");
 
-  // Use React Query for subscription data - automatic caching and background refetching
-  const { data: subscription, isLoading: subscriptionLoading } = useSubscriptionStatus();
+  // Determine default tab from URL parameters
+  const tabParam = searchParams.get("tab");
+  const autoUpgrade = searchParams.get("autoUpgrade");
+
+  const getDefaultTab = (): TabId => {
+    // If autoUpgrade is present, open subscription tab
+    if (autoUpgrade) return "subscription";
+    // If tab parameter is valid, use it
+    if (tabParam === "business" || tabParam === "invoice") return tabParam;
+    // Default to subscription
+    return "subscription";
+  };
+
+  const defaultTab = getDefaultTab();
+  const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingTab, setPendingTab] = useState<TabId | null>(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [mountedTabs, setMountedTabs] = useState<Set<TabId>>(
+    new Set([defaultTab])
+  );
+
+  // Prevent body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  // Prefetch next tab data on hover
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Prefetch other tabs after initial load
+      setMountedTabs(new Set(["subscription", "business", "invoice"]));
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/");
     }
   }, [user, loading, router]);
+
+  const handlePaymentSuccess = () => {
+    // Invalidate React Query cache to refetch subscription data
+    queryClient.invalidateQueries({ queryKey: ["subscription-status"] });
+  };
+
+  const handleBack = () => {
+    if (isDirty) {
+      // Show warning if there are unsaved changes
+      setShowWarning(true);
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
+  // Handle tab switch with unsaved changes check
+  const handleTabSwitch = useCallback(
+    (newTab: TabId) => {
+      if (newTab === activeTab) return;
+
+      // Mount the tab if not already mounted
+      setMountedTabs((prev) => new Set([...prev, newTab]));
+
+      if (isDirty) {
+        setPendingTab(newTab);
+        setShowWarning(true);
+      } else {
+        setActiveTab(newTab);
+      }
+    },
+    [activeTab, isDirty]
+  );
+
+  // Handle discard changes
+  const handleDiscard = useCallback(() => {
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setIsDirty(false);
+      setPendingTab(null);
+      setShowWarning(false);
+    } else {
+      // If no pending tab, user wants to navigate back
+      setIsDirty(false);
+      setShowWarning(false);
+      router.push("/dashboard");
+    }
+  }, [pendingTab, router]);
+
+  // Handle cancel warning
+  const handleCancelWarning = useCallback(() => {
+    setPendingTab(null);
+    setShowWarning(false);
+  }, []);
+
+  // Handle save and switch
+  const handleSaveAndSwitch = useCallback(() => {
+    // Trigger form submission in the active tab
+    const formId =
+      activeTab === "business"
+        ? "business-info-form"
+        : activeTab === "invoice"
+        ? "invoice-settings-form"
+        : null;
+
+    if (formId) {
+      const form = document.getElementById(formId) as HTMLFormElement;
+      if (form) {
+        form.requestSubmit();
+        // After successful save, switch tabs or navigate back
+        setTimeout(() => {
+          if (pendingTab) {
+            setActiveTab(pendingTab);
+            setIsDirty(false);
+            setPendingTab(null);
+            setShowWarning(false);
+          } else {
+            // User wants to navigate back
+            setIsDirty(false);
+            setShowWarning(false);
+            router.push("/dashboard");
+          }
+        }, 500);
+      }
+    }
+  }, [activeTab, pendingTab, router]);
+
+  const handleClose = () => {
+    router.push("/dashboard");
+  };
 
   if (loading) {
     return <LoadingSpinner message="Loading account..." />;
@@ -38,196 +194,138 @@ export default function AccountPage() {
     return null;
   }
 
-  const handleSignOut = async () => {
-    if (
-      confirm(
-        "Are you sure you want to sign out?",
-      )
-    ) {
-      await signOut();
-      router.push("/");
-    }
-  };
-
-  const handlePaymentSuccess = () => {
-    // Trigger subscription refresh after successful payment
-    setRefreshTrigger((prev) => !prev);
-    // Invalidate React Query cache to refetch subscription data
-    queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-  };
-  
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Payment Success/Failure Handler */}
-      <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
-      
-      {/* Sticky Header + Tabs */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        {/* Header */}
-        <div className="border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center justify-center w-11 h-11 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-              aria-label="Go back"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
-              Account Settings
-            </h1>
-            <div className="w-10" />
+    <>
+      <div className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden">
+        {/* Payment Success/Failure Handler */}
+        <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
+
+        {/* Header - Fixed */}
+        <div className="bg-white border-b z-30 shadow-sm flex-shrink-0">
+          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleBack}
+                  className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
+                  aria-label="Go back"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back</span>
+                </button>
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+                  Account Settings
+                </h1>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-around">
-            {[
-              { id: "subscription" as const, label: "Subscription" },
-              { id: "store" as const, label: "Store" },
-              { id: "contacts" as const, label: "Contacts" },
-              { id: "preferences" as const, label: "Preferences" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-3.5 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+        {/* Tab Navigation - Fixed */}
+        <div className="bg-white border-b z-20 shadow-sm flex-shrink-0">
+          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
+            <div className="flex justify-start gap-1">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabSwitch(tab.id)}
+                  className={`px-4 lg:px-6 py-4 text-sm font-medium transition-colors border-b-2 min-h-[48px] whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "text-primary border-primary"
+                      : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {/* Tab Content - Scrollable */}
+        <div className="flex-1 overflow-hidden bg-white">
+          <Suspense fallback={<SettingsSkeleton />}>
+            {mountedTabs.has("subscription") && (
+              <div
+                className="h-full"
+                style={{
+                  display: activeTab === "subscription" ? "block" : "none",
+                }}
+              >
+                <SubscriptionTab onClose={handleClose} />
+              </div>
+            )}
+            {mountedTabs.has("business") && (
+              <div
+                className="h-full"
+                style={{ display: activeTab === "business" ? "block" : "none" }}
+              >
+                <BusinessInfoTab
+                  onClose={handleClose}
+                  onDirtyChange={setIsDirty}
+                />
+              </div>
+            )}
+            {mountedTabs.has("invoice") && (
+              <div
+                className="h-full"
+                style={{ display: activeTab === "invoice" ? "block" : "none" }}
+              >
+                <InvoiceSettingsTab
+                  onClose={handleClose}
+                  onDirtyChange={setIsDirty}
+                />
+              </div>
+            )}
+          </Suspense>
         </div>
       </div>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 lg:px-6 lg:py-8">
-
-        {/* Tab Content */}
-        {activeTab === "subscription" && (
-          <div className="space-y-6">
-            {/* Subscription Status */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="p-6">
-                <h2 className="text-base lg:text-lg font-semibold mb-4">Subscription</h2>
-                <SubscriptionStatus 
-                  className="border-0 shadow-none p-0" 
-                  triggerRefresh={refreshTrigger}
-                />
-            
-            {/* Show upgrade button for free tier users or users near their limit */}
-            {!subscriptionLoading && subscription && (
-              <>
-                {subscription.tier === "free" && (
-                  <div className="mt-6 pt-6 border-t">
-                    <div className="space-y-3">
-                      <p className="text-sm text-gray-600">
-                        Upgrade to Starter plan for 200 invoices per month
-                      </p>
-                      <UpgradeButton 
-                        tier="starter" 
-                        className="w-full"
-                        requireAuth={false}
-                      >
-                        Upgrade to Starter - Rp 15,000
-                      </UpgradeButton>
-                    </div>
-                  </div>
-                )}
-                
-                {subscription.tier === "free" && subscription.remainingInvoices <= 10 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800 font-medium">
-                      ⚠️ You&apos;re running low on invoices!
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Only {subscription.remainingInvoices} invoices remaining this month. Upgrade now to avoid interruption.
-                    </p>
-                  </div>
-                )}
-
-                {subscription.tier === "starter" && subscription.remainingInvoices <= 20 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800 font-medium">
-                      ⚠️ You&apos;re running low on invoices!
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Only {subscription.remainingInvoices} invoices remaining this month.
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-              </div>
-            </div>
-
-            {/* Account Info */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-base lg:text-lg font-semibold mb-4">Account Information</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="text"
-                    value={user.email || ""}
-                    disabled
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    User ID
-                  </label>
-                  <input
-                    type="text"
-                    value={user.id}
-                    disabled
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono text-gray-600"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Sign Out */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-base lg:text-lg font-semibold mb-4 text-red-600">Sign Out</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                You&apos;ll need to log in again to access your account after signing out.
-              </p>
-              <button
-                onClick={handleSignOut}
-                className="w-full py-3 px-4 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
+      {/* Unsaved Changes Warning Dialog */}
+      <Dialog open={showWarning} onOpenChange={setShowWarning}>
+        <DialogContent className="max-w-md mx-4 sm:mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">
+              Unsaved Changes
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-3 sm:py-4 roun">
+            <p className="text-sm text-gray-600">
+              You have unsaved changes. What would you like to do?
+            </p>
           </div>
-        )}
-
-        {activeTab === "store" && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <StoreSettingsTab onClose={() => router.push("/dashboard")} />
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={handleSaveAndSwitch}
+              className="w-full min-h-[44px]"
+            >
+              Save and Continue
+            </Button>
+            <Button
+              onClick={handleDiscard}
+              variant="destructive"
+              className="w-full min-h-[44px]"
+            >
+              Discard Changes
+            </Button>
+            <Button
+              onClick={handleCancelWarning}
+              variant="outline"
+              className="w-full min-h-[44px]"
+            >
+              Cancel
+            </Button>
           </div>
-        )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
-        {activeTab === "contacts" && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <ContactPersonTab onClose={() => router.push("/dashboard")} />
-          </div>
-        )}
-
-        {activeTab === "preferences" && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <UserPreferencesTab onClose={() => router.push("/dashboard")} />
-          </div>
-        )}
-      </main>
-    </div>
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner message="Loading account..." />}>
+      <AccountPageContent />
+    </Suspense>
   );
 }

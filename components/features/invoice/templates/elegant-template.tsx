@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Elegant Invoice Template
- * 
+ *
  * A sophisticated invoice template with:
  * - Serif-inspired typography
  * - Thin elegant lines
@@ -32,6 +32,7 @@ export function ElegantInvoiceTemplate({
 
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   useEffect(() => {
     const fetchTaxPreferences = async () => {
@@ -47,6 +48,31 @@ export function ElegantInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
+  useEffect(() => {
+    // Get primary color from CSS variable
+    const hslToHex = (h: number, s: number, l: number) => {
+      l /= 100;
+      const a = (s * Math.min(l, 1 - l)) / 100;
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+          .toString(16)
+          .padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary")
+      .trim();
+
+    if (primaryColor) {
+      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
+      setDefaultBrandColor(hslToHex(h, s, l));
+    }
+  }, []);
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -54,7 +80,7 @@ export function ElegantInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || "#8b7355";
+  const brandColor = storeSettings?.brandColor || defaultBrandColor;
 
   return (
     <div
@@ -257,7 +283,7 @@ export function ElegantInvoiceTemplate({
             <div style={{ width: "17.5%", textAlign: "right" }}>AMOUNT</div>
           </div>
 
-          {items.map((item, index) => (
+          {items.map((item) => (
             <div
               key={item.id}
               style={{

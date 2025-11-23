@@ -1,5 +1,6 @@
-export { StoreSettingsTab } from './store-settings-tab';
-export { ContactPersonTab } from './contact-person-tab';
-export { UserPreferencesTab } from './user-preferences-tab';
 export { ExportQualitySettings } from './export-quality-settings';
 export { TaxSettings } from './tax-settings';
+export { SubscriptionTab } from './subscription-tab';
+export { BusinessInfoTab } from './business-info-tab';
+export { InvoiceSettingsTab } from './invoice-settings-tab';
+export { SettingsDialog } from './settings-dialog';

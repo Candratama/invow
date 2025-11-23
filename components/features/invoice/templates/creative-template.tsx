@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Creative Invoice Template
- * 
+ *
  * A unique and artistic invoice template with:
  * - Asymmetric layout
  * - Playful use of brand color
@@ -32,6 +32,7 @@ export function CreativeInvoiceTemplate({
 
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   useEffect(() => {
     const fetchTaxPreferences = async () => {
@@ -47,6 +48,31 @@ export function CreativeInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
+  useEffect(() => {
+    // Get primary color from CSS variable
+    const hslToHex = (h: number, s: number, l: number) => {
+      l /= 100;
+      const a = (s * Math.min(l, 1 - l)) / 100;
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+          .toString(16)
+          .padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary")
+      .trim();
+
+    if (primaryColor) {
+      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
+      setDefaultBrandColor(hslToHex(h, s, l));
+    }
+  }, []);
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -54,7 +80,7 @@ export function CreativeInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || "#8b5cf6";
+  const brandColor = storeSettings?.brandColor || defaultBrandColor;
 
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -107,13 +133,15 @@ export function CreativeInvoiceTemplate({
         <div
           style={{
             position: "absolute",
-            top: "-100px",
-            right: "-100px",
-            width: "300px",
-            height: "300px",
+            overflow: "hidden",
+            top: "0px",
+            right: "0px",
+            width: "250px",
+            height: "250px",
             borderRadius: "50%",
             backgroundColor: lightBrandColor,
             zIndex: 0,
+            pointerEvents: "none",
           }}
         />
 
@@ -122,20 +150,25 @@ export function CreativeInvoiceTemplate({
           <div style={{ marginBottom: "40px" }}>
             <div
               style={{
-                display: "inline-block",
+                display: "block",
                 backgroundColor: brandColor,
                 color: "#ffffff",
                 padding: "20px 30px",
                 borderRadius: "0 30px 30px 0",
                 marginLeft: "-50px",
                 marginBottom: "20px",
+                width: "fit-content",
+                position: "relative",
+                zIndex: 2,
               }}
             >
               <div
                 style={{
                   fontSize: "28pt",
                   fontWeight: "700",
-                  letterSpacing: "1px",
+                  letterSpacing: "2px",
+                  color: "#ffffff",
+                  lineHeight: "1",
                 }}
               >
                 INVOICE
@@ -149,7 +182,9 @@ export function CreativeInvoiceTemplate({
                 alignItems: "flex-start",
               }}
             >
-              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", gap: "16px", alignItems: "center" }}
+              >
                 {storeSettings?.logo && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -187,7 +222,7 @@ export function CreativeInvoiceTemplate({
 
               <div
                 style={{
-                  backgroundColor: lightBrandColor,
+                  backgroundColor: brandColor,
                   padding: "16px 20px",
                   borderRadius: "12px",
                   textAlign: "right",
@@ -196,9 +231,10 @@ export function CreativeInvoiceTemplate({
                 <div
                   style={{
                     fontSize: "9pt",
-                    color: brandColor,
+                    color: "#ffffff",
                     fontWeight: "700",
                     marginBottom: "6px",
+                    letterSpacing: "1px",
                   }}
                 >
                   INVOICE NO.
@@ -208,11 +244,14 @@ export function CreativeInvoiceTemplate({
                     fontSize: "11pt",
                     fontWeight: "700",
                     marginBottom: "8px",
+                    color: "#ffffff",
                   }}
                 >
                   {invoiceNumber}
                 </div>
-                <div style={{ fontSize: "9pt", color: "#6b7280" }}>
+                <div
+                  style={{ fontSize: "9pt", color: "rgba(255, 255, 255, 0.9)" }}
+                >
                   {formatDate(new Date(invoiceDate))}
                 </div>
               </div>
@@ -254,29 +293,33 @@ export function CreativeInvoiceTemplate({
               >
                 {customer.name}
               </div>
-              <div style={{ fontSize: "10pt", color: "#6b7280" }}>
-                {customer.address}
-                
-              </div>
-              <div style={{ fontSize: "10pt", color: "#6b7280" }}>
-
-                {customer.status && (
-                  <div
-                    style={{
-                      marginTop: "8px",
-                      display: "inline-block",
-                      padding: "4px 12px",
-                      backgroundColor: brandColor,
-                      color: "#ffffff",
-                      borderRadius: "12px",
-                      fontSize: "9pt",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {customer.status}
-                  </div>
-                )}
-              </div>
+              {customer.address && (
+                <div
+                  style={{
+                    fontSize: "10pt",
+                    color: "#6b7280",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {customer.address}
+                </div>
+              )}
+              {customer.status && (
+                <div
+                  style={{
+                    marginTop: "8px",
+                    display: "inline-block",
+                    padding: "4px 12px",
+                    backgroundColor: brandColor,
+                    color: "#ffffff",
+                    borderRadius: "12px",
+                    fontSize: "9pt",
+                    fontWeight: "600",
+                  }}
+                >
+                  {customer.status}
+                </div>
+              )}
             </div>
 
             <div
@@ -299,12 +342,17 @@ export function CreativeInvoiceTemplate({
               </div>
               <div style={{ fontSize: "10pt", color: "#6b7280" }}>
                 {storeSettings?.address && (
-                  <div style={{ whiteSpace: "pre-wrap" }}>
+                  <div style={{ whiteSpace: "pre-wrap", marginBottom: "4px" }}>
                     {storeSettings.address}
                   </div>
                 )}
                 {storeSettings?.whatsapp && <div>{storeSettings.whatsapp}</div>}
                 {storeSettings?.email && <div>{storeSettings.email}</div>}
+                {storeSettings?.storeNumber && (
+                  <div style={{ marginTop: "4px" }}>
+                    ID: {storeSettings.storeNumber}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -337,7 +385,8 @@ export function CreativeInvoiceTemplate({
                   padding: "14px 16px",
                   borderBottom: "1px solid #e5e7eb",
                   fontSize: "10pt",
-                  backgroundColor: index % 2 === 1 ? lightBrandColor : "#ffffff",
+                  backgroundColor:
+                    index % 2 === 1 ? lightBrandColor : "#ffffff",
                 }}
               >
                 <div

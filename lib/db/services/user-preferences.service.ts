@@ -9,6 +9,7 @@ import type {
   UserPreferencesInsert,
   UserPreferencesUpdate,
 } from "@/lib/db/database.types";
+import type { InvoiceTemplateId } from "@/components/features/invoice/templates";
 
 export class UserPreferencesService {
   private supabase = createClient();
@@ -88,6 +89,7 @@ export class UserPreferencesService {
             export_quality_kb: 100,
             tax_enabled: false,
             tax_percentage: null,
+            selected_template: "classic",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -281,6 +283,80 @@ export class UserPreferencesService {
       const { data, error } = await this.supabase
         .from("user_preferences")
         .update(updateData)
+        .eq("user_id", user.id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return { data, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Get selected invoice template for the authenticated user
+   * Returns 'classic' as default if no preference is set
+   */
+  async getSelectedTemplate(): Promise<{
+    data: InvoiceTemplateId;
+    error: Error | null;
+  }> {
+    try {
+      const { data: preferences, error } = await this.getUserPreferences();
+
+      if (error) throw error;
+
+      return { 
+        data: preferences.selected_template as InvoiceTemplateId, 
+        error: null 
+      };
+    } catch (error) {
+      return {
+        data: "classic",
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Update selected invoice template
+   * Validates that template is one of the available templates
+   */
+  async updateSelectedTemplate(
+    template: InvoiceTemplateId
+  ): Promise<{
+    data: UserPreferences | null;
+    error: Error | null;
+  }> {
+    try {
+      // Validate template value
+      const validTemplates: InvoiceTemplateId[] = [
+        'classic', 'simple', 'modern', 'elegant', 
+        'bold', 'compact', 'creative', 'corporate'
+      ];
+      
+      if (!validTemplates.includes(template)) {
+        throw new Error(
+          `Invalid template. Must be one of: ${validTemplates.join(', ')}`
+        );
+      }
+
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const { data, error } = await this.supabase
+        .from("user_preferences")
+        .update({ selected_template: template })
         .eq("user_id", user.id)
         .select()
         .single();

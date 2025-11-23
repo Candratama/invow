@@ -29,6 +29,7 @@ export interface Database {
           export_quality_kb: 50 | 100 | 150
           tax_enabled: boolean
           tax_percentage: number | null
+          selected_template: 'classic' | 'simple' | 'modern' | 'elegant' | 'bold' | 'compact' | 'creative' | 'corporate'
           created_at: string
           updated_at: string
         }
@@ -43,6 +44,7 @@ export interface Database {
           export_quality_kb?: 50 | 100 | 150
           tax_enabled?: boolean
           tax_percentage?: number | null
+          selected_template?: 'classic' | 'simple' | 'modern' | 'elegant' | 'bold' | 'compact' | 'creative' | 'corporate'
           created_at?: string
           updated_at?: string
         }
@@ -57,6 +59,7 @@ export interface Database {
           export_quality_kb?: 50 | 100 | 150
           tax_enabled?: boolean
           tax_percentage?: number | null
+          selected_template?: 'classic' | 'simple' | 'modern' | 'elegant' | 'bold' | 'compact' | 'creative' | 'corporate'
           created_at?: string
           updated_at?: string
         }

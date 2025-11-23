@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Compact Invoice Template
- * 
+ *
  * A space-efficient invoice template with:
  * - Dense information layout
  * - Smaller but readable fonts
@@ -32,6 +32,7 @@ export function CompactInvoiceTemplate({
 
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   useEffect(() => {
     const fetchTaxPreferences = async () => {
@@ -47,6 +48,31 @@ export function CompactInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
+  useEffect(() => {
+    // Get primary color from CSS variable
+    const hslToHex = (h: number, s: number, l: number) => {
+      l /= 100;
+      const a = (s * Math.min(l, 1 - l)) / 100;
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+          .toString(16)
+          .padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary")
+      .trim();
+
+    if (primaryColor) {
+      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
+      setDefaultBrandColor(hslToHex(h, s, l));
+    }
+  }, []);
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -54,7 +80,7 @@ export function CompactInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || "#059669";
+  const brandColor = storeSettings?.brandColor || defaultBrandColor;
 
   return (
     <div
@@ -179,9 +205,13 @@ export function CompactInvoiceTemplate({
               {storeSettings?.address && (
                 <div>{storeSettings.address.replace(/\n/g, ", ")}</div>
               )}
-              <div>
-                {storeSettings?.whatsapp} • {storeSettings?.email}
-              </div>
+              {(storeSettings?.whatsapp || storeSettings?.email) && (
+                <div>
+                  {storeSettings?.whatsapp}
+                  {storeSettings?.whatsapp && storeSettings?.email && " • "}
+                  {storeSettings?.email}
+                </div>
+              )}
               {storeSettings?.storeNumber && (
                 <div>ID: {storeSettings.storeNumber}</div>
               )}
@@ -217,7 +247,7 @@ export function CompactInvoiceTemplate({
               {customer.name}
             </div>
             <div style={{ fontSize: "8pt", color: "#6b7280" }}>
-              {customer.address}
+              {customer.address && <div>{customer.address}</div>}
               {customer.status && <div>Status: {customer.status}</div>}
             </div>
           </div>

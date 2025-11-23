@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/ui/logo";
 import { InvoiceForm } from "@/components/features/invoice/invoice-form";
@@ -19,7 +19,12 @@ import { Invoice } from "@/lib/types";
 import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { calculateRevenueMetrics } from "@/lib/utils/revenue";
-import { useAllInvoices, useInvoices, useSubscriptionStatus, useDeleteInvoice } from "@/lib/hooks/use-dashboard-data";
+import {
+  useAllInvoices,
+  useInvoices,
+  useSubscriptionStatus,
+  useDeleteInvoice,
+} from "@/lib/hooks/use-dashboard-data";
 import { useStoreSettings } from "@/lib/hooks/use-store-settings";
 
 function PreviewView({
@@ -49,7 +54,10 @@ function PreviewView({
         }
       }
 
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings ?? null);
+      await generateJPEGFromInvoice(
+        currentInvoice as Invoice,
+        storeSettings ?? null
+      );
 
       // Notify completion
       onComplete();
@@ -75,10 +83,11 @@ function PreviewView({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button
             onClick={onBack}
-            className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5"
+            className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
             aria-label="Go back"
           >
-            ← Back
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
           </button>
           <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
             Preview
@@ -99,76 +108,84 @@ function PreviewView({
 export default function HomePage() {
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [currentPage, setCurrentPage] = useState(1);
-  
-  const {
-    initializeNewInvoice,
-    loadCompleted,
-  } = useInvoiceStore();
+
+  const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
 
   // Get auth state
   const { user, loading: authLoading } = useAuth();
 
   // React Query hooks - automatic caching and background refetching
-  const { data: allInvoicesData, isLoading: allInvoicesLoading } = useAllInvoices();
-  const { data: invoicesData, isLoading: invoicesLoading, isError } = useInvoices(currentPage, 10);
+  const { data: allInvoicesData, isLoading: allInvoicesLoading } =
+    useAllInvoices();
+  const {
+    data: invoicesData,
+    isLoading: invoicesLoading,
+    isError,
+  } = useInvoices(currentPage, 10);
   const { data: subscriptionStatus } = useSubscriptionStatus();
-  
+
   // Mutation hook for deleting invoices with optimistic updates
   const deleteInvoice = useDeleteInvoice();
 
   // Calculate revenue metrics from ALL invoices (not paginated)
-  const allCompletedInvoices = allInvoicesData?.map(inv => ({
-    id: inv.id,
-    invoiceNumber: inv.invoice_number,
-    invoiceDate: parseLocalDate(inv.invoice_date),
-    dueDate: parseLocalDate(inv.invoice_date),
-    customer: {
-      name: inv.customer_name,
-      email: inv.customer_email || "",
-      status: (inv.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
-      address: inv.customer_address || ""
-    },
-    items: [], // Not needed for revenue calculation
-    subtotal: inv.subtotal,
-    shippingCost: inv.shipping_cost,
-    total: inv.total,
-    note: inv.note || undefined,
-    status: 'completed' as const,
-    createdAt: new Date(inv.created_at),
-    updatedAt: new Date(inv.updated_at),
-    syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined
-  })) || [];
+  const allCompletedInvoices =
+    allInvoicesData?.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoice_number,
+      invoiceDate: parseLocalDate(inv.invoice_date),
+      dueDate: parseLocalDate(inv.invoice_date),
+      customer: {
+        name: inv.customer_name,
+        email: inv.customer_email || "",
+        status:
+          (inv.customer_status as "Distributor" | "Reseller" | "Customer") ||
+          "Customer",
+        address: inv.customer_address || "",
+      },
+      items: [], // Not needed for revenue calculation
+      subtotal: inv.subtotal,
+      shippingCost: inv.shipping_cost,
+      total: inv.total,
+      note: inv.note || undefined,
+      status: "completed" as const,
+      createdAt: new Date(inv.created_at),
+      updatedAt: new Date(inv.updated_at),
+      syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
+    })) || [];
 
   const revenueMetrics = calculateRevenueMetrics(allCompletedInvoices);
 
   // Transform paginated invoices for display
-  const completedInvoices = invoicesData?.invoices.map(inv => ({
-    id: inv.id,
-    invoiceNumber: inv.invoice_number,
-    invoiceDate: parseLocalDate(inv.invoice_date),
-    dueDate: parseLocalDate(inv.invoice_date),
-    customer: {
-      name: inv.customer_name,
-      email: inv.customer_email || "",
-      status: (inv.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
-      address: inv.customer_address || ""
-    },
-    items: inv.invoice_items.map(item => ({
-      id: item.id,
-      description: item.description,
-      quantity: item.quantity,
-      price: item.price,
-      subtotal: item.subtotal,
-    })),
-    subtotal: inv.subtotal,
-    shippingCost: inv.shipping_cost,
-    total: inv.total,
-    note: inv.note || undefined,
-    status: 'completed' as const,
-    createdAt: new Date(inv.created_at),
-    updatedAt: new Date(inv.updated_at),
-    syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined
-  })) || [];
+  const completedInvoices =
+    invoicesData?.invoices.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoice_number,
+      invoiceDate: parseLocalDate(inv.invoice_date),
+      dueDate: parseLocalDate(inv.invoice_date),
+      customer: {
+        name: inv.customer_name,
+        email: inv.customer_email || "",
+        status:
+          (inv.customer_status as "Distributor" | "Reseller" | "Customer") ||
+          "Customer",
+        address: inv.customer_address || "",
+      },
+      items: inv.invoice_items.map((item) => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        price: item.price,
+        subtotal: item.subtotal,
+      })),
+      subtotal: inv.subtotal,
+      shippingCost: inv.shipping_cost,
+      total: inv.total,
+      note: inv.note || undefined,
+      status: "completed" as const,
+      createdAt: new Date(inv.created_at),
+      updatedAt: new Date(inv.updated_at),
+      syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
+    })) || [];
 
   const isLoading = invoicesLoading && !invoicesData;
   const isRevenueLoading = allInvoicesLoading && !allInvoicesData;
@@ -210,7 +227,10 @@ export default function HomePage() {
     setView("form");
   };
 
-  const handleDeleteCompleted = async (e: React.MouseEvent, invoiceId: string) => {
+  const handleDeleteCompleted = async (
+    e: React.MouseEvent,
+    invoiceId: string
+  ) => {
     e.stopPropagation();
     if (confirm("Delete this invoice?")) {
       try {
@@ -218,7 +238,8 @@ export default function HomePage() {
         // Success - optimistic update already handled by the mutation hook
       } catch (error) {
         // Error message - rollback already handled by the mutation hook
-        const errorMessage = error instanceof Error ? error.message : "Failed to delete invoice";
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to delete invoice";
         toast.error(`Failed to delete invoice: ${errorMessage}`);
       }
     }
@@ -235,10 +256,11 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button
               onClick={() => setView("home")}
-              className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5"
+              className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
               aria-label="Go back"
             >
-              ← Back
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
             </button>
             <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
               New Invoice
@@ -264,7 +286,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Payment Success/Failure Handler */}
       <PaymentSuccessHandler />
-      
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

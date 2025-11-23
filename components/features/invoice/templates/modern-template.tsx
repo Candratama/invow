@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Modern Invoice Template
- * 
+ *
  * A contemporary invoice template with:
  * - Bold geometric design
  * - Gradient accents
@@ -33,6 +33,7 @@ export function ModernInvoiceTemplate({
   // Tax preferences state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   // Fetch tax preferences on mount
   useEffect(() => {
@@ -49,6 +50,31 @@ export function ModernInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
+  useEffect(() => {
+    // Get primary color from CSS variable
+    const hslToHex = (h: number, s: number, l: number) => {
+      l /= 100;
+      const a = (s * Math.min(l, 1 - l)) / 100;
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+          .toString(16)
+          .padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary")
+      .trim();
+
+    if (primaryColor) {
+      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
+      setDefaultBrandColor(hslToHex(h, s, l));
+    }
+  }, []);
+
   // Calculate totals with tax
   const calculation = calculateTotal(
     subtotal,
@@ -57,7 +83,7 @@ export function ModernInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || "#6366f1";
+  const brandColor = storeSettings?.brandColor || defaultBrandColor;
 
   // Helper to create lighter shade of brand color
   const hexToRgb = (hex: string) => {

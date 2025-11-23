@@ -8,7 +8,7 @@ import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Classic Invoice Template
- * 
+ *
  * A professional invoice template with:
  * - Header with logo and store info
  * - Customer billing section
@@ -29,10 +29,11 @@ export function ClassicInvoiceTemplate({
     invoiceNumber,
     invoiceDate,
   } = invoice;
-  
+
   // Tax preferences state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
+  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   // Fetch tax preferences on mount
   useEffect(() => {
@@ -49,6 +50,31 @@ export function ClassicInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
+  useEffect(() => {
+    // Get primary color from CSS variable
+    const hslToHex = (h: number, s: number, l: number) => {
+      l /= 100;
+      const a = (s * Math.min(l, 1 - l)) / 100;
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color)
+          .toString(16)
+          .padStart(2, "0");
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary")
+      .trim();
+
+    if (primaryColor) {
+      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
+      setDefaultBrandColor(hslToHex(h, s, l));
+    }
+  }, []);
+
   // Calculate totals with tax
   const calculation = calculateTotal(
     subtotal,
@@ -56,8 +82,8 @@ export function ClassicInvoiceTemplate({
     taxEnabled,
     taxPercentage
   );
-  
-  const brandColor = storeSettings?.brandColor || "#EFBF04";
+
+  const brandColor = storeSettings?.brandColor || defaultBrandColor;
   const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
   const contactLine = [storeSettings?.whatsapp, storeSettings?.email]
     .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
@@ -294,7 +320,7 @@ export function ClassicInvoiceTemplate({
           </div>
           {items.map((item, index) => {
             const { symbol: priceSymbol, amount: priceAmount } = splitCurrency(
-              item.price,
+              item.price
             );
             const { symbol: subtotalSymbol, amount: subtotalAmount } =
               splitCurrency(item.subtotal);

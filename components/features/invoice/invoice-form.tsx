@@ -8,7 +8,14 @@ import { Plus, Download, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useInvoiceStore } from "@/lib/store";
 import { InvoiceItem, Invoice } from "@/lib/types";
-import { formatCurrency, parseLocalDate, formatDateForInput, generateInvoiceNumber, formatDate, generateUUID } from "@/lib/utils";
+import {
+  formatCurrency,
+  parseLocalDate,
+  formatDateForInput,
+  generateInvoiceNumber,
+  formatDate,
+  generateUUID,
+} from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
@@ -26,9 +33,22 @@ import {
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ItemRow } from "@/components/features/invoice/item-row";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
-import { ClassicInvoiceTemplate } from "@/components/features/invoice/templates";
+import {
+  ClassicInvoiceTemplate,
+  SimpleInvoiceTemplate,
+  ModernInvoiceTemplate,
+  ElegantInvoiceTemplate,
+  BoldInvoiceTemplate,
+  CompactInvoiceTemplate,
+  CreativeInvoiceTemplate,
+  CorporateInvoiceTemplate,
+  type InvoiceTemplateId,
+} from "@/components/features/invoice/templates";
 import { useAuth } from "@/lib/auth/auth-context";
-import { useCreateInvoice, useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
+import {
+  useCreateInvoice,
+  useSubscriptionStatus,
+} from "@/lib/hooks/use-dashboard-data";
 import { useStoreSettings } from "@/lib/hooks/use-store-settings";
 import { useDefaultStore } from "@/lib/hooks/use-default-store";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
@@ -71,18 +91,23 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   } = useInvoiceStore();
 
   const { user } = useAuth();
-  
+
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
-  
+
   // Tax preferences state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
-  
+
+  // Selected template state
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<InvoiceTemplateId>("classic");
+
   // Use React Query hooks for subscription status, store settings, and invoice creation
-  const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useSubscriptionStatus();
+  const { data: subscriptionStatus, isLoading: isLoadingSubscription } =
+    useSubscriptionStatus();
   const { data: storeSettings } = useStoreSettings();
   const { data: defaultStore } = useDefaultStore();
   const createInvoice = useCreateInvoice();
@@ -92,30 +117,40 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     const initInvoice = async () => {
       // Wait for both user and defaultStore to be available
       if (!user?.id || !defaultStore?.id) {
-        console.log('⏳ Waiting for user or store...', { userId: user?.id, storeId: defaultStore?.id });
+        console.log("⏳ Waiting for user or store...", {
+          userId: user?.id,
+          storeId: defaultStore?.id,
+        });
         return;
       }
 
       // Check if we need to initialize or fix existing invoice
       const needsInit = !currentInvoice;
-      const needsFix = currentInvoice?.invoiceNumber?.includes('XXXXXXXX');
+      const needsFix = currentInvoice?.invoiceNumber?.includes("XXXXXXXX");
 
       if (!needsInit && !needsFix) {
-        console.log('✅ Invoice already properly initialized');
+        console.log("✅ Invoice already properly initialized");
         return;
       }
 
-      console.log('🚀 Initializing/fixing invoice with userId:', user.id);
+      console.log("🚀 Initializing/fixing invoice with userId:", user.id);
 
       // Get sequence number for today
       const today = new Date();
       const dateStr = formatDateForInput(today);
-      const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
-      
+      const { data: sequence } = await invoicesService.getNextInvoiceSequence(
+        defaultStore.id,
+        dateStr
+      );
+
       // Generate invoice number with actual user ID
-      const invoiceNumber = generateInvoiceNumber(today, user.id, sequence || 1);
-      
-      console.log('✅ Generated invoice number:', invoiceNumber);
+      const invoiceNumber = generateInvoiceNumber(
+        today,
+        user.id,
+        sequence || 1
+      );
+
+      console.log("✅ Generated invoice number:", invoiceNumber);
 
       if (needsInit) {
         // Initialize new invoice with proper invoice number
@@ -135,30 +170,37 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
         };
 
         setCurrentInvoice(newInvoice);
-        console.log('✨ New invoice initialized');
+        console.log("✨ New invoice initialized");
       } else if (needsFix) {
         // Fix existing invoice number
         updateCurrentInvoice({ invoiceNumber });
-        console.log('🔧 Invoice number fixed');
+        console.log("🔧 Invoice number fixed");
       }
     };
-    
-    initInvoice();
-  }, [user?.id, defaultStore?.id, currentInvoice, setCurrentInvoice, updateCurrentInvoice]);
 
-  // Fetch tax preferences on mount
+    initInvoice();
+  }, [
+    user?.id,
+    defaultStore?.id,
+    currentInvoice,
+    setCurrentInvoice,
+    updateCurrentInvoice,
+  ]);
+
+  // Fetch tax preferences and selected template on mount
   useEffect(() => {
-    const fetchTaxPreferences = async () => {
+    const fetchUserPreferences = async () => {
       try {
         const { data } = await userPreferencesService.getUserPreferences();
         setTaxEnabled(data.tax_enabled);
         setTaxPercentage(data.tax_percentage ?? 0);
+        setSelectedTemplate(data.selected_template as InvoiceTemplateId);
       } catch (error) {
-        console.error("Failed to fetch tax preferences:", error);
+        console.error("Failed to fetch user preferences:", error);
       }
     };
 
-    fetchTaxPreferences();
+    fetchUserPreferences();
   }, []);
 
   // Main form
@@ -203,10 +245,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     },
   });
 
-
   const handleFormChange = (
     field: keyof InvoiceFormData,
-    value: string | Date | number,
+    value: string | Date | number
   ) => {
     if (
       field === "customerName" ||
@@ -234,26 +275,36 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     } else if (field === "invoiceDate") {
       // Parse date string as local date to avoid timezone issues
       const newDate = parseLocalDate(String(value));
-      
+
       // Regenerate invoice number based on new date with sequence
       const regenerateInvoiceNumber = async () => {
         if (user?.id && defaultStore?.id) {
           const dateStr = String(value);
-          const { data: sequence } = await invoicesService.getNextInvoiceSequence(defaultStore.id, dateStr);
-          const newInvoiceNumber = generateInvoiceNumber(newDate, user.id, sequence || 1);
-          console.log('📅 Date changed, new invoice number:', newInvoiceNumber);
+          const { data: sequence } =
+            await invoicesService.getNextInvoiceSequence(
+              defaultStore.id,
+              dateStr
+            );
+          const newInvoiceNumber = generateInvoiceNumber(
+            newDate,
+            user.id,
+            sequence || 1
+          );
+          console.log("📅 Date changed, new invoice number:", newInvoiceNumber);
           updateCurrentInvoice({
             [field]: newDate,
             invoiceNumber: newInvoiceNumber,
           });
         } else {
-          console.warn('⚠️ Cannot regenerate invoice number: user or store not available');
+          console.warn(
+            "⚠️ Cannot regenerate invoice number: user or store not available"
+          );
           updateCurrentInvoice({
             [field]: newDate,
           });
         }
       };
-      
+
       regenerateInvoiceNumber();
     } else {
       updateCurrentInvoice({
@@ -318,10 +369,10 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
 
           // Prepare invoice data for mutation
           // Format date as YYYY-MM-DD for database (no time component)
-          const invoiceDate = currentInvoice.invoiceDate 
+          const invoiceDate = currentInvoice.invoiceDate
             ? formatDateForInput(new Date(currentInvoice.invoiceDate))
             : formatDateForInput(new Date());
-          
+
           // Calculate tax and total
           const calculation = calculateTotal(
             currentInvoice.subtotal || 0,
@@ -329,23 +380,23 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             taxEnabled,
             taxPercentage
           );
-          
+
           const invoiceData = {
             invoice: {
               id: currentInvoice.id,
               store_id: defaultStore.id,
-              invoice_number: currentInvoice.invoiceNumber || '',
+              invoice_number: currentInvoice.invoiceNumber || "",
               invoice_date: invoiceDate,
-              customer_name: currentInvoice.customer?.name || '',
-              customer_email: currentInvoice.customer?.email || '',
-              customer_address: currentInvoice.customer?.address || '',
-              customer_status: currentInvoice.customer?.status || 'Customer',
+              customer_name: currentInvoice.customer?.name || "",
+              customer_email: currentInvoice.customer?.email || "",
+              customer_address: currentInvoice.customer?.address || "",
+              customer_status: currentInvoice.customer?.status || "Customer",
               subtotal: calculation.subtotal,
               shipping_cost: calculation.shippingCost,
               tax_amount: calculation.taxAmount,
               total: calculation.total,
-              note: currentInvoice.note || '',
-              status: 'synced' as const,
+              note: currentInvoice.note || "",
+              status: "synced" as const,
             },
             items: (currentInvoice.items || []).map((item, index) => ({
               id: item.id,
@@ -359,25 +410,33 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
 
           // Use mutation to save invoice with optimistic updates
           await createInvoice.mutateAsync(invoiceData);
-          
+
           // Success feedback is shown via optimistic update (< 500ms)
         } catch (error) {
           console.error("Failed to save invoice:", error);
-          
+
           // Display appropriate error messages
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          if (errorMessage.includes('limit reached')) {
-            toast.error("You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices.");
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          if (errorMessage.includes("limit reached")) {
+            toast.error(
+              "You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices."
+            );
           } else {
-            toast.error(errorMessage || "Failed to save invoice. Please try again.");
+            toast.error(
+              errorMessage || "Failed to save invoice. Please try again."
+            );
           }
-          
+
           setIsDownloading(false);
           return;
         }
       }
 
-      await generateJPEGFromInvoice(currentInvoice as Invoice, storeSettings ?? null);
+      await generateJPEGFromInvoice(
+        currentInvoice as Invoice,
+        storeSettings ?? null
+      );
 
       if (onComplete) {
         onComplete();
@@ -403,7 +462,6 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
               <Label htmlFor="invoiceNumber" className="text-sm font-medium">
                 Invoice Number
               </Label>
-              <p className="text-xs text-gray-500 mt-1">(Auto-generated)</p>
               <Input
                 id="invoiceNumber"
                 {...form.register("invoiceNumber")}
@@ -412,6 +470,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                 className="text-lg font-semibold bg-gray-50 cursor-not-allowed"
                 title="Invoice number is automatically generated based on date and your user ID"
               />
+              <p className="text-xs text-gray-500 mt-1">(Auto-generated)</p>
               {form.formState.errors.invoiceNumber && (
                 <p className="text-xs text-red-600 mt-1">
                   {form.formState.errors.invoiceNumber.message}
@@ -420,7 +479,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="invoiceDate" className="text-sm font-medium">Invoice Date</Label>
+              <Label htmlFor="invoiceDate" className="text-sm font-medium">
+                Invoice Date
+              </Label>
               <Input
                 id="invoiceDate"
                 type="date"
@@ -440,7 +501,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           </h3>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="customerName" className="text-sm font-medium">Customer Name *</Label>
+              <Label htmlFor="customerName" className="text-sm font-medium">
+                Customer Name *
+              </Label>
               <Input
                 id="customerName"
                 {...form.register("customerName")}
@@ -461,7 +524,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Customer Status */}
               <div>
-                <Label htmlFor="customerStatus" className="text-sm font-medium">Customer Status</Label>
+                <Label htmlFor="customerStatus" className="text-sm font-medium">
+                  Customer Status
+                </Label>
                 <select
                   id="customerStatus"
                   {...form.register("customerStatus")}
@@ -482,7 +547,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
 
             {/* Customer Address */}
             <div>
-              <Label htmlFor="customerAddress" className="text-sm font-medium">Address (Optional)</Label>
+              <Label htmlFor="customerAddress" className="text-sm font-medium">
+                Address (Optional)
+              </Label>
               <Textarea
                 id="customerAddress"
                 {...form.register("customerAddress")}
@@ -550,118 +617,145 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
         </div>
 
         {/* Totals Section */}
-        {currentInvoice.items && currentInvoice.items.length > 0 && (() => {
-          const calculation = calculateTotal(
-            currentInvoice.subtotal || 0,
-            currentInvoice.shippingCost || 0,
-            taxEnabled,
-            taxPercentage
-          );
-          
-          return (
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="space-y-3">
-                <div className="flex justify-between text-base lg:text-lg">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">
-                    {formatCurrency(calculation.subtotal)}
-                  </span>
-                </div>
+        {currentInvoice.items &&
+          currentInvoice.items.length > 0 &&
+          (() => {
+            const calculation = calculateTotal(
+              currentInvoice.subtotal || 0,
+              currentInvoice.shippingCost || 0,
+              taxEnabled,
+              taxPercentage
+            );
 
-                <div className="flex justify-between items-center text-base lg:text-lg">
-                  <span className="text-gray-600">Shipping</span>
-                  <CurrencyInput
-                    value={currentInvoice.shippingCost || 0}
-                    onChange={(value) => {
-                      handleFormChange("shippingCost", value);
-                      calculateTotals();
-                    }}
-                    className="w-32 h-8 text-sm text-right"
-                    placeholder="0"
-                  />
-                </div>
-
-                {taxEnabled && taxPercentage > 0 && (
+            return (
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="space-y-3">
                   <div className="flex justify-between text-base lg:text-lg">
-                    <span className="text-gray-600">Tax ({taxPercentage}%)</span>
+                    <span className="text-gray-600">Subtotal</span>
                     <span className="font-semibold">
-                      {formatCurrency(calculation.taxAmount)}
+                      {formatCurrency(calculation.subtotal)}
                     </span>
                   </div>
-                )}
 
-                <div className="border-t pt-3 flex justify-between text-xl lg:text-2xl font-bold">
-                  <span>Total</span>
-                  <span className="text-primary">
-                    {formatCurrency(calculation.total)}
-                  </span>
+                  <div className="flex justify-between items-center text-base lg:text-lg">
+                    <span className="text-gray-600">Shipping</span>
+                    <CurrencyInput
+                      value={currentInvoice.shippingCost || 0}
+                      onChange={(value) => {
+                        handleFormChange("shippingCost", value);
+                        calculateTotals();
+                      }}
+                      className="w-32 h-8 text-sm text-right"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  {taxEnabled && taxPercentage > 0 && (
+                    <div className="flex justify-between text-base lg:text-lg">
+                      <span className="text-gray-600">
+                        Tax ({taxPercentage}%)
+                      </span>
+                      <span className="font-semibold">
+                        {formatCurrency(calculation.taxAmount)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="border-t pt-3 flex justify-between text-xl lg:text-2xl font-bold">
+                    <span>Total</span>
+                    <span className="text-primary">
+                      {formatCurrency(calculation.total)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
       </div>
 
       {/* Fixed Bottom Actions - Green Zone */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 lg:fixed lg:border-t lg:p-4">
         <div className="max-w-2xl lg:max-w-4xl mx-auto space-y-3">
           {/* Warning message when near limit */}
-          {!isLoadingSubscription && subscriptionStatus && subscriptionStatus.remainingInvoices <= 5 && subscriptionStatus.remainingInvoices > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-yellow-800">
-                  {subscriptionStatus.remainingInvoices} invoice{subscriptionStatus.remainingInvoices !== 1 ? 's' : ''} remaining
-                </p>
-                <p className="text-yellow-700 mt-0.5">
-                  You&apos;re running low on invoices. Consider upgrading your plan.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Error message when limit reached */}
-          {!isLoadingSubscription && subscriptionStatus && subscriptionStatus.remainingInvoices === 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="flex items-start gap-2 mb-2">
-                <AlertTriangle size={18} className="text-red-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm flex-1">
-                  <p className="font-medium text-red-800">
-                    Monthly limit reached
+          {!isLoadingSubscription &&
+            subscriptionStatus &&
+            subscriptionStatus.remainingInvoices <= 5 &&
+            subscriptionStatus.remainingInvoices > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+                <AlertTriangle
+                  size={18}
+                  className="text-yellow-600 mt-0.5 flex-shrink-0"
+                />
+                <div className="text-sm">
+                  <p className="font-medium text-yellow-800">
+                    {subscriptionStatus.remainingInvoices} invoice
+                    {subscriptionStatus.remainingInvoices !== 1 ? "s" : ""}{" "}
+                    remaining
                   </p>
-                  <p className="text-red-700 mt-0.5">
-                    You&apos;ve used all {subscriptionStatus.invoiceLimit} invoices for this month. Upgrade to generate more.
+                  <p className="text-yellow-700 mt-0.5">
+                    You&apos;re running low on invoices. Consider upgrading your
+                    plan.
                   </p>
                 </div>
               </div>
-              <Button
-                type="button"
-                onClick={() => window.location.href = '/dashboard/account'}
-                variant="outline"
-                size="sm"
-                className="w-full border-red-300 text-red-700 hover:bg-red-50"
-              >
-                Upgrade Plan
-              </Button>
-            </div>
-          )}
+            )}
+
+          {/* Error message when limit reached */}
+          {!isLoadingSubscription &&
+            subscriptionStatus &&
+            subscriptionStatus.remainingInvoices === 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-start gap-2 mb-2">
+                  <AlertTriangle
+                    size={18}
+                    className="text-red-600 mt-0.5 flex-shrink-0"
+                  />
+                  <div className="text-sm flex-1">
+                    <p className="font-medium text-red-800">
+                      Monthly limit reached
+                    </p>
+                    <p className="text-red-700 mt-0.5">
+                      You&apos;ve used all {subscriptionStatus.invoiceLimit}{" "}
+                      invoices for this month. Upgrade to generate more.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => (window.location.href = "/dashboard/account")}
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  Upgrade Plan
+                </Button>
+              </div>
+            )}
 
           {/* Show mutation error if any */}
           {createInvoice.isError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle size={18} className="text-red-600 mt-0.5 flex-shrink-0" />
+              <AlertTriangle
+                size={18}
+                className="text-red-600 mt-0.5 flex-shrink-0"
+              />
               <div className="text-sm">
                 <p className="font-medium text-red-800">
                   Failed to save invoice
                 </p>
                 <p className="text-red-700 mt-0.5">
-                  {createInvoice.error instanceof Error ? createInvoice.error.message : 'An error occurred while saving the invoice'}
+                  {createInvoice.error instanceof Error
+                    ? createInvoice.error.message
+                    : "An error occurred while saving the invoice"}
                 </p>
               </div>
             </div>
           )}
 
-          <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+          <Dialog
+            open={isReviewDialogOpen}
+            onOpenChange={setIsReviewDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button
                 type="button"
@@ -669,7 +763,8 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                   !currentInvoice.items ||
                   currentInvoice.items.length === 0 ||
                   isDownloading ||
-                  (!isLoadingSubscription && subscriptionStatus?.remainingInvoices === 0)
+                  (!isLoadingSubscription &&
+                    subscriptionStatus?.remainingInvoices === 0)
                 }
                 className="gap-2 w-full"
                 size="lg"
@@ -700,19 +795,27 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                 <div className="p-3 bg-gray-50 rounded-lg space-y-2">
                   <div>
                     <p className="text-xs text-gray-500">Invoice Number</p>
-                    <p className="text-sm font-semibold">{currentInvoice.invoiceNumber}</p>
+                    <p className="text-sm font-semibold">
+                      {currentInvoice.invoiceNumber}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Date</p>
                     <p className="text-sm font-semibold">
-                      {formatDate(new Date(currentInvoice.invoiceDate || new Date()))}
+                      {formatDate(
+                        new Date(currentInvoice.invoiceDate || new Date())
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Customer</p>
-                    <p className="text-sm font-semibold">{currentInvoice.customer?.name || 'No customer'}</p>
+                    <p className="text-sm font-semibold">
+                      {currentInvoice.customer?.name || "No customer"}
+                    </p>
                     {currentInvoice.customer?.address && (
-                      <p className="text-xs text-gray-600">{currentInvoice.customer.address}</p>
+                      <p className="text-xs text-gray-600">
+                        {currentInvoice.customer.address}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -724,9 +827,14 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                   </p>
                   <div className="space-y-2">
                     {currentInvoice.items?.map((item) => (
-                      <div key={item.id} className="flex justify-between items-start text-sm">
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-start text-sm"
+                      >
                         <div className="flex-1 min-w-0 pr-2">
-                          <p className="font-medium truncate">{item.description}</p>
+                          <p className="font-medium truncate">
+                            {item.description}
+                          </p>
                           <p className="text-xs text-gray-600">
                             {item.quantity} × {formatCurrency(item.price)}
                           </p>
@@ -755,26 +863,32 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                   </div>
                   {taxEnabled && taxPercentage > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tax ({taxPercentage}%)</span>
+                      <span className="text-gray-600">
+                        Tax ({taxPercentage}%)
+                      </span>
                       <span className="font-medium">
-                        {formatCurrency(calculateTotal(
-                          currentInvoice.subtotal || 0,
-                          currentInvoice.shippingCost || 0,
-                          taxEnabled,
-                          taxPercentage
-                        ).taxAmount)}
+                        {formatCurrency(
+                          calculateTotal(
+                            currentInvoice.subtotal || 0,
+                            currentInvoice.shippingCost || 0,
+                            taxEnabled,
+                            taxPercentage
+                          ).taxAmount
+                        )}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-base font-bold pt-1.5 border-t border-gray-300">
                     <span>Total</span>
                     <span className="text-primary">
-                      {formatCurrency(calculateTotal(
-                        currentInvoice.subtotal || 0,
-                        currentInvoice.shippingCost || 0,
-                        taxEnabled,
-                        taxPercentage
-                      ).total)}
+                      {formatCurrency(
+                        calculateTotal(
+                          currentInvoice.subtotal || 0,
+                          currentInvoice.shippingCost || 0,
+                          taxEnabled,
+                          taxPercentage
+                        ).total
+                      )}
                     </span>
                   </div>
                 </div>
@@ -782,7 +896,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                 {/* Note if exists */}
                 {currentInvoice.note && (
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Note</p>
+                    <p className="text-xs font-medium text-gray-700 mb-1">
+                      Note
+                    </p>
                     <p className="text-sm text-gray-600 whitespace-pre-wrap">
                       {currentInvoice.note}
                     </p>
@@ -839,7 +955,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           className="py-4 space-y-4 lg:py-6"
         >
           <div>
-            <Label htmlFor="description" className="text-sm font-medium">Description *</Label>
+            <Label htmlFor="description" className="text-sm font-medium">
+              Description *
+            </Label>
             <Input
               id="description"
               {...itemForm.register("description")}
@@ -856,7 +974,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
 
           <div className="grid grid-cols-2 gap-3 lg:gap-4">
             <div>
-              <Label htmlFor="quantity" className="text-sm font-medium">Quantity *</Label>
+              <Label htmlFor="quantity" className="text-sm font-medium">
+                Quantity *
+              </Label>
               <Input
                 id="quantity"
                 type="number"
@@ -873,7 +993,9 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="price" className="text-sm font-medium">Price *</Label>
+              <Label htmlFor="price" className="text-sm font-medium">
+                Price *
+              </Label>
               <Controller
                 name="price"
                 control={itemForm.control}
@@ -919,12 +1041,34 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       {/* Hidden Invoice Preview for Quick Download */}
       {currentInvoice &&
         currentInvoice.items &&
-        currentInvoice.items.length > 0 && (
-          <ClassicInvoiceTemplate
-            invoice={currentInvoice as Invoice}
-            storeSettings={storeSettings ?? null}
-          />
-        )}
+        currentInvoice.items.length > 0 &&
+        (() => {
+          // Render the selected template dynamically
+          const templateProps = {
+            invoice: currentInvoice as Invoice,
+            storeSettings: storeSettings ?? null,
+          };
+
+          switch (selectedTemplate) {
+            case "simple":
+              return <SimpleInvoiceTemplate {...templateProps} />;
+            case "modern":
+              return <ModernInvoiceTemplate {...templateProps} />;
+            case "elegant":
+              return <ElegantInvoiceTemplate {...templateProps} />;
+            case "bold":
+              return <BoldInvoiceTemplate {...templateProps} />;
+            case "compact":
+              return <CompactInvoiceTemplate {...templateProps} />;
+            case "creative":
+              return <CreativeInvoiceTemplate {...templateProps} />;
+            case "corporate":
+              return <CorporateInvoiceTemplate {...templateProps} />;
+            case "classic":
+            default:
+              return <ClassicInvoiceTemplate {...templateProps} />;
+          }
+        })()}
     </div>
   );
 }
