@@ -100,7 +100,7 @@ export function BusinessInfoTab({
     },
   });
 
-  // Fetch store data with optimized settings
+  // Fetch store data
   const { data: store, isLoading } = useQuery({
     queryKey: storeSettingsQueryKey,
     queryFn: async () => {
@@ -109,28 +109,28 @@ export function BusinessInfoTab({
       return data;
     },
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
+    refetchOnMount: true, // Always fetch on mount to ensure fresh data
     refetchOnWindowFocus: false,
   });
 
-  // Fetch contacts with optimized settings
+  // Fetch contacts - use store.id directly instead of storeId state
   const { data: contacts = [] } = useQuery({
-    queryKey: ["store-contacts", storeId],
+    queryKey: ["store-contacts", store?.id],
     queryFn: async () => {
-      if (!storeId) return [];
-      const { data, error } = await storeContactsService.getContacts(storeId);
+      if (!store?.id) return [];
+      const { data, error } = await storeContactsService.getContacts(store.id);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!storeId,
+    enabled: !!store?.id,
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
+    refetchOnMount: true, // Always fetch on mount
     refetchOnWindowFocus: false,
   });
 
   // Update form when store data is loaded
   useEffect(() => {
-    if (store) {
+    if (store?.id) {
       setStoreId(store.id);
       setLogo(store.logo || "");
 
@@ -173,7 +173,9 @@ export function BusinessInfoTab({
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["store-contacts", storeId] });
+      queryClient.invalidateQueries({
+        queryKey: ["store-contacts", store?.id],
+      });
       queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
     },
   });
@@ -190,7 +192,9 @@ export function BusinessInfoTab({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["store-contacts", storeId] });
+      queryClient.invalidateQueries({
+        queryKey: ["store-contacts", store?.id],
+      });
       queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
     },
   });
@@ -201,7 +205,9 @@ export function BusinessInfoTab({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["store-contacts", storeId] });
+      queryClient.invalidateQueries({
+        queryKey: ["store-contacts", store?.id],
+      });
       queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
     },
   });
@@ -221,7 +227,9 @@ export function BusinessInfoTab({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["store-contacts", storeId] });
+      queryClient.invalidateQueries({
+        queryKey: ["store-contacts", store?.id],
+      });
       queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
     },
   });
@@ -314,14 +322,30 @@ export function BusinessInfoTab({
     setIsSignatureSheetOpen(false);
   };
 
-  const handleSaveSignatureDraft = () => {
+  const handleSaveSignatureDraft = async () => {
     let latestSignature = signatureDraft;
     if (!latestSignature && signaturePadRef.current) {
       if (signaturePadRef.current.isEmpty()) {
         toast.error("Please draw a signature first.");
         return;
       }
-      latestSignature = signaturePadRef.current.toDataURL("image/png");
+      // Get signature as data URL
+      const signatureDataURL = signaturePadRef.current.toDataURL("image/png");
+
+      // Compress signature to reduce size
+      try {
+        // Convert data URL to blob
+        const response = await fetch(signatureDataURL);
+        const blob = await response.blob();
+        const file = new File([blob], "signature.png", { type: "image/png" });
+
+        // Compress to 50KB max
+        latestSignature = await compressImage(file, 50);
+      } catch (error) {
+        console.error("Error compressing signature:", error);
+        // Fallback to original if compression fails
+        latestSignature = signatureDataURL;
+      }
     }
     if (!latestSignature) {
       toast.error("Please draw a signature first.");
@@ -412,7 +436,8 @@ export function BusinessInfoTab({
       }
 
       await queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await queryClient.refetchQueries({ queryKey: storeSettingsQueryKey });
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Reset dirty state
       if (onDirtyChange) {

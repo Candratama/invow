@@ -11,6 +11,7 @@ export async function generateJPEGFromInvoice(
   // storeSettings is kept as parameter for future use if needed
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _storeSettings: StoreSettings | null,
+  qualityLimitKB?: 50 | 100 | 150, // Optional: pass quality to avoid extra fetch
 ): Promise<void> {
   try {
     console.log("📸 Generating JPEG for invoice");
@@ -21,21 +22,20 @@ export async function generateJPEGFromInvoice(
       throw new Error("Invoice content element not found");
     }
 
-    // Wait for fonts, images, and styles (including brand color) to fully render
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Fetch user export quality preference
-    let qualityLimitKB: 50 | 100 | 150 = 100; // Default to Medium
-    try {
-      const { data } = await userPreferencesService.getUserPreferences();
-      qualityLimitKB = data.export_quality_kb;
-      console.log(`📊 Using export quality: ${qualityLimitKB}KB`);
-    } catch (error) {
-      console.warn("⚠️ Failed to fetch export quality preference, using default (100KB):", error);
+    // Fetch user export quality preference only if not provided
+    let quality: 50 | 100 | 150 = qualityLimitKB || 100;
+    if (!qualityLimitKB) {
+      try {
+        const { data } = await userPreferencesService.getUserPreferences();
+        quality = data.export_quality_kb;
+        console.log(`📊 Using export quality: ${quality}KB`);
+      } catch (error) {
+        console.warn("⚠️ Failed to fetch export quality preference, using default (100KB):", error);
+      }
     }
 
-    // Export as JPEG with quality limit
-    const blob = await exportAsJPEG(element, qualityLimitKB);
+    // Export as JPEG with quality limit (no extra delay, exportAsJPEG handles it)
+    const blob = await exportAsJPEG(element, quality);
 
     // Create download link
     const url = URL.createObjectURL(blob);

@@ -32,7 +32,7 @@ export function SubscriptionTab({ onClose }: SubscriptionTabProps) {
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnMount: false, // Don't refetch if data exists
+    refetchOnMount: true, // Always fetch on mount to ensure fresh data
     refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 

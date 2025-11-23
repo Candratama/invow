@@ -49,10 +49,14 @@ import {
   useCreateInvoice,
   useSubscriptionStatus,
 } from "@/lib/hooks/use-dashboard-data";
-import { useStoreSettings } from "@/lib/hooks/use-store-settings";
+import {
+  useStoreSettings,
+  storeSettingsQueryKey,
+} from "@/lib/hooks/use-store-settings";
 import { useDefaultStore } from "@/lib/hooks/use-default-store";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
 import { userPreferencesService, invoicesService } from "@/lib/db/services";
+import { useQueryClient } from "@tanstack/react-query";
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -106,6 +110,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     useState<InvoiceTemplateId>("classic");
 
   // Use React Query hooks for subscription status, store settings, and invoice creation
+  const queryClient = useQueryClient();
   const { data: subscriptionStatus, isLoading: isLoadingSubscription } =
     useSubscriptionStatus();
   const { data: storeSettings } = useStoreSettings();
@@ -354,7 +359,10 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
 
     setIsDownloading(true);
     try {
-      // Small delay to ensure DOM is ready
+      // Force refetch store settings to get latest brandColor and signature
+      await queryClient.refetchQueries({ queryKey: storeSettingsQueryKey });
+
+      // Small delay to ensure DOM is ready with fresh data
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Save invoice using React Query mutation
@@ -793,12 +801,6 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
               <div className="space-y-3 py-4">
                 {/* Invoice Info */}
                 <div className="p-3 bg-gray-50 rounded-lg space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-500">Invoice Number</p>
-                    <p className="text-sm font-semibold">
-                      {currentInvoice.invoiceNumber}
-                    </p>
-                  </div>
                   <div>
                     <p className="text-xs text-gray-500">Date</p>
                     <p className="text-sm font-semibold">

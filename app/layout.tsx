@@ -3,6 +3,7 @@ import { Inter, WindSong } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { QueryProvider } from "@/lib/providers/query-provider";
+import { PrefetchProvider } from "@/lib/providers/prefetch-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -55,7 +56,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Invow" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="96x96"
+          href="/icons/favicon-96x96.png"
+        />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/icons/site.webmanifest" />
       </head>
@@ -65,17 +71,19 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            <div className="min-h-screen bg-background">{children}</div>
-            <Toaster 
-              position="top-center"
-              toastOptions={{
-                classNames: {
-                  success: 'text-primary',
-                  error: 'text-red-600',
-                  icon: 'text-primary',
-                },
-              }}
-            />
+            <PrefetchProvider>
+              <div className="min-h-screen bg-background">{children}</div>
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  classNames: {
+                    success: "text-primary",
+                    error: "text-red-600",
+                    icon: "text-primary",
+                  },
+                }}
+              />
+            </PrefetchProvider>
           </AuthProvider>
         </QueryProvider>
       </body>

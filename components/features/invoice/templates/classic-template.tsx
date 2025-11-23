@@ -33,7 +33,6 @@ export function ClassicInvoiceTemplate({
   // Tax preferences state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
-  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   // Fetch tax preferences on mount
   useEffect(() => {
@@ -50,31 +49,6 @@ export function ClassicInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
-  useEffect(() => {
-    // Get primary color from CSS variable
-    const hslToHex = (h: number, s: number, l: number) => {
-      l /= 100;
-      const a = (s * Math.min(l, 1 - l)) / 100;
-      const f = (n: number) => {
-        const k = (n + h / 30) % 12;
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-        return Math.round(255 * color)
-          .toString(16)
-          .padStart(2, "0");
-      };
-      return `#${f(0)}${f(8)}${f(4)}`;
-    };
-
-    const primaryColor = getComputedStyle(document.documentElement)
-      .getPropertyValue("--primary")
-      .trim();
-
-    if (primaryColor) {
-      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
-      setDefaultBrandColor(hslToHex(h, s, l));
-    }
-  }, []);
-
   // Calculate totals with tax
   const calculation = calculateTotal(
     subtotal,
@@ -83,7 +57,8 @@ export function ClassicInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || defaultBrandColor;
+  // Get brand color directly from storeSettings
+  const brandColor = storeSettings?.brandColor || "#D4A72C";
   const adminTitle = storeSettings?.adminTitle?.trim() || "Admin Store";
   const contactLine = [storeSettings?.whatsapp, storeSettings?.email]
     .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
@@ -154,7 +129,7 @@ export function ClassicInvoiceTemplate({
                 src={storeSettings.logo}
                 alt="Store Logo"
                 style={{
-                  height: "100%",
+                  height: "60px",
                   width: "auto",
                   maxWidth: "100px",
                   objectFit: "contain",
@@ -290,7 +265,7 @@ export function ClassicInvoiceTemplate({
                 lineHeight: "1.4",
               }}
             >
-              <div>{customer.address || "No address provided"}</div>
+              <div>{customer.address || ""}</div>
               {customer.status && <div>Status: {customer.status}</div>}
               <br />
             </div>
@@ -312,11 +287,11 @@ export function ClassicInvoiceTemplate({
               textTransform: "uppercase",
             }}
           >
-            <div style={{ width: "12%", textAlign: "center" }}>No</div>
-            <div style={{ width: "40%", textAlign: "left" }}>Items</div>
+            <div style={{ width: "10%", textAlign: "center" }}>No</div>
+            <div style={{ width: "45%", textAlign: "left" }}>Items</div>
             <div style={{ width: "8%", textAlign: "center" }}>Qty</div>
-            <div style={{ width: "20%", textAlign: "center" }}>Price</div>
-            <div style={{ width: "20%", textAlign: "center" }}>Subtotal</div>
+            <div style={{ width: "18%", textAlign: "center" }}>Price</div>
+            <div style={{ width: "18%", textAlign: "center" }}>Subtotal</div>
           </div>
           {items.map((item, index) => {
             const { symbol: priceSymbol, amount: priceAmount } = splitCurrency(
@@ -336,13 +311,13 @@ export function ClassicInvoiceTemplate({
                   backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                 }}
               >
-                <div style={{ width: "12%", textAlign: "center" }}>
+                <div style={{ width: "10%", textAlign: "center" }}>
                   {index + 1}
                 </div>
                 <div
                   className="text-sm font-bold"
                   style={{
-                    width: "40%",
+                    width: "45%",
                     color: "#111827",
                     textAlign: "left",
                   }}
@@ -354,7 +329,7 @@ export function ClassicInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "20%",
+                    width: "18%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
@@ -375,7 +350,7 @@ export function ClassicInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "20%",
+                    width: "18%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
@@ -644,7 +619,7 @@ export function ClassicInvoiceTemplate({
                     height: "auto",
                     maxHeight: "80px",
                     objectFit: "contain",
-                    objectPosition: "right center",
+                    objectPosition: "right",
                     marginBottom: "8px",
                     display: "block",
                   }}

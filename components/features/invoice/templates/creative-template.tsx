@@ -32,7 +32,6 @@ export function CreativeInvoiceTemplate({
 
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
-  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   useEffect(() => {
     const fetchTaxPreferences = async () => {
@@ -48,31 +47,6 @@ export function CreativeInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
-  useEffect(() => {
-    // Get primary color from CSS variable
-    const hslToHex = (h: number, s: number, l: number) => {
-      l /= 100;
-      const a = (s * Math.min(l, 1 - l)) / 100;
-      const f = (n: number) => {
-        const k = (n + h / 30) % 12;
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-        return Math.round(255 * color)
-          .toString(16)
-          .padStart(2, "0");
-      };
-      return `#${f(0)}${f(8)}${f(4)}`;
-    };
-
-    const primaryColor = getComputedStyle(document.documentElement)
-      .getPropertyValue("--primary")
-      .trim();
-
-    if (primaryColor) {
-      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
-      setDefaultBrandColor(hslToHex(h, s, l));
-    }
-  }, []);
-
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -80,7 +54,24 @@ export function CreativeInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || defaultBrandColor;
+  // Get brand color directly from storeSettings
+  const brandColor = storeSettings?.brandColor || "#D4A72C";
+
+  const splitCurrency = (value: number) => {
+    const normalized = formatCurrency(value)
+      .replace(/\u00A0/g, " ")
+      .trim();
+    const [symbol, ...rest] = normalized.split(" ");
+    const amount = rest.join(" ").trim();
+    return {
+      symbol: symbol || "Rp",
+      amount: amount || normalized.replace(symbol || "", "").trim(),
+    };
+  };
+  const subtotalCurrency = splitCurrency(calculation.subtotal);
+  const taxCurrency = splitCurrency(calculation.taxAmount);
+  const shippingCurrency = splitCurrency(calculation.shippingCost);
+  const totalCurrency = splitCurrency(calculation.total);
 
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -153,7 +144,7 @@ export function CreativeInvoiceTemplate({
                 display: "block",
                 backgroundColor: brandColor,
                 color: "#ffffff",
-                padding: "20px 30px",
+                padding: "0px 30px 30px 30px",
                 borderRadius: "0 30px 30px 0",
                 marginLeft: "-50px",
                 marginBottom: "20px",
@@ -179,7 +170,7 @@ export function CreativeInvoiceTemplate({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "flex-start",
+                alignItems: "flex-end",
               }}
             >
               <div
@@ -191,7 +182,7 @@ export function CreativeInvoiceTemplate({
                     src={storeSettings.logo}
                     alt="Logo"
                     style={{
-                      height: "100%",
+                      height: "70px",
                       width: "auto",
                       maxWidth: "100px",
                       objectFit: "contain",
@@ -269,7 +260,7 @@ export function CreativeInvoiceTemplate({
             <div
               style={{
                 flex: 1,
-                padding: "20px",
+                padding: "8px 20px 20px 20px",
                 backgroundColor: lightBrandColor,
                 borderRadius: "20px 0 20px 0",
               }}
@@ -309,7 +300,7 @@ export function CreativeInvoiceTemplate({
                   style={{
                     marginTop: "8px",
                     display: "inline-block",
-                    padding: "4px 12px",
+                    padding: "0px 12px 16px 12px",
                     backgroundColor: brandColor,
                     color: "#ffffff",
                     borderRadius: "12px",
@@ -325,7 +316,7 @@ export function CreativeInvoiceTemplate({
             <div
               style={{
                 flex: 1,
-                padding: "20px",
+                padding: "8px 20px 20px 20px",
                 border: `2px solid ${brandColor}`,
                 borderRadius: "0 20px 0 20px",
               }}
@@ -363,78 +354,100 @@ export function CreativeInvoiceTemplate({
               style={{
                 display: "flex",
                 backgroundColor: brandColor,
+                fillOpacity: 0.5,
                 color: "#ffffff",
-                padding: "12px 16px",
+                padding: "4px 12px 16px 12px",
                 borderRadius: "12px 12px 0 0",
                 fontSize: "9pt",
                 fontWeight: "700",
               }}
             >
-              <div style={{ width: "8%", textAlign: "center" }}>#</div>
-              <div style={{ width: "44%", textAlign: "left" }}>DESCRIPTION</div>
-              <div style={{ width: "12%", textAlign: "center" }}>QTY</div>
-              <div style={{ width: "18%", textAlign: "right" }}>PRICE</div>
-              <div style={{ width: "18%", textAlign: "right" }}>AMOUNT</div>
+              <div style={{ width: "10%", textAlign: "center" }}>NO</div>
+              <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
+              <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
+              <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
+              <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
             </div>
 
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                style={{
-                  display: "flex",
-                  padding: "14px 16px",
-                  borderBottom: "1px solid #e5e7eb",
-                  fontSize: "10pt",
-                  backgroundColor:
-                    index % 2 === 1 ? lightBrandColor : "#ffffff",
-                }}
-              >
+            {items.map((item, index) => {
+              const { symbol: priceSymbol, amount: priceAmount } =
+                splitCurrency(item.price);
+              const { symbol: subtotalSymbol, amount: subtotalAmount } =
+                splitCurrency(item.subtotal);
+              return (
                 <div
+                  key={item.id}
                   style={{
-                    width: "8%",
-                    textAlign: "center",
-                    color: brandColor,
-                    fontWeight: "700",
+                    display: "flex",
+                    padding: "0px 12px 16px 12px",
+                    borderBottom: "1px solid #e5e7eb",
+                    fontSize: "10pt",
+                    backgroundColor:
+                      index % 2 === 1 ? lightBrandColor : "#ffffff",
                   }}
                 >
-                  {index + 1}
+                  <div
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                      color: brandColor,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div
+                    style={{
+                      width: "44%",
+                      fontWeight: "600",
+                      textAlign: "left",
+                    }}
+                  >
+                    {item.description}
+                  </div>
+                  <div
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                    }}
+                  >
+                    {item.quantity}
+                  </div>
+                  <div
+                    style={{
+                      width: "18%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      paddingRight: "8px",
+                      paddingLeft: "8px",
+                      alignItems: "center",
+                      color: "#6b7280",
+                    }}
+                  >
+                    <span>{priceSymbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {priceAmount}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "18%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      paddingRight: "8px",
+                      paddingLeft: "8px",
+                      alignItems: "center",
+                      fontWeight: "600",
+                    }}
+                  >
+                    <span>{subtotalSymbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {subtotalAmount}
+                    </span>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    width: "44%",
-                    fontWeight: "600",
-                  }}
-                >
-                  {item.description}
-                </div>
-                <div
-                  style={{
-                    width: "12%",
-                    textAlign: "center",
-                  }}
-                >
-                  {item.quantity}
-                </div>
-                <div
-                  style={{
-                    width: "18%",
-                    textAlign: "right",
-                    color: "#6b7280",
-                  }}
-                >
-                  {formatCurrency(item.price)}
-                </div>
-                <div
-                  style={{
-                    width: "18%",
-                    textAlign: "right",
-                    fontWeight: "600",
-                  }}
-                >
-                  {formatCurrency(item.subtotal)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Note & Totals */}
@@ -449,17 +462,17 @@ export function CreativeInvoiceTemplate({
               <div
                 style={{
                   flex: 1,
-                  padding: "20px",
-                  backgroundColor: "#fef3c7",
+                  padding: "8px 20px 20px 20px",
+                  backgroundColor: lightBrandColor,
                   borderRadius: "0 20px 0 20px",
-                  borderLeft: `4px solid #f59e0b`,
+                  borderLeft: `4px solid`,
+                  borderColor: brandColor,
                 }}
               >
                 <div
                   style={{
                     fontSize: "9pt",
                     fontWeight: "700",
-                    color: "#92400e",
                     marginBottom: "8px",
                   }}
                 >
@@ -468,7 +481,7 @@ export function CreativeInvoiceTemplate({
                 <div
                   style={{
                     fontSize: "10pt",
-                    color: "#78350f",
+                    color: brandColor,
                     lineHeight: "1.6",
                     whiteSpace: "pre-wrap",
                   }}
@@ -483,7 +496,7 @@ export function CreativeInvoiceTemplate({
             <div style={{ width: "300px" }}>
               <div
                 style={{
-                  padding: "20px",
+                  padding: "8px 20px 20px 20px",
                   backgroundColor: lightBrandColor,
                   borderRadius: "20px 0 20px 0",
                 }}
@@ -497,8 +510,19 @@ export function CreativeInvoiceTemplate({
                   }}
                 >
                   <span>Subtotal</span>
-                  <span style={{ fontWeight: "600" }}>
-                    {formatCurrency(calculation.subtotal)}
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      minWidth: "120px",
+                    }}
+                  >
+                    <span>{subtotalCurrency.symbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {subtotalCurrency.amount}
+                    </span>
                   </span>
                 </div>
                 {taxEnabled && taxPercentage > 0 && (
@@ -511,8 +535,19 @@ export function CreativeInvoiceTemplate({
                     }}
                   >
                     <span>Tax ({taxPercentage}%)</span>
-                    <span style={{ fontWeight: "600" }}>
-                      {formatCurrency(calculation.taxAmount)}
+                    <span
+                      style={{
+                        fontWeight: "600",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                        minWidth: "120px",
+                      }}
+                    >
+                      <span>{taxCurrency.symbol}</span>
+                      <span style={{ textAlign: "right", flex: 1 }}>
+                        {taxCurrency.amount}
+                      </span>
                     </span>
                   </div>
                 )}
@@ -527,15 +562,26 @@ export function CreativeInvoiceTemplate({
                   }}
                 >
                   <span>Shipping</span>
-                  <span style={{ fontWeight: "600" }}>
-                    {formatCurrency(calculation.shippingCost)}
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      minWidth: "120px",
+                    }}
+                  >
+                    <span>{shippingCurrency.symbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {shippingCurrency.amount}
+                    </span>
                   </span>
                 </div>
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    padding: "16px",
+                    padding: "0px 12px 16px 12px",
                     backgroundColor: brandColor,
                     color: "#ffffff",
                     borderRadius: "12px",
@@ -544,7 +590,19 @@ export function CreativeInvoiceTemplate({
                   }}
                 >
                   <span>TOTAL</span>
-                  <span>{formatCurrency(calculation.total)}</span>
+                  <span
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      minWidth: "120px",
+                    }}
+                  >
+                    <span>{totalCurrency.symbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {totalCurrency.amount}
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -612,7 +670,7 @@ export function CreativeInvoiceTemplate({
                 )}
                 <div
                   style={{
-                    padding: "10px 20px",
+                    padding: "0px 12px 16px 12px",
                     backgroundColor: lightBrandColor,
                     borderRadius: "20px",
                   }}

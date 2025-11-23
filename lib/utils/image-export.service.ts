@@ -36,12 +36,12 @@ export async function exportAsJPEG(
   }
 
   try {
-    // Wait for fonts and images to load
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    // Wait for fonts and images to load (reduced from 300ms to 200ms)
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
-    // Convert HTML element to canvas
+    // Convert HTML element to canvas with optimized settings
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 1.5, // Reduced from 2 to 1.5 for faster rendering (still good quality)
       useCORS: true,
       allowTaint: false,
       logging: false,
@@ -51,6 +51,14 @@ export async function exportAsJPEG(
       height: element.scrollHeight,
       windowWidth: element.scrollWidth,
       windowHeight: element.scrollHeight,
+      onclone: (clonedDoc) => {
+        // Ensure fonts are loaded in cloned document
+        const clonedElement = clonedDoc.getElementById("invoice-content");
+        if (clonedElement) {
+          // Force font rendering by setting font-related properties
+          (clonedElement as HTMLElement).style.setProperty('font-display', 'block');
+        }
+      },
     });
 
     // Compress to target size
@@ -81,36 +89,30 @@ async function compressToSize(
 ): Promise<Blob> {
   const targetSizeBytes = targetSizeKB * 1024;
   const startTime = Date.now();
-  const TIMEOUT_MS = 10000; // 10 seconds
-  const MIN_QUALITY = 0.10; // Minimum quality 10% for more aggressive compression
-  const QUALITY_STEP = 0.05;
+  const TIMEOUT_MS = 8000; // Reduced to 8 seconds
+  const MIN_QUALITY = 0.15; // Increased minimum quality for faster convergence
+  const QUALITY_STEP = 0.08; // Larger steps for faster convergence
 
-  let quality = 0.95;
+  // Start with a smarter initial quality based on target size
+  let quality = targetSizeKB >= 150 ? 0.92 : targetSizeKB >= 100 ? 0.85 : 0.75;
   let bestBlob: Blob | null = null;
 
   while (quality >= MIN_QUALITY) {
     // Check for timeout
     if (Date.now() - startTime > TIMEOUT_MS) {
       throw new ImageExportError(
-        "Compression timeout: Could not compress image to target size within 10 seconds"
+        "Compression timeout: Could not compress image to target size within 8 seconds"
       );
     }
 
-    // Convert canvas to blob with current quality, with timeout
-    const blob = await Promise.race([
-      new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(
-          (result) => resolve(result),
-          "image/jpeg",
-          quality
-        );
-      }),
-      new Promise<null>((_, reject) => {
-        setTimeout(() => {
-          reject(new ImageExportError("Blob creation timeout"));
-        }, TIMEOUT_MS);
-      }),
-    ]);
+    // Convert canvas to blob with current quality
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(
+        (result) => resolve(result),
+        "image/jpeg",
+        quality
+      );
+    });
 
     if (!blob) {
       throw new ImageExportError("Failed to create image blob");
@@ -123,8 +125,13 @@ async function compressToSize(
       return blob;
     }
 
-    // Reduce quality and try again
-    quality -= QUALITY_STEP;
+    // Adaptive quality reduction based on how far we are from target
+    const ratio = blob.size / targetSizeBytes;
+    if (ratio > 1.5) {
+      quality -= QUALITY_STEP * 1.5; // Faster reduction if way over
+    } else {
+      quality -= QUALITY_STEP;
+    }
   }
 
   // If we couldn't reach the target size, return the best effort

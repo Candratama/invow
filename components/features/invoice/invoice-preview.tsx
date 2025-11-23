@@ -69,7 +69,7 @@ export function InvoicePreview({
 
   const total = calculation.total;
   const taxAmount = calculation.taxAmount;
-  
+
   // Show loading state while storeSettings is being fetched
   if (storeSettings === null) {
     return (
@@ -81,9 +81,9 @@ export function InvoicePreview({
       </div>
     );
   }
-  
+
   const brandColor = storeSettings.brandColor || "#10b981";
-  
+
   const splitCurrency = (value: number) => {
     const normalized = formatCurrency(value)
       .replace(/\u00A0/g, " ")
@@ -337,7 +337,10 @@ export function InvoicePreview({
                       backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                     }}
                   >
-                    <div className="text-xs text-gray-500" style={{ width: "8%", textAlign: "center" }}>
+                    <div
+                      className="text-xs text-gray-500"
+                      style={{ width: "8%", textAlign: "center" }}
+                    >
                       {index + 1}
                     </div>
                     <div
@@ -715,7 +718,9 @@ export function InvoicePreview({
                     <p className="text-xs text-gray-500">Customer</p>
                     <p className="text-sm font-semibold">{customer.name}</p>
                     {customer.address && (
-                      <p className="text-xs text-gray-600">{customer.address}</p>
+                      <p className="text-xs text-gray-600">
+                        {customer.address}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -727,9 +732,14 @@ export function InvoicePreview({
                   </p>
                   <div className="space-y-2">
                     {items.map((item) => (
-                      <div key={item.id} className="flex justify-between items-start text-sm">
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-start text-sm"
+                      >
                         <div className="flex-1 min-w-0 pr-2">
-                          <p className="text-sm font-medium truncate">{item.description}</p>
+                          <p className="text-sm font-medium truncate">
+                            {item.description}
+                          </p>
                           <p className="text-xs text-gray-500">
                             {item.quantity} × {formatCurrency(item.price)}
                           </p>
@@ -758,7 +768,9 @@ export function InvoicePreview({
                   </div>
                   {taxEnabled && taxPercentage > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tax ({taxPercentage}%)</span>
+                      <span className="text-gray-600">
+                        Tax ({taxPercentage}%)
+                      </span>
                       <span className="font-medium">
                         {formatCurrency(taxAmount)}
                       </span>
@@ -775,7 +787,9 @@ export function InvoicePreview({
                 {/* Note if exists */}
                 {invoice.note && (
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Note</p>
+                    <p className="text-xs font-medium text-gray-700 mb-1">
+                      Note
+                    </p>
                     <p className="text-sm text-gray-600 whitespace-pre-wrap">
                       {invoice.note}
                     </p>

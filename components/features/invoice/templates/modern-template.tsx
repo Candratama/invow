@@ -33,7 +33,6 @@ export function ModernInvoiceTemplate({
   // Tax preferences state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState(0);
-  const [defaultBrandColor, setDefaultBrandColor] = useState("#D4A72C");
 
   // Fetch tax preferences on mount
   useEffect(() => {
@@ -50,31 +49,6 @@ export function ModernInvoiceTemplate({
     fetchTaxPreferences();
   }, []);
 
-  useEffect(() => {
-    // Get primary color from CSS variable
-    const hslToHex = (h: number, s: number, l: number) => {
-      l /= 100;
-      const a = (s * Math.min(l, 1 - l)) / 100;
-      const f = (n: number) => {
-        const k = (n + h / 30) % 12;
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-        return Math.round(255 * color)
-          .toString(16)
-          .padStart(2, "0");
-      };
-      return `#${f(0)}${f(8)}${f(4)}`;
-    };
-
-    const primaryColor = getComputedStyle(document.documentElement)
-      .getPropertyValue("--primary")
-      .trim();
-
-    if (primaryColor) {
-      const [h, s, l] = primaryColor.split(" ").map((v) => parseFloat(v));
-      setDefaultBrandColor(hslToHex(h, s, l));
-    }
-  }, []);
-
   // Calculate totals with tax
   const calculation = calculateTotal(
     subtotal,
@@ -83,7 +57,24 @@ export function ModernInvoiceTemplate({
     taxPercentage
   );
 
-  const brandColor = storeSettings?.brandColor || defaultBrandColor;
+  // Get brand color directly from storeSettings
+  const brandColor = storeSettings?.brandColor || "#D4A72C";
+
+  const splitCurrency = (value: number) => {
+    const normalized = formatCurrency(value)
+      .replace(/\u00A0/g, " ")
+      .trim();
+    const [symbol, ...rest] = normalized.split(" ");
+    const amount = rest.join(" ").trim();
+    return {
+      symbol: symbol || "Rp",
+      amount: amount || normalized.replace(symbol || "", "").trim(),
+    };
+  };
+  const subtotalCurrency = splitCurrency(calculation.subtotal);
+  const taxCurrency = splitCurrency(calculation.taxAmount);
+  const shippingCurrency = splitCurrency(calculation.shippingCost);
+  const totalCurrency = splitCurrency(calculation.total);
 
   // Helper to create lighter shade of brand color
   const hexToRgb = (hex: string) => {
@@ -145,7 +136,7 @@ export function ModernInvoiceTemplate({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "flex-start",
+              alignItems: "center",
             }}
           >
             <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
@@ -156,11 +147,10 @@ export function ModernInvoiceTemplate({
                   alt="Store Logo"
                   style={{
                     height: "100%",
-                    width: "auto",
+                    width: "100%",
                     maxWidth: "100px",
                     objectFit: "contain",
                     backgroundColor: "rgba(255, 255, 255, 0.2)",
-
                     borderRadius: "12px",
                     flexShrink: 0,
                   }}
@@ -173,6 +163,7 @@ export function ModernInvoiceTemplate({
                     fontWeight: "700",
                     marginBottom: "8px",
                     letterSpacing: "-0.5px",
+                    alignItems: "end",
                   }}
                 >
                   {storeSettings?.name || "Your Store"}
@@ -201,9 +192,14 @@ export function ModernInvoiceTemplate({
                     </div>
                   )}
                   {storeSettings?.whatsapp && (
-                    <div>{storeSettings.whatsapp}</div>
+                    <div>
+                      {storeSettings.whatsapp} | {storeSettings.email}
+                    </div>
                   )}
-                  {storeSettings?.email && <div>{storeSettings.email}</div>}
+
+                  {storeSettings?.storeNumber && (
+                    <div>ID: {storeSettings.storeNumber}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -218,7 +214,7 @@ export function ModernInvoiceTemplate({
             >
               <div
                 style={{
-                  fontSize: "11pt",
+                  fontSize: "24pt",
                   fontWeight: "600",
                   marginBottom: "12px",
                   opacity: 0.9,
@@ -252,7 +248,7 @@ export function ModernInvoiceTemplate({
           <div
             style={{
               backgroundColor: lightBrandColor,
-              padding: "24px",
+              padding: "14px 24px 24px 24px",
               borderRadius: "12px",
               marginBottom: "40px",
               borderLeft: `4px solid ${brandColor}`,
@@ -293,7 +289,7 @@ export function ModernInvoiceTemplate({
                   style={{
                     marginTop: "8px",
                     display: "inline-block",
-                    padding: "4px 12px",
+                    padding: "0px 10px 14px 10px",
                     backgroundColor: brandColor,
                     color: "#ffffff",
                     borderRadius: "6px",
@@ -315,7 +311,7 @@ export function ModernInvoiceTemplate({
                 display: "flex",
                 alignItems: "center",
                 backgroundColor: mediumBrandColor,
-                padding: "14px 20px",
+                padding: "0px 20px 14px 20px",
                 borderRadius: "8px",
                 fontSize: "9pt",
                 fontWeight: "700",
@@ -325,77 +321,97 @@ export function ModernInvoiceTemplate({
                 marginBottom: "4px",
               }}
             >
-              <div style={{ width: "8%", textAlign: "center" }}>#</div>
-              <div style={{ width: "44%", textAlign: "left" }}>Description</div>
-              <div style={{ width: "12%", textAlign: "center" }}>Qty</div>
-              <div style={{ width: "18%", textAlign: "right" }}>Price</div>
-              <div style={{ width: "18%", textAlign: "right" }}>Amount</div>
+              <div style={{ width: "10%", textAlign: "center" }}>NO</div>
+              <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
+              <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
+              <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
+              <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
             </div>
 
             {/* Table Rows */}
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "16px 20px",
-                  borderBottom: "1px solid #e5e7eb",
-                  fontSize: "10pt",
-                  backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
-                }}
-              >
+            {items.map((item, index) => {
+              const { symbol: priceSymbol, amount: priceAmount } =
+                splitCurrency(item.price);
+              const { symbol: subtotalSymbol, amount: subtotalAmount } =
+                splitCurrency(item.subtotal);
+              return (
                 <div
+                  key={item.id}
                   style={{
-                    width: "8%",
-                    textAlign: "center",
-                    color: "#9ca3af",
-                    fontWeight: "600",
-                    fontSize: "9pt",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0px 20px 14px 20px",
+                    borderBottom: "1px solid #e5e7eb",
+                    fontSize: "10pt",
+                    backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                   }}
                 >
-                  {index + 1}
+                  <div
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                      color: "#9ca3af",
+                      fontWeight: "600",
+                      fontSize: "9pt",
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div
+                    style={{
+                      width: "44%",
+                      textAlign: "left",
+                      fontWeight: "600",
+                      color: "#1f2937",
+                    }}
+                  >
+                    {item.description}
+                  </div>
+                  <div
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                      color: "#6b7280",
+                    }}
+                  >
+                    {item.quantity}
+                  </div>
+                  <div
+                    style={{
+                      width: "18%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      paddingRight: "8px",
+                      paddingLeft: "8px",
+                      alignItems: "center",
+                      color: "#6b7280",
+                    }}
+                  >
+                    <span>{priceSymbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {priceAmount}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "18%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      paddingRight: "8px",
+                      paddingLeft: "8px",
+                      alignItems: "center",
+                      fontWeight: "600",
+                      color: "#1f2937",
+                    }}
+                  >
+                    <span>{subtotalSymbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {subtotalAmount}
+                    </span>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    width: "44%",
-                    textAlign: "left",
-                    fontWeight: "600",
-                    color: "#1f2937",
-                  }}
-                >
-                  {item.description}
-                </div>
-                <div
-                  style={{
-                    width: "12%",
-                    textAlign: "center",
-                    color: "#6b7280",
-                  }}
-                >
-                  {item.quantity}
-                </div>
-                <div
-                  style={{
-                    width: "18%",
-                    textAlign: "right",
-                    color: "#6b7280",
-                  }}
-                >
-                  {formatCurrency(item.price)}
-                </div>
-                <div
-                  style={{
-                    width: "18%",
-                    textAlign: "right",
-                    fontWeight: "600",
-                    color: "#1f2937",
-                  }}
-                >
-                  {formatCurrency(item.subtotal)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Note & Totals */}
@@ -412,7 +428,7 @@ export function ModernInvoiceTemplate({
                 style={{
                   flex: 1,
                   backgroundColor: lightBrandColor,
-                  padding: "20px",
+                  padding: "10px 20px 20px 20px",
                   borderRadius: "12px",
                   borderLeft: `4px solid ${brandColor}`,
                 }}
@@ -453,7 +469,7 @@ export function ModernInvoiceTemplate({
               <div
                 style={{
                   backgroundColor: "#f9fafb",
-                  padding: "20px",
+                  padding: "0 20px 18px 20px",
                   borderRadius: "12px",
                   marginBottom: "12px",
                 }}
@@ -462,15 +478,27 @@ export function ModernInvoiceTemplate({
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    paddingBottom: "10px",
-                    marginBottom: "10px",
+                    paddingBottom: "4px",
+                    marginBottom: "4px",
                     fontSize: "10pt",
                     color: "#6b7280",
                   }}
                 >
                   <span>Subtotal</span>
-                  <span style={{ fontWeight: "600", color: "#1f2937" }}>
-                    {formatCurrency(calculation.subtotal)}
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      color: "#1f2937",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      minWidth: "120px",
+                    }}
+                  >
+                    <span>{subtotalCurrency.symbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {subtotalCurrency.amount}
+                    </span>
                   </span>
                 </div>
                 {taxEnabled && taxPercentage > 0 && (
@@ -478,15 +506,27 @@ export function ModernInvoiceTemplate({
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      paddingBottom: "10px",
-                      marginBottom: "10px",
+                      paddingBottom: "4px",
+                      marginBottom: "4px",
                       fontSize: "10pt",
                       color: "#6b7280",
                     }}
                   >
                     <span>Tax ({taxPercentage}%)</span>
-                    <span style={{ fontWeight: "600", color: "#1f2937" }}>
-                      {formatCurrency(calculation.taxAmount)}
+                    <span
+                      style={{
+                        fontWeight: "600",
+                        color: "#1f2937",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                        minWidth: "120px",
+                      }}
+                    >
+                      <span>{taxCurrency.symbol}</span>
+                      <span style={{ textAlign: "right", flex: 1 }}>
+                        {taxCurrency.amount}
+                      </span>
                     </span>
                   </div>
                 )}
@@ -499,8 +539,20 @@ export function ModernInvoiceTemplate({
                   }}
                 >
                   <span>Shipping</span>
-                  <span style={{ fontWeight: "600", color: "#1f2937" }}>
-                    {formatCurrency(calculation.shippingCost)}
+                  <span
+                    style={{
+                      fontWeight: "600",
+                      color: "#1f2937",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      minWidth: "120px",
+                    }}
+                  >
+                    <span>{shippingCurrency.symbol}</span>
+                    <span style={{ textAlign: "right", flex: 1 }}>
+                      {shippingCurrency.amount}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -509,11 +561,11 @@ export function ModernInvoiceTemplate({
               <div
                 style={{
                   background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 100%)`,
-                  padding: "20px",
+                  padding: "0 20px 20px 20px",
                   borderRadius: "12px",
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center",
+                  alignItems: "end",
                 }}
               >
                 <span
@@ -530,9 +582,16 @@ export function ModernInvoiceTemplate({
                     fontSize: "18pt",
                     fontWeight: "700",
                     color: "#ffffff",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    minWidth: "140px",
                   }}
                 >
-                  {formatCurrency(calculation.total)}
+                  <span>{totalCurrency.symbol}</span>
+                  <span style={{ textAlign: "right", flex: 1 }}>
+                    {totalCurrency.amount}
+                  </span>
                 </span>
               </div>
             </div>
@@ -625,7 +684,7 @@ export function ModernInvoiceTemplate({
                 <div
                   style={{
                     backgroundColor: lightBrandColor,
-                    padding: "12px 20px",
+                    padding: "0 12px 18px 12px",
                     borderRadius: "8px",
                   }}
                 >
