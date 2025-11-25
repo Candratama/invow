@@ -86,6 +86,7 @@ export function CreativeInvoiceTemplate({
 
   const rgb = hexToRgb(brandColor);
   const lightBrandColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`;
+  const mediumBrandColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
 
   return (
     <div
@@ -182,7 +183,7 @@ export function CreativeInvoiceTemplate({
                     src={storeSettings.logo}
                     alt="Logo"
                     style={{
-                      height: "70px",
+                      height: "80px",
                       width: "auto",
                       maxWidth: "100px",
                       objectFit: "contain",
@@ -203,6 +204,11 @@ export function CreativeInvoiceTemplate({
                   >
                     {storeSettings?.name || "Your Store"}
                   </div>
+                  {storeSettings?.storeNumber && (
+                    <div style={{ marginTop: "4px" }}>
+                      ID: {storeSettings.storeNumber}
+                    </div>
+                  )}
                   {storeSettings?.storeDescription && (
                     <div style={{ fontSize: "10pt", color: "#6b7280" }}>
                       {storeSettings.storeDescription}
@@ -301,8 +307,8 @@ export function CreativeInvoiceTemplate({
                     marginTop: "8px",
                     display: "inline-block",
                     padding: "0px 12px 16px 12px",
-                    backgroundColor: brandColor,
-                    color: "#ffffff",
+                    backgroundColor: mediumBrandColor,
+                    color: brandColor,
                     borderRadius: "12px",
                     fontSize: "9pt",
                     fontWeight: "600",
@@ -339,11 +345,6 @@ export function CreativeInvoiceTemplate({
                 )}
                 {storeSettings?.whatsapp && <div>{storeSettings.whatsapp}</div>}
                 {storeSettings?.email && <div>{storeSettings.email}</div>}
-                {storeSettings?.storeNumber && (
-                  <div style={{ marginTop: "4px" }}>
-                    ID: {storeSettings.storeNumber}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -363,10 +364,10 @@ export function CreativeInvoiceTemplate({
               }}
             >
               <div style={{ width: "10%", textAlign: "center" }}>NO</div>
-              <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
+              <div style={{ width: "40%", textAlign: "left" }}>ITEMS</div>
               <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
-              <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
-              <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
+              <div style={{ width: "20%", textAlign: "center" }}>PRICE</div>
+              <div style={{ width: "20%", textAlign: "center" }}>SUBTOTAL</div>
             </div>
 
             {items.map((item, index) => {
@@ -398,7 +399,7 @@ export function CreativeInvoiceTemplate({
                   </div>
                   <div
                     style={{
-                      width: "44%",
+                      width: "40%",
                       fontWeight: "600",
                       textAlign: "left",
                     }}
@@ -415,7 +416,7 @@ export function CreativeInvoiceTemplate({
                   </div>
                   <div
                     style={{
-                      width: "18%",
+                      width: "20%",
                       display: "flex",
                       justifyContent: "space-between",
                       paddingRight: "8px",
@@ -431,7 +432,7 @@ export function CreativeInvoiceTemplate({
                   </div>
                   <div
                     style={{
-                      width: "18%",
+                      width: "20%",
                       display: "flex",
                       justifyContent: "space-between",
                       paddingRight: "8px",
@@ -493,7 +494,7 @@ export function CreativeInvoiceTemplate({
               <div style={{ flex: 1 }} />
             )}
 
-            <div style={{ width: "300px" }}>
+            <div style={{ width: "330px" }}>
               <div
                 style={{
                   padding: "8px 20px 20px 20px",

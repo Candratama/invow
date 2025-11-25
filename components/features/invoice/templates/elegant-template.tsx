@@ -92,7 +92,7 @@ export function ElegantInvoiceTemplate({
         style={{
           width: "800px",
           padding: "70px 60px",
-          fontSize: "11pt",
+          fontSize: "13pt",
           fontFamily: "Georgia, 'Times New Roman', serif",
           backgroundColor: "#ffffff",
           color: "#2d2d2d",
@@ -141,7 +141,7 @@ export function ElegantInvoiceTemplate({
           )}
           <div
             style={{
-              fontSize: "32pt",
+              fontSize: "35pt",
               fontWeight: "400",
               color: brandColor,
               marginBottom: "8px",
@@ -150,10 +150,13 @@ export function ElegantInvoiceTemplate({
           >
             {storeSettings?.name || "Your Store"}
           </div>
+          {storeSettings?.storeNumber && (
+            <div>ID: {storeSettings.storeNumber}</div>
+          )}
           {storeSettings?.storeDescription && (
             <div
               style={{
-                fontSize: "11pt",
+                fontSize: "14pt",
                 color: "#666666",
                 fontStyle: "italic",
                 marginBottom: "16px",
@@ -164,7 +167,7 @@ export function ElegantInvoiceTemplate({
           )}
           <div
             style={{
-              fontSize: "9pt",
+              fontSize: "12pt",
               color: "#888888",
               lineHeight: "1.8",
             }}
@@ -179,9 +182,6 @@ export function ElegantInvoiceTemplate({
               )}
               {storeSettings?.email && <span>{storeSettings.email}</span>}
             </div>
-            {storeSettings?.storeNumber && (
-              <div>Reg. No: {storeSettings.storeNumber}</div>
-            )}
           </div>
         </div>
 
@@ -194,7 +194,7 @@ export function ElegantInvoiceTemplate({
         >
           <div
             style={{
-              fontSize: "14pt",
+              fontSize: "17pt",
               fontWeight: "400",
               color: brandColor,
               letterSpacing: "3px",
@@ -205,7 +205,7 @@ export function ElegantInvoiceTemplate({
           </div>
           <div
             style={{
-              fontSize: "9pt",
+              fontSize: "12pt",
               color: "#666666",
             }}
           >
@@ -223,7 +223,7 @@ export function ElegantInvoiceTemplate({
         >
           <div
             style={{
-              fontSize: "9pt",
+              fontSize: "12pt",
               color: brandColor,
               letterSpacing: "2px",
               marginBottom: "12px",
@@ -233,7 +233,7 @@ export function ElegantInvoiceTemplate({
           </div>
           <div
             style={{
-              fontSize: "13pt",
+              fontSize: "16pt",
               fontWeight: "600",
               color: "#2d2d2d",
               marginBottom: "6px",
@@ -243,7 +243,7 @@ export function ElegantInvoiceTemplate({
           </div>
           <div
             style={{
-              fontSize: "10pt",
+              fontSize: "13pt",
               color: "#666666",
               lineHeight: "1.6",
             }}
@@ -264,7 +264,7 @@ export function ElegantInvoiceTemplate({
               display: "flex",
               padding: "0 12px 12px 12px",
               borderBottom: `1px solid ${brandColor}`,
-              fontSize: "9pt",
+              fontSize: "12pt",
               fontWeight: "600",
               color: brandColor,
               letterSpacing: "1px",
@@ -272,10 +272,10 @@ export function ElegantInvoiceTemplate({
             }}
           >
             <div style={{ width: "10%", textAlign: "center" }}>NO</div>
-            <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
+            <div style={{ width: "40%", textAlign: "left" }}>ITEMS</div>
             <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
-            <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
-            <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
+            <div style={{ width: "20%", textAlign: "center" }}>PRICE</div>
+            <div style={{ width: "20%", textAlign: "center" }}>SUBTOTAL</div>
           </div>
 
           {items.map((item, index) => {
@@ -291,7 +291,7 @@ export function ElegantInvoiceTemplate({
                   display: "flex",
                   padding: "0 12px 12px 12px",
                   borderBottom: "1px solid #e5e7eb",
-                  fontSize: "10pt",
+                  fontSize: "13pt",
                 }}
               >
                 <div
@@ -305,7 +305,7 @@ export function ElegantInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "44%",
+                    width: "40%",
                     fontWeight: "500",
                     color: "#2d2d2d",
                     textAlign: "left",
@@ -324,7 +324,7 @@ export function ElegantInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
@@ -340,13 +340,13 @@ export function ElegantInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
                     paddingLeft: "8px",
                     alignItems: "center",
-                    fontWeight: "600",
+                    fontWeight: "400",
                     color: "#2d2d2d",
                   }}
                 >
@@ -373,8 +373,8 @@ export function ElegantInvoiceTemplate({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                padding: "0 12px 12px 12px",
-                fontSize: "10pt",
+                padding: "0 20px 12px 12px",
+                fontSize: "13pt",
                 color: "#666666",
               }}
             >
@@ -398,8 +398,8 @@ export function ElegantInvoiceTemplate({
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  padding: "0 12px 12px 12px",
-                  fontSize: "10pt",
+                  padding: "0 20px 12px 12px",
+                  fontSize: "13pt",
                   color: "#666666",
                 }}
               >
@@ -423,8 +423,8 @@ export function ElegantInvoiceTemplate({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                padding: "0 12px 12px 12px",
-                fontSize: "10pt",
+                padding: "0 20px 12px 12px",
+                fontSize: "13pt",
                 color: "#666666",
                 borderBottom: `1px solid ${brandColor}`,
               }}
@@ -449,7 +449,7 @@ export function ElegantInvoiceTemplate({
                 display: "flex",
                 justifyContent: "space-between",
                 padding: "0px 12px",
-                fontSize: "16pt",
+                fontSize: "19pt",
                 fontWeight: "400",
                 color: brandColor,
               }}
@@ -461,6 +461,7 @@ export function ElegantInvoiceTemplate({
                   justifyContent: "space-between",
                   gap: "8px",
                   minWidth: "120px",
+                  paddingRight: "8px",
                 }}
               >
                 <span>{totalCurrency.symbol}</span>
@@ -484,7 +485,7 @@ export function ElegantInvoiceTemplate({
           >
             <div
               style={{
-                fontSize: "9pt",
+                fontSize: "12pt",
                 color: brandColor,
                 letterSpacing: "2px",
                 marginBottom: "8px",
@@ -494,7 +495,7 @@ export function ElegantInvoiceTemplate({
             </div>
             <div
               style={{
-                fontSize: "10pt",
+                fontSize: "13pt",
                 color: "#666666",
                 lineHeight: "1.7",
                 whiteSpace: "pre-wrap",
@@ -521,7 +522,7 @@ export function ElegantInvoiceTemplate({
               <div style={{ marginBottom: "16px" }}>
                 <div
                   style={{
-                    fontSize: "9pt",
+                    fontSize: "12pt",
                     color: brandColor,
                     letterSpacing: "2px",
                     marginBottom: "6px",
@@ -531,7 +532,7 @@ export function ElegantInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    fontSize: "10pt",
+                    fontSize: "13pt",
                     color: "#666666",
                   }}
                 >
@@ -542,7 +543,7 @@ export function ElegantInvoiceTemplate({
             {storeSettings?.tagline && (
               <div
                 style={{
-                  fontSize: "9pt",
+                  fontSize: "12pt",
                   color: "#999999",
                   fontStyle: "italic",
                 }}
@@ -575,7 +576,7 @@ export function ElegantInvoiceTemplate({
                 style={{
                   borderTop: `1px solid ${brandColor}`,
                   paddingTop: "8px",
-                  fontSize: "10pt",
+                  fontSize: "13pt",
                   color: brandColor,
                   fontWeight: "500",
                 }}
@@ -585,7 +586,7 @@ export function ElegantInvoiceTemplate({
               {storeSettings?.adminTitle && (
                 <div
                   style={{
-                    fontSize: "9pt",
+                    fontSize: "12pt",
                     color: "#888888",
                     fontStyle: "italic",
                   }}

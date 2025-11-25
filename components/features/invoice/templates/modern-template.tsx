@@ -161,13 +161,16 @@ export function ModernInvoiceTemplate({
                   style={{
                     fontSize: "28pt",
                     fontWeight: "700",
-                    marginBottom: "8px",
+                    // marginBottom: "8px",
                     letterSpacing: "-0.5px",
                     alignItems: "end",
                   }}
                 >
                   {storeSettings?.name || "Your Store"}
                 </div>
+                {storeSettings?.storeNumber && (
+                  <div>ID: {storeSettings.storeNumber}</div>
+                )}
                 {storeSettings?.storeDescription && (
                   <div
                     style={{
@@ -179,6 +182,7 @@ export function ModernInvoiceTemplate({
                     {storeSettings.storeDescription}
                   </div>
                 )}
+
                 <div
                   style={{
                     fontSize: "9pt",
@@ -196,20 +200,17 @@ export function ModernInvoiceTemplate({
                       {storeSettings.whatsapp} | {storeSettings.email}
                     </div>
                   )}
-
-                  {storeSettings?.storeNumber && (
-                    <div>ID: {storeSettings.storeNumber}</div>
-                  )}
                 </div>
               </div>
             </div>
             <div
               style={{
                 textAlign: "right",
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                padding: "20px 24px",
-                borderRadius: "12px",
-                backdropFilter: "blur(10px)",
+                // backgroundColor: "rgba(255, 255, 255, 0.15)",
+                // padding: "20px 24px",
+                // borderRadius: "12px",
+                // backdropFilter: "blur(10px)",
+                // border: `1px solid #fff`,
               }}
             >
               <div
@@ -217,6 +218,7 @@ export function ModernInvoiceTemplate({
                   fontSize: "24pt",
                   fontWeight: "600",
                   marginBottom: "12px",
+                  paddingRight: "28px",
                   opacity: 0.9,
                 }}
               >
@@ -226,6 +228,7 @@ export function ModernInvoiceTemplate({
                 style={{
                   fontSize: "10pt",
                   lineHeight: "1.8",
+                  paddingRight: "28px",
                 }}
               >
                 <div style={{ marginBottom: "4px" }}>
@@ -244,62 +247,115 @@ export function ModernInvoiceTemplate({
         </div>
 
         <div style={{ padding: "40px 50px 50px 50px" }}>
-          {/* Customer Card */}
+          {/* Customer & Store Address Cards */}
           <div
             style={{
-              backgroundColor: lightBrandColor,
-              padding: "14px 24px 24px 24px",
-              borderRadius: "12px",
+              display: "flex",
+              gap: "24px",
               marginBottom: "40px",
-              borderLeft: `4px solid ${brandColor}`,
             }}
           >
+            {/* Bill To Card */}
             <div
               style={{
-                fontSize: "9pt",
-                fontWeight: "700",
-                color: brandColor,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-                marginBottom: "12px",
+                flex: 1,
+                backgroundColor: lightBrandColor,
+                padding: "14px 24px 24px 24px",
+                borderRadius: "12px",
+                borderLeft: `4px solid ${brandColor}`,
               }}
             >
-              Bill To
+              <div
+                style={{
+                  fontSize: "9pt",
+                  fontWeight: "700",
+                  color: brandColor,
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "12px",
+                }}
+              >
+                Bill To
+              </div>
+              <div
+                style={{
+                  fontSize: "14pt",
+                  fontWeight: "700",
+                  color: "#1f2937",
+                  marginBottom: "6px",
+                }}
+              >
+                {customer.name}
+              </div>
+              <div
+                style={{
+                  fontSize: "10pt",
+                  color: "#6b7280",
+                  lineHeight: "1.6",
+                }}
+              >
+                {customer.address && <div>{customer.address}</div>}
+                {customer.status && (
+                  <div
+                    style={{
+                      marginTop: "18px",
+                      display: "inline-block",
+                      padding: "0px 10px 14px 10px",
+                      backgroundColor: mediumBrandColor,
+                      color: brandColor,
+                      borderRadius: "6px",
+                      fontSize: "9pt",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {customer.status}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Store Address Card */}
             <div
               style={{
-                fontSize: "14pt",
-                fontWeight: "700",
-                color: "#1f2937",
-                marginBottom: "6px",
+                flex: 1,
+                backgroundColor: lightBrandColor,
+                padding: "14px 24px 24px 24px",
+                borderRadius: "12px",
+                borderLeft: `4px solid ${brandColor}`,
               }}
             >
-              {customer.name}
-            </div>
-            <div
-              style={{
-                fontSize: "10pt",
-                color: "#6b7280",
-                lineHeight: "1.6",
-              }}
-            >
-              {customer.address && <div>{customer.address}</div>}
-              {customer.status && (
-                <div
-                  style={{
-                    marginTop: "8px",
-                    display: "inline-block",
-                    padding: "0px 10px 14px 10px",
-                    backgroundColor: brandColor,
-                    color: "#ffffff",
-                    borderRadius: "6px",
-                    fontSize: "9pt",
-                    fontWeight: "600",
-                  }}
-                >
-                  {customer.status}
-                </div>
-              )}
+              <div
+                style={{
+                  fontSize: "9pt",
+                  fontWeight: "700",
+                  color: brandColor,
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "12px",
+                }}
+              >
+                From
+              </div>
+
+              <div
+                style={{
+                  fontSize: "10pt",
+                  color: "#6b7280",
+                  lineHeight: "1.6",
+                }}
+              >
+                {storeSettings?.address && (
+                  <div style={{ whiteSpace: "pre-wrap" }}>
+                    {storeSettings.address}
+                  </div>
+                )}
+                {storeSettings?.whatsapp && (
+                  <div style={{ marginTop: "8px" }}>
+                    {storeSettings.whatsapp}
+                  </div>
+                )}
+                {storeSettings?.email && <div>{storeSettings.email}</div>}
+              </div>
             </div>
           </div>
 
@@ -324,8 +380,8 @@ export function ModernInvoiceTemplate({
               <div style={{ width: "10%", textAlign: "center" }}>NO</div>
               <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
               <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
-              <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
-              <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
+              <div style={{ width: "20%", textAlign: "center" }}>PRICE</div>
+              <div style={{ width: "20%", textAlign: "center" }}>SUBTOTAL</div>
             </div>
 
             {/* Table Rows */}
@@ -378,7 +434,7 @@ export function ModernInvoiceTemplate({
                   </div>
                   <div
                     style={{
-                      width: "18%",
+                      width: "20%",
                       display: "flex",
                       justifyContent: "space-between",
                       paddingRight: "8px",
@@ -394,7 +450,7 @@ export function ModernInvoiceTemplate({
                   </div>
                   <div
                     style={{
-                      width: "18%",
+                      width: "20%",
                       display: "flex",
                       justifyContent: "space-between",
                       paddingRight: "8px",
@@ -472,6 +528,7 @@ export function ModernInvoiceTemplate({
                   padding: "0 20px 18px 20px",
                   borderRadius: "12px",
                   marginBottom: "12px",
+                  paddingRight: "28px",
                 }}
               >
                 <div
@@ -561,7 +618,7 @@ export function ModernInvoiceTemplate({
               <div
                 style={{
                   background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 100%)`,
-                  padding: "0 20px 20px 20px",
+                  padding: "0 28px 20px 20px",
                   borderRadius: "12px",
                   display: "flex",
                   justifyContent: "space-between",

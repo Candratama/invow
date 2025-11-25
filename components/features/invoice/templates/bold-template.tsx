@@ -117,7 +117,7 @@ export function BoldInvoiceTemplate({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "end",
+              alignItems: "center",
             }}
           >
             <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
@@ -135,6 +135,7 @@ export function BoldInvoiceTemplate({
                   }}
                 />
               )}
+
               <div>
                 <div
                   style={{
@@ -145,6 +146,12 @@ export function BoldInvoiceTemplate({
                 >
                   {storeSettings?.name || "YOUR STORE"}
                 </div>
+                {storeSettings?.storeNumber && (
+                  <div>
+                    <span style={{ fontWeight: "700" }}>Store ID:</span>{" "}
+                    {storeSettings.storeNumber}
+                  </div>
+                )}
                 {storeSettings?.storeDescription && (
                   <div style={{ fontSize: "11pt", opacity: 0.9 }}>
                     {storeSettings.storeDescription}
@@ -200,12 +207,6 @@ export function BoldInvoiceTemplate({
                   <span style={{ fontWeight: "700" }}>Date:</span>{" "}
                   {formatDate(new Date(invoiceDate))}
                 </div>
-                {storeSettings?.storeNumber && (
-                  <div>
-                    <span style={{ fontWeight: "700" }}>Store ID:</span>{" "}
-                    {storeSettings.storeNumber}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -240,7 +241,7 @@ export function BoldInvoiceTemplate({
                 {customer.status && (
                   <div
                     style={{
-                      marginTop: "8px",
+                      marginTop: "18px",
                       display: "inline-block",
                       padding: "0px 12px 14px 12px",
                       backgroundColor: "#000000",
@@ -394,7 +395,7 @@ export function BoldInvoiceTemplate({
               <div style={{ flex: 1 }} />
             )}
 
-            <div style={{ width: "300px" }}>
+            <div style={{ width: "327px" }}>
               <div
                 style={{
                   border: "3px solid #000000",
@@ -405,7 +406,7 @@ export function BoldInvoiceTemplate({
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    padding: "0px 14px 16px 14px",
+                    padding: "0px 5px 16px 5px",
                     fontSize: "10pt",
                     fontWeight: "700",
                   }}
@@ -416,7 +417,7 @@ export function BoldInvoiceTemplate({
                       display: "flex",
                       justifyContent: "space-between",
                       gap: "8px",
-                      minWidth: "120px",
+                      minWidth: "100px",
                     }}
                   >
                     <span>{subtotalCurrency.symbol}</span>
@@ -430,7 +431,7 @@ export function BoldInvoiceTemplate({
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      padding: "0px 14px 16px 14px",
+                      padding: "0px 5px 16px 5px",
                       fontSize: "10pt",
                       fontWeight: "700",
                     }}
@@ -441,7 +442,7 @@ export function BoldInvoiceTemplate({
                         display: "flex",
                         justifyContent: "space-between",
                         gap: "8px",
-                        minWidth: "120px",
+                        minWidth: "100px",
                       }}
                     >
                       <span>{taxCurrency.symbol}</span>
@@ -455,7 +456,7 @@ export function BoldInvoiceTemplate({
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    padding: "0px 14px 16px 14px",
+                    padding: "0px 5px 16px 5px",
                     borderBottom: "2px solid #000000",
                     fontSize: "10pt",
                     fontWeight: "700",
@@ -467,7 +468,7 @@ export function BoldInvoiceTemplate({
                       display: "flex",
                       justifyContent: "space-between",
                       gap: "8px",
-                      minWidth: "120px",
+                      minWidth: "100px",
                     }}
                   >
                     <span>{shippingCurrency.symbol}</span>
@@ -493,7 +494,7 @@ export function BoldInvoiceTemplate({
                       display: "flex",
                       justifyContent: "space-between",
                       gap: "8px",
-                      minWidth: "120px",
+                      minWidth: "100px",
                     }}
                   >
                     <span>{totalCurrency.symbol}</span>

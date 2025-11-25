@@ -239,6 +239,8 @@ export function InvoiceSettingsTab({
                           <Image
                             src={`/template/${templateId}.jpg`}
                             alt={`${info.name} template preview`}
+                            width={400}
+                            height={533}
                             className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
                           />
 
@@ -449,6 +451,8 @@ export function InvoiceSettingsTab({
             <Image
               src={`/template/${previewTemplate}.jpg`}
               alt={`${TEMPLATE_INFO[previewTemplate].name} template preview`}
+              width={800}
+              height={1067}
               className="w-full h-auto rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />

@@ -165,14 +165,27 @@ export function CompactInvoiceTemplate({
                 fontSize: "14pt",
                 fontWeight: "700",
                 color: brandColor,
+                paddingRight: "16px",
               }}
             >
               INVOICE
             </div>
-            <div style={{ fontSize: "8pt", color: "#6b7280" }}>
+            <div
+              style={{
+                fontSize: "8pt",
+                color: "#6b7280",
+                paddingRight: "16px",
+              }}
+            >
               {invoiceNumber}
             </div>
-            <div style={{ fontSize: "8pt", color: "#6b7280" }}>
+            <div
+              style={{
+                fontSize: "8pt",
+                color: "#6b7280",
+                paddingRight: "16px",
+              }}
+            >
               {formatDate(new Date(invoiceDate))}
             </div>
           </div>
@@ -296,10 +309,10 @@ export function CompactInvoiceTemplate({
             }}
           >
             <div style={{ width: "10%", textAlign: "center" }}>NO</div>
-            <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
+            <div style={{ width: "40%", textAlign: "left" }}>ITEMS</div>
             <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
-            <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
-            <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
+            <div style={{ width: "20%", textAlign: "center" }}>PRICE</div>
+            <div style={{ width: "20%", textAlign: "center" }}>SUBTOTAL</div>
           </div>
 
           {items.map((item, index) => {
@@ -331,7 +344,7 @@ export function CompactInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "44%",
+                    width: "40%",
                     fontWeight: "600",
                     textAlign: "left",
                   }}
@@ -348,7 +361,7 @@ export function CompactInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "6px",
@@ -364,7 +377,7 @@ export function CompactInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "6px",
@@ -426,7 +439,7 @@ export function CompactInvoiceTemplate({
           )}
 
           {/* Totals */}
-          <div style={{ width: "240px" }}>
+          <div style={{ width: "340px" }}>
             <div
               style={{
                 backgroundColor: "#f9fafb",
@@ -439,7 +452,8 @@ export function CompactInvoiceTemplate({
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "6px",
-                  fontSize: "8pt",
+                  paddingRight: "4px",
+                  fontSize: "9pt",
                 }}
               >
                 <span>Subtotal</span>
@@ -464,7 +478,8 @@ export function CompactInvoiceTemplate({
                     display: "flex",
                     justifyContent: "space-between",
                     marginBottom: "6px",
-                    fontSize: "8pt",
+                    paddingRight: "4px",
+                    fontSize: "9pt",
                   }}
                 >
                   <span>Tax ({taxPercentage}%)</span>
@@ -489,9 +504,10 @@ export function CompactInvoiceTemplate({
                   display: "flex",
                   justifyContent: "space-between",
                   paddingBottom: "10px",
+                  paddingRight: "4px",
                   marginBottom: "10px",
                   borderBottom: "1px solid #d1d5db",
-                  fontSize: "8pt",
+                  fontSize: "9pt",
                 }}
               >
                 <span>Shipping</span>

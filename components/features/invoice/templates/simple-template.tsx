@@ -147,12 +147,24 @@ export function SimpleInvoiceTemplate({
                   style={{
                     fontSize: "10pt",
                     color: "#666666",
+                    marginBottom: "0px",
+                  }}
+                >
+                  ID: {storeSettings.storeNumber}
+                </div>
+              )}
+              {storeSettings?.storeDescription && (
+                <div
+                  style={{
+                    fontSize: "10pt",
+                    color: "#666666",
                     marginBottom: "4px",
                   }}
                 >
                   {storeSettings.storeDescription}
                 </div>
               )}
+
               <div style={{ fontSize: "9pt", color: "#666666" }}>
                 {storeSettings?.address && (
                   <div style={{ whiteSpace: "pre-wrap" }}>
@@ -164,10 +176,6 @@ export function SimpleInvoiceTemplate({
                     {storeSettings.whatsapp} | {storeSettings.email}
                   </div>
                 )}
-
-                {storeSettings?.storeNumber && (
-                  <div>ID: {storeSettings.storeNumber}</div>
-                )}
               </div>
             </div>
           </div>
@@ -177,12 +185,20 @@ export function SimpleInvoiceTemplate({
                 fontSize: "18pt",
                 fontWeight: "700",
                 marginBottom: "8px",
+                paddingRight: "18px",
+                paddingTop: "8px",
                 color: brandColor,
               }}
             >
               INVOICE
             </div>
-            <div style={{ fontSize: "9pt", color: "#666666" }}>
+            <div
+              style={{
+                fontSize: "9pt",
+                color: "#666666",
+                paddingRight: "18px",
+              }}
+            >
               <div>{invoiceNumber}</div>
               <div>{formatDate(new Date(invoiceDate))}</div>
             </div>
@@ -271,10 +287,10 @@ export function SimpleInvoiceTemplate({
             }}
           >
             <div style={{ width: "10%", textAlign: "center" }}>NO</div>
-            <div style={{ width: "44%", textAlign: "left" }}>ITEMS</div>
+            <div style={{ width: "40%", textAlign: "left" }}>ITEMS</div>
             <div style={{ width: "10%", textAlign: "center" }}>QTY</div>
-            <div style={{ width: "18%", textAlign: "center" }}>PRICE</div>
-            <div style={{ width: "18%", textAlign: "center" }}>SUBTOTAL</div>
+            <div style={{ width: "20%", textAlign: "center" }}>PRICE</div>
+            <div style={{ width: "20%", textAlign: "center" }}>SUBTOTAL</div>
           </div>
 
           {items.map((item, index) => {
@@ -297,13 +313,14 @@ export function SimpleInvoiceTemplate({
                   style={{
                     width: "10%",
                     textAlign: "center",
+
                     color: "#666666",
                   }}
                 >
                   {index + 1}
                 </div>
                 <div
-                  style={{ width: "44%", fontWeight: "500", textAlign: "left" }}
+                  style={{ width: "40%", fontWeight: "500", textAlign: "left" }}
                 >
                   {item.description}
                 </div>
@@ -318,11 +335,12 @@ export function SimpleInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
-                    paddingRight: "8px",
-                    paddingLeft: "8px",
+                    paddingRight: "18px",
+                    paddingLeft: "18px",
+
                     color: "#666666",
                   }}
                 >
@@ -333,11 +351,11 @@ export function SimpleInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: "20%",
                     display: "flex",
                     justifyContent: "space-between",
-                    paddingRight: "8px",
-                    paddingLeft: "8px",
+                    paddingRight: "18px",
+                    paddingLeft: "18px",
                   }}
                 >
                   <span>{subtotalSymbol}</span>
@@ -356,15 +374,18 @@ export function SimpleInvoiceTemplate({
             display: "flex",
             justifyContent: "flex-end",
             marginBottom: "50px",
+
+            // border: `2px solid ${brandColor}`,
           }}
         >
-          <div style={{ width: "300px" }}>
+          <div style={{ width: "310px" }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "0px",
                 paddingBottom: "8px",
+                paddingRight: "18px",
                 fontSize: "10pt",
               }}
             >
@@ -389,6 +410,7 @@ export function SimpleInvoiceTemplate({
                   display: "flex",
                   justifyContent: "space-between",
                   paddingTop: "0px",
+                  paddingRight: "18px",
                   paddingBottom: "8px",
                   fontSize: "10pt",
                 }}
@@ -414,6 +436,7 @@ export function SimpleInvoiceTemplate({
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "0px",
+                paddingRight: "18px",
                 paddingBottom: "16px",
                 fontSize: "10pt",
                 borderBottom: `2px solid ${brandColor}`,
@@ -439,6 +462,7 @@ export function SimpleInvoiceTemplate({
                 display: "flex",
                 justifyContent: "space-between",
                 paddingTop: "8px",
+                paddingRight: "18px",
                 fontSize: "14pt",
                 fontWeight: "700",
                 color: brandColor,

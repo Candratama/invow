@@ -111,7 +111,7 @@ export function CorporateInvoiceTemplate({
           style={{
             borderBottom: `3px solid ${brandColor}`,
             paddingBottom: "20px",
-            marginBottom: "30px",
+            marginBottom: "5px",
           }}
         >
           <div
@@ -128,7 +128,7 @@ export function CorporateInvoiceTemplate({
                   src={storeSettings.logo}
                   alt="Company Logo"
                   style={{
-                    height: "60px",
+                    height: "80px",
                     width: "auto",
                     maxWidth: "100px",
                     objectFit: "contain",
@@ -142,10 +142,14 @@ export function CorporateInvoiceTemplate({
                     fontWeight: "700",
                     color: brandColor,
                     marginBottom: "4px",
+                    alignItems: "center",
                   }}
                 >
                   {storeSettings?.name || "Your Company Name"}
                 </div>
+                {storeSettings?.storeNumber && (
+                  <div>Reg. No: {storeSettings.storeNumber}</div>
+                )}
                 {storeSettings?.storeDescription && (
                   <div style={{ fontSize: "9pt", color: "#6b7280" }}>
                     {storeSettings.storeDescription}
@@ -154,7 +158,12 @@ export function CorporateInvoiceTemplate({
               </div>
             </div>
             <div
-              style={{ textAlign: "right", fontSize: "9pt", color: "#6b7280" }}
+              style={{
+                textAlign: "right",
+                fontSize: "9pt",
+                color: "#6b7280",
+                paddingRight: "20px",
+              }}
             >
               {storeSettings?.address && (
                 <div style={{ whiteSpace: "pre-wrap" }}>
@@ -166,10 +175,6 @@ export function CorporateInvoiceTemplate({
                   {storeSettings.whatsapp} | {storeSettings.email}
                 </div>
               )}
-
-              {storeSettings?.storeNumber && (
-                <div>Reg. No: {storeSettings.storeNumber}</div>
-              )}
             </div>
           </div>
         </div>
@@ -179,6 +184,7 @@ export function CorporateInvoiceTemplate({
           style={{
             textAlign: "center",
             marginBottom: "30px",
+            border: "1px #000",
           }}
         >
           <div
@@ -417,7 +423,7 @@ export function CorporateInvoiceTemplate({
             <div
               style={{
                 flex: 1,
-                marginRight: "30px",
+                marginRight: "20px",
                 border: "1px solid #d1d5db",
               }}
             >
@@ -450,7 +456,7 @@ export function CorporateInvoiceTemplate({
           {/* Totals */}
           <div
             style={{
-              width: "280px",
+              width: "310px",
               border: "1px solid #d1d5db",
             }}
           >
@@ -458,7 +464,7 @@ export function CorporateInvoiceTemplate({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                padding: "0px 12px 12px 12px",
+                padding: "0px 20px 12px 12px",
                 borderBottom: "1px solid #e5e7eb",
                 fontSize: "9pt",
               }}
@@ -483,7 +489,7 @@ export function CorporateInvoiceTemplate({
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  padding: "0px 12px 12px 12px",
+                  padding: "0px 20px 12px 12px",
                   borderBottom: "1px solid #e5e7eb",
                   fontSize: "9pt",
                 }}
@@ -510,7 +516,7 @@ export function CorporateInvoiceTemplate({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                padding: "0px 12px 12px 12px",
+                padding: "0px 20px 12px 12px",
                 borderBottom: "1px solid #e5e7eb",
                 fontSize: "9pt",
               }}
@@ -534,7 +540,7 @@ export function CorporateInvoiceTemplate({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                padding: "0px 12px 12px 12px",
+                padding: "0px 20px 12px 12px",
                 backgroundColor: brandColor,
                 color: "#ffffff",
                 fontSize: "12pt",
