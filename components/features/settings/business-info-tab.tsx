@@ -100,9 +100,9 @@ export function BusinessInfoTab({
     },
   });
 
-  // Fetch store data
+  // Fetch store data - use separate query key to get full Store object with id
   const { data: store, isLoading } = useQuery({
-    queryKey: storeSettingsQueryKey,
+    queryKey: ["store-full"],
     queryFn: async () => {
       const { data, error } = await storesService.getDefaultStore();
       if (error) throw error;
@@ -134,7 +134,7 @@ export function BusinessInfoTab({
       setStoreId(store.id);
       setLogo(store.logo || "");
 
-      form.reset({
+      const formValues = {
         name: store.name || "",
         address: store.address || "",
         whatsapp: store.whatsapp?.replace(/^\+62/, "") || "",
@@ -145,7 +145,9 @@ export function BusinessInfoTab({
         tagline: store.tagline || "",
         storeNumber: store.store_number || "",
         brandColor: store.brand_color || "#10b981",
-      });
+      };
+
+      form.reset(formValues, { keepDirty: false });
     }
   }, [store, form]);
 

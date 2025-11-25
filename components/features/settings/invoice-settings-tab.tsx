@@ -72,9 +72,9 @@ export function InvoiceSettingsTab({
     },
   });
 
-  // Fetch store data
+  // Fetch store data - use separate query key to get full Store object with id
   const { data: store, isLoading: isLoadingStore } = useQuery({
-    queryKey: storeSettingsQueryKey,
+    queryKey: ["store-full"],
     queryFn: async () => {
       const { data, error } = await storesService.getDefaultStore();
       if (error) throw error;
@@ -101,16 +101,19 @@ export function InvoiceSettingsTab({
   // Update form when data is loaded
   useEffect(() => {
     if (store && preferences) {
-      setStoreId(store.id);
-      // Use reset instead of setValue to properly set initial values
-      // This prevents the form from being marked as dirty on load
-      form.reset({
+      if (store.id) {
+        setStoreId(store.id);
+      }
+
+      const formValues = {
         selectedTemplate: preferences.selected_template || "classic",
         paymentMethod: store.payment_method || "",
         taxEnabled: preferences.tax_enabled,
         taxPercentage: preferences.tax_percentage || 0,
         exportQuality: preferences.export_quality_kb,
-      });
+      };
+
+      form.reset(formValues);
     }
   }, [store, preferences, form]);
 

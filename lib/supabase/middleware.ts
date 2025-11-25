@@ -56,12 +56,7 @@ export async function updateSession(request: NextRequest) {
     )
 
     // Refresh session if expired
-    const { error } = await supabase.auth.getUser()
-
-    // Log errors in development but don't crash
-    if (error && process.env.NODE_ENV === 'development') {
-      console.error('Session refresh error:', error.message)
-    }
+    await supabase.auth.getUser()
   } catch (error) {
     // Log error but continue - don't crash middleware
     if (process.env.NODE_ENV === 'development') {

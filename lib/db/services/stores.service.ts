@@ -104,7 +104,7 @@ export class StoresService {
   /**
    * Get default store for the authenticated user
    * Priority: 1) User's default_store_id from preferences, 2) First active store
-   * Includes primary contact information
+   * Includes primary contact information if available
    */
   async getDefaultStore(): Promise<{
     data: Store | null;
@@ -131,7 +131,7 @@ export class StoresService {
           .from("stores")
           .select(`
             *,
-            store_contacts!inner (
+            store_contacts (
               id,
               name,
               title,
@@ -141,7 +141,6 @@ export class StoresService {
           `)
           .eq("id", preferences.default_store_id)
           .eq("is_active", true)
-          .eq("store_contacts.is_primary", true)
           .single();
 
         if (defaultStore) {
@@ -149,12 +148,12 @@ export class StoresService {
         }
       }
 
-      // Fallback: Get first active store with contact
+      // Fallback: Get first active store
       const { data, error } = await this.supabase
         .from("stores")
         .select(`
           *,
-          store_contacts!inner (
+          store_contacts (
             id,
             name,
             title,
@@ -164,7 +163,6 @@ export class StoresService {
         `)
         .eq("user_id", user.id)
         .eq("is_active", true)
-        .eq("store_contacts.is_primary", true)
         .order("created_at", { ascending: true })
         .limit(1)
         .single();
