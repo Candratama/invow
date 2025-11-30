@@ -18,11 +18,11 @@ interface PaymentInvoiceResult {
 /**
  * Server Action to create a payment invoice for subscription upgrade
  * 
- * @param tier - Subscription tier ('starter')
+ * @param tier - Subscription tier ('premium')
  * @returns PaymentInvoiceResult with success status and data or error
  */
 export async function createPaymentInvoiceAction(
-  tier: 'starter'
+  tier: 'premium'
 ): Promise<PaymentInvoiceResult> {
   try {
     // 1. Authenticate user
@@ -34,7 +34,7 @@ export async function createPaymentInvoiceAction(
     }
 
     // 2. Validate tier parameter
-    const validTiers = ['starter']
+    const validTiers = ['premium']
     if (!tier || !validTiers.includes(tier)) {
       return { success: false, error: `Invalid tier: ${tier}. Must be one of: ${validTiers.join(', ')}` }
     }

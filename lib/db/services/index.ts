@@ -12,7 +12,11 @@ export { ItemsService } from './items.service'
 export { MayarPaymentService } from './mayar-payment.service'
 export { SubscriptionService } from './subscription.service'
 export { InvoiceCounterService } from './invoice-counter.service'
+export { TierService } from './tier.service'
+export { MonthlyReportService } from './monthly-report.service'
 
 // Re-export types for convenience
 export type { InvoiceWithItems } from './invoices.service'
 export type { Store, StoreInsert } from './stores.service'
+export type { FeatureName, HistoryLimit } from './tier.service'
+export type { MonthlyReportSummary, DailyInvoiceData, CustomerSummary } from './monthly-report.service'

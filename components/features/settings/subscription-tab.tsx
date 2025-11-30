@@ -77,9 +77,9 @@ export function SubscriptionTab({
           color: "text-primary",
           bgColor: "bg-accent",
         };
-      case "starter":
+      case "premium":
         return {
-          name: "Starter",
+          name: "Premium",
           icon: <Zap className="w-6 h-6" />,
           color: "text-primary",
           bgColor: "bg-accent",
@@ -234,33 +234,33 @@ export function SubscriptionTab({
               </h2>
 
               <div className="space-y-3 sm:space-y-4">
-                {/* Starter Plan */}
+                {/* Premium Plan */}
                 <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                         <h3 className="text-base sm:text-lg font-semibold">
-                          Starter Plan
+                          Premium Plan
                         </h3>
                       </div>
                       <p className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
-                        {TIER_CONFIGS.starter.priceFormatted}
+                        {TIER_CONFIGS.premium.priceFormatted}
                       </p>
                       <p className="text-xs sm:text-sm text-muted-foreground">
                         per 30 days
                       </p>
                     </div>
                     <UpgradeButton
-                      tier="starter"
+                      tier="premium"
                       variant="default"
                       className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto min-h-[44px]"
                     >
-                      Upgrade to Starter
+                      Upgrade to Premium
                     </UpgradeButton>
                   </div>
                   <ul className="space-y-2">
-                    {TIER_CONFIGS.starter.features.map((feature, index) => (
+                    {TIER_CONFIGS.premium.features.map((feature, index) => (
                       <li
                         key={index}
                         className="flex items-start gap-2 text-xs sm:text-sm"

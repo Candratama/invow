@@ -101,8 +101,8 @@ async function processWebhook() {
   // 4. Calculate new subscription values
   const now = new Date();
   const tierLimits = {
-    free: 30,
-    starter: 200,
+    free: 10,
+    premium: 200,
     pro: 999999
   };
 

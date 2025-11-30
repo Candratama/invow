@@ -69,6 +69,8 @@ const INTERNAL_ROUTE_PATTERNS = [
 ];
 
 // Patterns that are allowed (external URLs, origin-based URLs for OAuth)
+// Note: These patterns are defined for documentation purposes and potential future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ALLOWED_PATTERNS = [
   /window\.location\.origin/,
   /window\.location\.search/,
@@ -93,10 +95,6 @@ function hasInternalRouteWindowLocation(content: string): { found: boolean; matc
   }
   
   return { found: matches.length > 0, matches };
-}
-
-function isAllowedUsage(line: string): boolean {
-  return ALLOWED_PATTERNS.some(pattern => pattern.test(line));
 }
 
 describe('Property 1: No window.location for internal navigation', () => {

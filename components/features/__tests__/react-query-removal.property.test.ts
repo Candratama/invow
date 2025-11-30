@@ -8,7 +8,7 @@
  * it must not use React Query hooks (useQuery, useMutation, useQueryClient)
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 import * as fs from 'fs';
 import * as path from 'path';

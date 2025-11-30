@@ -8,17 +8,13 @@ const pricingTiers = [
     price: "Rp 0",
     period: "bulan",
     description: "Coba dulu, gratis!",
-    features: [
-      "30 invoice sebulan",
-      "Kustomisasi basic",
-      "Cek pendapatan",
-    ],
+    features: ["30 invoice sebulan", "Kustomisasi basic", "Cek pendapatan"],
     ctaText: "Cobain Dulu",
     ctaVariant: "default" as const,
     isPopular: false,
   },
   {
-    name: "Starter",
+    name: "Premium",
     price: "Rp 15K",
     period: "bulan",
     description: "Harga terbaik, cuma Rp75/invoice",
@@ -60,7 +56,8 @@ export default function PricingSection() {
             Harga fair & jelas
           </h2>
           <p className="mt-6 text-lg text-gray-600">
-            Pilih yang sesuai budget lo. Mulai dari gratis, mau upgrade kapan aja bisa.
+            Pilih yang sesuai budget lo. Mulai dari gratis, mau upgrade kapan
+            aja bisa.
           </p>
         </div>
 

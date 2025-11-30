@@ -117,16 +117,16 @@ export function InvoiceForm({
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_isSaving, setIsSaving] = useState(false);
 
-  // Tax preferences state
-  const [taxEnabled, setTaxEnabled] = useState(initialTaxEnabled);
-  const [taxPercentage, setTaxPercentage] = useState(initialTaxPercentage);
+  // Tax preferences state - used in calculateTotal calls
+  const taxEnabled = initialTaxEnabled;
+  const taxPercentage = initialTaxPercentage;
 
-  // Selected template state
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplateId>(
-    initialSelectedTemplate as InvoiceTemplateId
-  );
+  // Selected template state - used for template rendering
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const selectedTemplate = initialSelectedTemplate as InvoiceTemplateId;
 
   // Initialize invoice when component mounts
   useEffect(() => {

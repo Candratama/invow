@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Check, Eye, X } from "lucide-react";
+import { Check, Eye, X, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,47 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { updatePreferencesAction } from "@/app/actions/preferences";
 import { updateStoreAction } from "@/app/actions/store";
 import {
-  INVOICE_TEMPLATES,
+  TEMPLATE_CONFIGS,
+  getAllTemplatesWithAccess,
   type InvoiceTemplateId,
+  type TemplateTier,
 } from "@/components/features/invoice/templates";
+import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 import Image from "next/image";
+
+// Export quality configuration with tier-based access
+// Maps to TIER_FEATURES.exportQualities: ['standard'] for free, ['standard', 'high', 'print-ready'] for premium
+export interface ExportQualityOption {
+  value: 50 | 100 | 150;
+  id: string;
+  label: string;
+  description: string;
+  tierRequired: "free" | "premium";
+}
+
+export const EXPORT_QUALITY_OPTIONS: ExportQualityOption[] = [
+  {
+    value: 50,
+    id: "standard",
+    label: "Standard (50KB)",
+    description: "Good for sharing via messaging apps",
+    tierRequired: "free",
+  },
+  {
+    value: 100,
+    id: "high",
+    label: "High (100KB)",
+    description: "Better quality for email attachments",
+    tierRequired: "premium",
+  },
+  {
+    value: 150,
+    id: "print-ready",
+    label: "Print-Ready (150KB)",
+    description: "Best quality for printing",
+    tierRequired: "premium",
+  },
+];
 
 const invoiceSettingsSchema = z.object({
   selectedTemplate: z.string(),
@@ -42,32 +79,27 @@ interface InvoiceSettingsTabProps {
     tax_percentage?: number | null;
     export_quality_kb: number;
   } | null;
+  /** User's subscription tier - defaults to 'free' */
+  userTier?: string;
 }
-
-// Template display information
-const TEMPLATE_INFO: Record<
-  InvoiceTemplateId,
-  { name: string; description: string }
-> = {
-  classic: { name: "Classic", description: "Traditional invoice layout" },
-  simple: { name: "Simple", description: "Clean and minimal design" },
-  modern: { name: "Modern", description: "Contemporary style" },
-  elegant: { name: "Elegant", description: "Sophisticated look" },
-  bold: { name: "Bold", description: "Strong visual impact" },
-  compact: { name: "Compact", description: "Space-efficient layout" },
-  creative: { name: "Creative", description: "Unique and artistic" },
-  corporate: { name: "Corporate", description: "Professional business style" },
-};
 
 export function InvoiceSettingsTab({
   onClose,
   onDirtyChange,
   initialStore,
   initialPreferences,
+  userTier = "free",
 }: InvoiceSettingsTabProps) {
   const [isPending, startTransition] = useTransition();
   const [previewTemplate, setPreviewTemplate] =
     useState<InvoiceTemplateId | null>(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isExportUpgradeModalOpen, setIsExportUpgradeModalOpen] =
+    useState(false);
+
+  // Get templates with access information based on user tier
+  const tier = (userTier === "premium" ? "premium" : "free") as TemplateTier;
+  const templatesWithAccess = getAllTemplatesWithAccess(tier);
 
   const form = useForm<InvoiceSettingsFormData>({
     resolver: zodResolver(invoiceSettingsSchema),
@@ -167,42 +199,68 @@ export function InvoiceSettingsTab({
             <Label className="text-sm font-medium mb-3 block">
               Select Invoice Template
             </Label>
+            <p className="text-xs text-gray-500 mb-4">
+              {tier === "free"
+                ? "1 template available. Upgrade to Premium for 8 templates."
+                : "All 8 templates available with Premium."}
+            </p>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {(Object.keys(INVOICE_TEMPLATES) as InvoiceTemplateId[]).map(
-                (templateId) => {
-                  const info = TEMPLATE_INFO[templateId];
-                  const isSelected =
-                    form.watch("selectedTemplate") === templateId;
+              {templatesWithAccess.map((template) => {
+                const isSelected =
+                  form.watch("selectedTemplate") === template.id;
+                const isLocked = template.isLocked;
 
-                  return (
-                    <div key={templateId} className="relative group">
-                      <div
-                        onClick={() =>
-                          form.setValue("selectedTemplate", templateId)
-                        }
-                        className={`w-full overflow-hidden rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer ${
-                          isSelected
-                            ? "border-primary ring-2 ring-primary/20"
-                            : "border-gray-200 hover:border-primary/50"
-                        }`}
-                      >
-                        {/* Preview Image */}
-                        <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
-                          <Image
-                            src={`/template/${templateId}.jpg`}
-                            alt={`${info.name} template preview`}
-                            width={400}
-                            height={533}
-                            className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
-                          />
+                const handleTemplateClick = () => {
+                  if (isLocked) {
+                    // Trigger upgrade modal for locked templates (Requirements: 3.3)
+                    setIsUpgradeModalOpen(true);
+                  } else {
+                    form.setValue("selectedTemplate", template.id);
+                  }
+                };
 
-                          {/* Preview Button Overlay */}
+                return (
+                  <div key={template.id} className="relative group">
+                    <div
+                      onClick={handleTemplateClick}
+                      className={`w-full overflow-hidden rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer ${
+                        isSelected
+                          ? "border-primary ring-2 ring-primary/20"
+                          : isLocked
+                          ? "border-gray-200 opacity-75"
+                          : "border-gray-200 hover:border-primary/50"
+                      }`}
+                    >
+                      {/* Preview Image */}
+                      <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
+                        <Image
+                          src={`/template/${template.id}.jpg`}
+                          alt={`${template.name} template preview`}
+                          width={400}
+                          height={533}
+                          className={`w-full h-full object-cover object-top transition-transform group-hover:scale-105 ${
+                            isLocked ? "grayscale-[30%]" : ""
+                          }`}
+                        />
+
+                        {/* Lock Overlay for Premium Templates (Requirements: 3.4) */}
+                        {isLocked && (
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium rounded-full shadow-md">
+                              <Lock className="w-3 h-3" />
+                              <span>Premium</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Preview Button Overlay */}
+                        {!isLocked && (
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center pointer-events-none">
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setPreviewTemplate(templateId);
+                                setPreviewTemplate(template.id);
                               }}
                               className="opacity-0 group-hover:opacity-100 transition-opacity bg-white text-gray-900 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:bg-gray-100 pointer-events-auto"
                             >
@@ -210,29 +268,32 @@ export function InvoiceSettingsTab({
                               Preview
                             </button>
                           </div>
-                        </div>
-
-                        {/* Template Info */}
-                        <div className="p-3 bg-white">
-                          <div className="font-semibold text-sm mb-1">
-                            {info.name}
-                          </div>
-                          <div className="text-xs text-gray-500 line-clamp-1">
-                            {info.description}
-                          </div>
-                        </div>
-
-                        {/* Selected Badge */}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg pointer-events-none">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
                         )}
                       </div>
+
+                      {/* Template Info */}
+                      <div className="p-3 bg-white">
+                        <div className="font-semibold text-sm mb-1 flex items-center gap-2">
+                          {template.name}
+                          {isLocked && (
+                            <Lock className="w-3 h-3 text-amber-500" />
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 line-clamp-1">
+                          {template.description}
+                        </div>
+                      </div>
+
+                      {/* Selected Badge */}
+                      {isSelected && !isLocked && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg pointer-events-none">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
                     </div>
-                  );
-                }
-              )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -318,44 +379,78 @@ export function InvoiceSettingsTab({
             </Label>
             <p className="text-xs text-gray-500 mb-3 sm:mb-4">
               Choose the quality of exported invoice images
+              {tier === "free" && (
+                <span className="block mt-1 text-amber-600">
+                  Upgrade to Premium for high and print-ready quality options.
+                </span>
+              )}
             </p>
             <RadioGroup
               value={form.watch("exportQuality").toString()}
-              onValueChange={(value) =>
-                form.setValue(
-                  "exportQuality",
-                  parseInt(value) as 50 | 100 | 150
-                )
-              }
+              onValueChange={(value) => {
+                const quality = parseInt(value) as 50 | 100 | 150;
+                const option = EXPORT_QUALITY_OPTIONS.find(
+                  (opt) => opt.value === quality
+                );
+                // Only allow selection if user has access
+                if (
+                  option &&
+                  (option.tierRequired === "free" || tier === "premium")
+                ) {
+                  form.setValue("exportQuality", quality);
+                }
+              }}
               className="space-y-2"
             >
-              <div className="flex items-center space-x-3 min-h-[44px]">
-                <RadioGroupItem value="50" id="quality-50" />
-                <Label
-                  htmlFor="quality-50"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Small (50KB) - Faster sharing, lower quality
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 min-h-[44px]">
-                <RadioGroupItem value="100" id="quality-100" />
-                <Label
-                  htmlFor="quality-100"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Medium (100KB) - Balanced quality and size
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 min-h-[44px]">
-                <RadioGroupItem value="150" id="quality-150" />
-                <Label
-                  htmlFor="quality-150"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  High (150KB) - Best quality, larger file
-                </Label>
-              </div>
+              {EXPORT_QUALITY_OPTIONS.map((option) => {
+                const isLocked =
+                  option.tierRequired === "premium" && tier === "free";
+                const isSelected = form.watch("exportQuality") === option.value;
+
+                return (
+                  <div
+                    key={option.id}
+                    className={`flex items-center space-x-3 min-h-[44px] rounded-lg p-2 transition-colors ${
+                      isLocked
+                        ? "opacity-60 cursor-pointer hover:bg-gray-50"
+                        : ""
+                    } ${isSelected && !isLocked ? "bg-primary/5" : ""}`}
+                    onClick={() => {
+                      if (isLocked) {
+                        setIsExportUpgradeModalOpen(true);
+                      }
+                    }}
+                  >
+                    <RadioGroupItem
+                      value={option.value.toString()}
+                      id={`quality-${option.id}`}
+                      disabled={isLocked}
+                      className={isLocked ? "pointer-events-none" : ""}
+                    />
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={`quality-${option.id}`}
+                        className={`text-sm font-normal flex items-center gap-2 ${
+                          isLocked
+                            ? "cursor-pointer text-gray-500"
+                            : "cursor-pointer"
+                        }`}
+                      >
+                        {option.label}
+                        {isLocked && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium rounded-full">
+                            <Lock className="w-3 h-3" />
+                            Premium
+                          </span>
+                        )}
+                      </Label>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {option.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </RadioGroup>
           </div>
         </form>
@@ -402,7 +497,7 @@ export function InvoiceSettingsTab({
           <div className="max-w-4xl w-full max-h-[90vh] overflow-auto">
             <Image
               src={`/template/${previewTemplate}.jpg`}
-              alt={`${TEMPLATE_INFO[previewTemplate].name} template preview`}
+              alt={`${TEMPLATE_CONFIGS[previewTemplate].name} template preview`}
               width={800}
               height={1067}
               className="w-full h-auto rounded-lg shadow-2xl"
@@ -410,15 +505,31 @@ export function InvoiceSettingsTab({
             />
             <div className="text-center mt-4 text-white">
               <h3 className="text-xl font-semibold mb-1">
-                {TEMPLATE_INFO[previewTemplate].name}
+                {TEMPLATE_CONFIGS[previewTemplate].name}
               </h3>
               <p className="text-sm text-gray-300">
-                {TEMPLATE_INFO[previewTemplate].description}
+                {TEMPLATE_CONFIGS[previewTemplate].description}
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Upgrade Modal for Premium Templates (Requirements: 3.3, 11.1) */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        feature="Premium Templates"
+        featureDescription="Unlock all 8 professional invoice templates to create stunning invoices that match your brand."
+      />
+
+      {/* Upgrade Modal for Export Quality (Requirements: 9.3, 11.1) */}
+      <UpgradeModal
+        isOpen={isExportUpgradeModalOpen}
+        onClose={() => setIsExportUpgradeModalOpen(false)}
+        feature="High Quality Export"
+        featureDescription="Export your invoices in high quality (100KB) or print-ready quality (150KB) for professional results."
+      />
     </div>
   );
 }

@@ -41,7 +41,7 @@ describe('Property 2: Server Action response format consistency (Payment)', () =
   it('should return response with success=false and error string when authentication fails', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         async (tier) => {
           // Mock createClient to return auth error
           const mockSupabase = {
@@ -78,7 +78,7 @@ describe('Property 2: Server Action response format consistency (Payment)', () =
   it('should return response with success=true and data object when payment creation succeeds', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         async (tier) => {
           // Mock createClient to return authenticated user
           const mockSupabase = {
@@ -129,7 +129,7 @@ describe('Property 2: Server Action response format consistency (Payment)', () =
   it('should return response with success=false and error string when payment service fails', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         async (tier) => {
           // Mock createClient to return authenticated user
           const mockSupabase = {
@@ -172,7 +172,7 @@ describe('Property 2: Server Action response format consistency (Payment)', () =
   it('should have consistent response shape across all scenarios', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         fc.boolean(), // authenticated or not
         fc.boolean(), // payment succeeds or not
         async (tier, isAuthenticated, paymentSucceeds) => {

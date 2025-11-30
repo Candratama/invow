@@ -25,9 +25,9 @@ export default function PricingCard({ tier }: PricingCardProps) {
     ? "relative rounded-2xl bg-white border-2 border-primary p-8 shadow-lg hover:shadow-xl transition-shadow"
     : "relative rounded-2xl bg-white border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow";
 
-  // Determine if this is a paid tier (Starter)
-  const isPaidTier = tier.name === "Starter";
-  const tierType = tier.name.toLowerCase() as "starter";
+  // Determine if this is a paid tier (Premium)
+  const isPaidTier = tier.name === "Premium";
+  const tierType = tier.name.toLowerCase() as "premium";
 
   return (
     <div className={cardClasses}>

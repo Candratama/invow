@@ -1,6 +1,6 @@
 /**
  * Pricing Configuration
- * Central location for all subscription pricing
+ * Central location for all subscription pricing and feature access
  */
 
 export interface TierConfig {
@@ -12,14 +12,54 @@ export interface TierConfig {
   features: string[];
 }
 
+export interface TierFeatures {
+  invoiceLimit: number;
+  templateCount: number;
+  hasLogo: boolean;
+  hasSignature: boolean;
+  hasCustomColors: boolean;
+  historyLimit: number;
+  historyType: 'count' | 'days';
+  hasDashboardTotals: boolean;
+  exportQualities: string[];
+  hasMonthlyReport: boolean;
+}
+
 export const TIER_PRICES = {
-  starter: 15000,
+  premium: 15000,
 } as const;
 
 export const TIER_LIMITS = {
-  free: 30,
-  starter: 200,
+  free: 10,
+  premium: 200,
 } as const;
+
+export const TIER_FEATURES: Record<string, TierFeatures> = {
+  free: {
+    invoiceLimit: 10,
+    templateCount: 1,
+    hasLogo: false,
+    hasSignature: false,
+    hasCustomColors: false,
+    historyLimit: 10,
+    historyType: 'count',
+    hasDashboardTotals: false,
+    exportQualities: ['standard'],
+    hasMonthlyReport: false,
+  },
+  premium: {
+    invoiceLimit: 200,
+    templateCount: 3,
+    hasLogo: true,
+    hasSignature: true,
+    hasCustomColors: true,
+    historyLimit: 30,
+    historyType: 'days',
+    hasDashboardTotals: true,
+    exportQualities: ['standard', 'high', 'print-ready'],
+    hasMonthlyReport: true,
+  },
+};
 
 export const TIER_CONFIGS: Record<string, TierConfig> = {
   free: {
@@ -29,24 +69,28 @@ export const TIER_CONFIGS: Record<string, TierConfig> = {
     invoiceLimit: TIER_LIMITS.free,
     duration: 0, // Forever
     features: [
-      "30 invoices per month",
-      "Basic invoice templates",
-      "PDF export",
-      "Email delivery",
+      "10 invoices per month",
+      "1 basic invoice template",
+      "Standard quality PDF export",
+      "View last 10 transactions",
     ],
   },
-  starter: {
-    name: "Starter",
-    price: TIER_PRICES.starter,
-    priceFormatted: `Rp ${TIER_PRICES.starter.toLocaleString("id-ID")}`,
-    invoiceLimit: TIER_LIMITS.starter,
+  premium: {
+    name: "Premium",
+    price: TIER_PRICES.premium,
+    priceFormatted: `Rp ${TIER_PRICES.premium.toLocaleString("id-ID")}`,
+    invoiceLimit: TIER_LIMITS.premium,
     duration: 30, // 30 days
     features: [
       "200 invoices per month",
       "All Free features",
-      "Custom branding",
-      "Priority support",
-      "Advanced templates",
+      "Custom logo & signature",
+      "Custom brand colors",
+      "3+ premium templates",
+      "High & print-ready export quality",
+      "30 days transaction history",
+      "Monthly reports",
+      "Dashboard totals & revenue",
     ],
   },
 };
@@ -78,4 +122,25 @@ export function getTierLimit(tier: string): number {
  */
 export function getTierConfig(tier: string): TierConfig | null {
   return TIER_CONFIGS[tier] || null;
+}
+
+/**
+ * Get tier features
+ */
+export function getTierFeatures(tier: string): TierFeatures | null {
+  return TIER_FEATURES[tier] || null;
+}
+
+/**
+ * Check if a tier has access to a specific feature
+ */
+export function hasFeatureAccess(tier: string, feature: keyof TierFeatures): boolean {
+  const features = TIER_FEATURES[tier];
+  if (!features) return false;
+  
+  const value = features[feature];
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
 }

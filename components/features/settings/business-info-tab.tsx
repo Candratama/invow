@@ -24,9 +24,15 @@ import {
   setPrimaryContactAction,
   getStoreAndContactsAction,
 } from "@/app/actions/store";
+import { isPremiumAction } from "@/app/actions/subscription";
 import { useAuth } from "@/lib/auth/auth-context";
+import { FeatureGate } from "@/components/ui/feature-gate";
 
 const optionalText = z.string().optional().or(z.literal(""));
+
+const hexColorSchema = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color (e.g., #10b981)");
 
 const businessInfoSchema = z.object({
   name: z.string().min(3, "Store name must be at least 3 characters"),
@@ -38,9 +44,10 @@ const businessInfoSchema = z.object({
   storeDescription: optionalText,
   tagline: optionalText,
   storeNumber: optionalText,
-  brandColor: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color (e.g., #10b981)"),
+  brandColor: hexColorSchema,
+  primaryColor: hexColorSchema,
+  secondaryColor: hexColorSchema,
+  accentColor: hexColorSchema,
 });
 
 type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
@@ -68,6 +75,9 @@ interface BusinessInfoTabProps {
     tagline?: string | null;
     store_number?: string | null;
     brand_color?: string | null;
+    primary_color?: string | null;
+    secondary_color?: string | null;
+    accent_color?: string | null;
   } | null;
   initialContacts?: StoreContact[];
 }
@@ -81,7 +91,9 @@ export function BusinessInfoTab({
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(!initialStore);
-  const [store, setStore] = useState(initialStore);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_store, setStore] = useState(initialStore);
+  const [isPremium, setIsPremium] = useState(false);
 
   // State for business info
   const [logo, setLogo] = useState<string>(initialStore?.logo || "");
@@ -113,6 +125,9 @@ export function BusinessInfoTab({
       tagline: initialStore?.tagline || "",
       storeNumber: initialStore?.store_number || "",
       brandColor: initialStore?.brand_color || "#10b981",
+      primaryColor: initialStore?.primary_color || "#000000",
+      secondaryColor: initialStore?.secondary_color || "#666666",
+      accentColor: initialStore?.accent_color || "#0066cc",
     },
   });
 
@@ -146,6 +161,9 @@ export function BusinessInfoTab({
               tagline: result.data.store.tagline || "",
               storeNumber: result.data.store.store_number || "",
               brandColor: result.data.store.brand_color || "#10b981",
+              primaryColor: result.data.store.primary_color || "#000000",
+              secondaryColor: result.data.store.secondary_color || "#666666",
+              accentColor: result.data.store.accent_color || "#0066cc",
             });
           }
         }
@@ -153,6 +171,17 @@ export function BusinessInfoTab({
       });
     }
   }, [form, initialStore]);
+
+  // Fetch premium status on mount
+  useEffect(() => {
+    const fetchPremiumStatus = async () => {
+      const result = await isPremiumAction();
+      if (result.data !== undefined) {
+        setIsPremium(result.data);
+      }
+    };
+    fetchPremiumStatus();
+  }, []);
 
   // Track form dirty state
   useEffect(() => {
@@ -398,6 +427,9 @@ export function BusinessInfoTab({
           tagline: sanitize(data.tagline),
           storeNumber: sanitize(data.storeNumber),
           brandColor: data.brandColor,
+          primaryColor: data.primaryColor,
+          secondaryColor: data.secondaryColor,
+          accentColor: data.accentColor,
         });
 
         if (!result.success) {
@@ -623,72 +655,74 @@ export function BusinessInfoTab({
                 Branding
               </h2>
               <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Store Logo</Label>
-                  <div className="mt-2">
-                    {logo ? (
-                      <div className="relative inline-block">
-                        <Image
-                          src={logo}
-                          alt="Store logo"
-                          className="w-32 h-32 object-contain border-2 border-gray-200 rounded-lg lg:w-40 lg:h-40"
-                          unoptimized
-                          width={160}
-                          height={160}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemoveLogo}
-                          className="absolute -top-2 -right-2 w-11 h-11 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
-                          aria-label="Remove logo"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                            <Camera size={32} className="text-gray-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm lg:text-base text-gray-600 mb-2">
-                              Upload your store logo
-                            </p>
-                            <p className="text-xs lg:text-sm text-gray-500">
-                              Max 5MB • Will be compressed to 100KB
-                            </p>
+                <FeatureGate feature="hasLogo" hasAccess={isPremium}>
+                  <div>
+                    <Label className="text-sm font-medium">Store Logo</Label>
+                    <div className="mt-2">
+                      {logo ? (
+                        <div className="relative inline-block">
+                          <Image
+                            src={logo}
+                            alt="Store logo"
+                            className="w-32 h-32 object-contain border-2 border-gray-200 rounded-lg lg:w-40 lg:h-40"
+                            unoptimized
+                            width={160}
+                            height={160}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveLogo}
+                            className="absolute -top-2 -right-2 w-11 h-11 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                            aria-label="Remove logo"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                              <Camera size={32} className="text-gray-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm lg:text-base text-gray-600 mb-2">
+                                Upload your store logo
+                              </p>
+                              <p className="text-xs lg:text-sm text-gray-500">
+                                Max 5MB • Will be compressed to 100KB
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="w-full mt-3 gap-2 min-h-[44px]"
+                      size="lg"
+                    >
+                      <Upload size={20} />
+                      {uploading
+                        ? "Processing..."
+                        : logo
+                        ? "Change Logo"
+                        : "Upload Logo"}
+                    </Button>
                   </div>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                    id="logo-upload"
-                  />
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="w-full mt-3 gap-2 min-h-[44px]"
-                    size="lg"
-                  >
-                    <Upload size={20} />
-                    {uploading
-                      ? "Processing..."
-                      : logo
-                      ? "Change Logo"
-                      : "Upload Logo"}
-                  </Button>
-                </div>
+                </FeatureGate>
 
                 <div>
                   <Label htmlFor="brandColor" className="text-sm font-medium">
@@ -718,6 +752,121 @@ export function BusinessInfoTab({
                     </p>
                   )}
                 </div>
+
+                {/* Custom Colors - Premium Feature */}
+                <FeatureGate feature="hasCustomColors" hasAccess={isPremium}>
+                  <div className="space-y-3 sm:space-y-4 pt-2 border-t border-gray-100">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">
+                        Custom Invoice Colors
+                      </Label>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Customize colors for your invoice templates
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+                      {/* Primary Color */}
+                      <div>
+                        <Label
+                          htmlFor="primaryColor"
+                          className="text-sm font-medium"
+                        >
+                          Primary Color
+                        </Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            id="primaryColor"
+                            type="color"
+                            value={form.watch("primaryColor")}
+                            onChange={(e) =>
+                              form.setValue("primaryColor", e.target.value)
+                            }
+                            className="w-12 h-10 p-1 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            {...form.register("primaryColor")}
+                            placeholder="#000000"
+                            className="flex-1 min-h-[44px]"
+                            maxLength={7}
+                          />
+                        </div>
+                        {form.formState.errors.primaryColor && (
+                          <p className="text-xs text-red-600 mt-1">
+                            {form.formState.errors.primaryColor.message}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Secondary Color */}
+                      <div>
+                        <Label
+                          htmlFor="secondaryColor"
+                          className="text-sm font-medium"
+                        >
+                          Secondary Color
+                        </Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            id="secondaryColor"
+                            type="color"
+                            value={form.watch("secondaryColor")}
+                            onChange={(e) =>
+                              form.setValue("secondaryColor", e.target.value)
+                            }
+                            className="w-12 h-10 p-1 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            {...form.register("secondaryColor")}
+                            placeholder="#666666"
+                            className="flex-1 min-h-[44px]"
+                            maxLength={7}
+                          />
+                        </div>
+                        {form.formState.errors.secondaryColor && (
+                          <p className="text-xs text-red-600 mt-1">
+                            {form.formState.errors.secondaryColor.message}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Accent Color */}
+                      <div>
+                        <Label
+                          htmlFor="accentColor"
+                          className="text-sm font-medium"
+                        >
+                          Accent Color
+                        </Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            id="accentColor"
+                            type="color"
+                            value={form.watch("accentColor")}
+                            onChange={(e) =>
+                              form.setValue("accentColor", e.target.value)
+                            }
+                            className="w-12 h-10 p-1 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            {...form.register("accentColor")}
+                            placeholder="#0066cc"
+                            className="flex-1 min-h-[44px]"
+                            maxLength={7}
+                          />
+                        </div>
+                        {form.formState.errors.accentColor && (
+                          <p className="text-xs text-red-600 mt-1">
+                            {form.formState.errors.accentColor.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </FeatureGate>
               </div>
             </div>
 
@@ -908,57 +1057,59 @@ export function BusinessInfoTab({
             </div>
 
             {/* Signature */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Signature</Label>
-              {signature ? (
-                <div className="border rounded-lg bg-white p-4 flex flex-col items-center gap-3">
-                  <Image
-                    src={signature}
-                    alt="Contact signature"
-                    className="max-w-full h-24 object-contain"
-                    unoptimized
-                    width={300}
-                    height={96}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenSignatureSheet(signature)}
-                    >
-                      Change
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Remove signature? You can add it later."
-                          )
-                        ) {
-                          setSignature("");
-                          setSignatureDraft(undefined);
-                        }
-                      }}
-                    >
-                      Remove
-                    </Button>
+            <FeatureGate feature="hasSignature" hasAccess={isPremium}>
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Signature</Label>
+                {signature ? (
+                  <div className="border rounded-lg bg-white p-4 flex flex-col items-center gap-3">
+                    <Image
+                      src={signature}
+                      alt="Contact signature"
+                      className="max-w-full h-24 object-contain"
+                      unoptimized
+                      width={300}
+                      height={96}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenSignatureSheet(signature)}
+                      >
+                        Change
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Remove signature? You can add it later."
+                            )
+                          ) {
+                            setSignature("");
+                            setSignatureDraft(undefined);
+                          }
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleOpenSignatureSheet(undefined)}
-                  className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
-                >
-                  <Plus className="h-6 w-6" />
-                  <span className="text-sm font-medium">Add Signature</span>
-                </button>
-              )}
-            </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSignatureSheet(undefined)}
+                    className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    <Plus className="h-6 w-6" />
+                    <span className="text-sm font-medium">Add Signature</span>
+                  </button>
+                )}
+              </div>
+            </FeatureGate>
 
             <div className="flex gap-3 pt-4">
               <Button

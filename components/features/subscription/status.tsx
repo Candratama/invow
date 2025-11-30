@@ -42,9 +42,9 @@ export default function SubscriptionStatus({
           color: "text-gray-600",
           bgColor: "bg-gray-100",
         };
-      case "starter":
+      case "premium":
         return {
-          name: "Starter",
+          name: "Premium",
           icon: <Zap className="w-5 h-5" />,
           color: "text-blue-600",
           bgColor: "bg-blue-100",

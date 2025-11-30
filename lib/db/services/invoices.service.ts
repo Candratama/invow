@@ -11,9 +11,20 @@ import type {
   InvoiceItem,
   InvoiceItemInsert,
 } from "@/lib/db/database.types";
+import { TierService } from "./tier.service";
 
 export interface InvoiceWithItems extends Invoice {
   invoice_items: InvoiceItem[];
+}
+
+export interface TierLimitedInvoicesResult {
+  invoices: InvoiceWithItems[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasMoreHistory: boolean;
+  historyLimitMessage?: string;
 }
 
 export class InvoicesService {
@@ -146,6 +157,125 @@ export class InvoicesService {
           page,
           pageSize,
           totalPages,
+        },
+        error: null,
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Get paginated invoices with tier-based history limits
+   * - Free users: limited to last 10 transactions (count-based)
+   * - Premium users: limited to last 30 days (time-based)
+   * @param page - Page number (1-indexed)
+   * @param pageSize - Number of invoices per page
+   * @param status - Optional filter by status
+   * @returns Paginated invoices with tier-based limits and metadata
+   */
+  async getInvoicesPaginatedWithTierLimit(
+    page: number = 1,
+    pageSize: number = 10,
+    status?: "draft" | "pending" | "synced",
+  ): Promise<{
+    data: TierLimitedInvoicesResult | null;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Get user's tier and history limit
+      const tierService = new TierService(this.supabase);
+      const { data: historyLimit } = await tierService.getHistoryLimit(user.id);
+
+      // Calculate offset
+      const offset = (page - 1) * pageSize;
+
+      // Build base query with items included
+      let query = this.supabase
+        .from("invoices")
+        .select(
+          `
+          *,
+          invoice_items (*)
+        `,
+          { count: "exact" }
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }); // DESC order - newest first
+
+      if (status) {
+        query = query.eq("status", status);
+      }
+
+      // Apply tier-based filtering
+      if (historyLimit.type === 'days') {
+        // Premium tier: filter by date (last N days)
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - historyLimit.limit);
+        query = query.gte("created_at", cutoffDate.toISOString());
+      }
+
+      // For count-based limit (free tier), we need to get total first
+      // then limit the results
+      const { data: allData, error: countError, count: totalCount } = await query;
+
+      if (countError) throw new Error(countError.message);
+
+      let invoicesData = allData || [];
+      let hasMoreHistory = false;
+      let historyLimitMessage: string | undefined;
+
+      // Apply count-based limit for free tier
+      if (historyLimit.type === 'count') {
+        // Check if there are more invoices beyond the limit
+        const totalInvoicesCount = totalCount || 0;
+        if (totalInvoicesCount > historyLimit.limit) {
+          hasMoreHistory = true;
+          historyLimitMessage = `Showing last ${historyLimit.limit} transactions. Upgrade to Premium for 30 days of history.`;
+        }
+        // Limit to the configured count
+        invoicesData = invoicesData.slice(0, historyLimit.limit);
+      }
+
+      // Apply pagination to the filtered results
+      const paginatedData = invoicesData.slice(offset, offset + pageSize);
+
+      // Sort items by position for each invoice
+      const invoices = paginatedData.map((invoice) => {
+        const typedInvoice = invoice as InvoiceWithItems;
+        if (typedInvoice.invoice_items) {
+          typedInvoice.invoice_items.sort(
+            (a: InvoiceItem, b: InvoiceItem) => a.position - b.position
+          );
+        }
+        return typedInvoice;
+      });
+
+      const total = historyLimit.type === 'count' 
+        ? Math.min(invoicesData.length, historyLimit.limit)
+        : invoicesData.length;
+      const totalPages = Math.ceil(total / pageSize);
+
+      return {
+        data: {
+          invoices,
+          total,
+          page,
+          pageSize,
+          totalPages,
+          hasMoreHistory,
+          historyLimitMessage,
         },
         error: null,
       };

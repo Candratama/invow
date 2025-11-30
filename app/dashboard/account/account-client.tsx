@@ -296,6 +296,7 @@ export function AccountClient({
                   onDirtyChange={setIsDirty}
                   initialStore={initialStore}
                   initialPreferences={initialPreferences}
+                  userTier={initialSubscription?.tier || "free"}
                 />
               </div>
             )}

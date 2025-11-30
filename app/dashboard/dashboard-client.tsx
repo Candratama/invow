@@ -41,6 +41,8 @@ interface DashboardClientProps {
   initialTotalPages: number;
   initialStoreSettings: StoreSettings | null;
   initialDefaultStore: { id: string } | null;
+  initialHasMoreHistory?: boolean;
+  initialHistoryLimitMessage?: string;
 }
 
 function PreviewView({
@@ -130,6 +132,8 @@ export default function DashboardClient({
   initialTotalPages,
   initialStoreSettings,
   initialDefaultStore,
+  initialHasMoreHistory = false,
+  initialHistoryLimitMessage,
 }: DashboardClientProps) {
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [currentPage, setCurrentPage] = useState(1);
@@ -330,6 +334,15 @@ export default function DashboardClient({
                     totalPages={initialTotalPages}
                     onPageChange={setCurrentPage}
                   />
+                )}
+
+                {/* History Limit Message for Free Users */}
+                {initialHasMoreHistory && initialHistoryLimitMessage && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                    <p className="text-sm text-amber-800">
+                      {initialHistoryLimitMessage}
+                    </p>
+                  </div>
                 )}
               </div>
             ) : (

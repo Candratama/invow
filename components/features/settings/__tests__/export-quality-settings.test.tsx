@@ -2,13 +2,11 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { ExportQualitySettings } from "../export-quality-settings";
-import { userPreferencesService } from "@/lib/db/services";
+import * as preferencesActions from "@/app/actions/preferences";
 
-// Mock the services
-vi.mock("@/lib/db/services", () => ({
-  userPreferencesService: {
-    getUserPreferences: vi.fn(),
-  },
+// Mock the server action
+vi.mock("@/app/actions/preferences", () => ({
+  getPreferencesAction: vi.fn(),
 }));
 
 // Mock the auth context
@@ -24,7 +22,8 @@ describe("ExportQualitySettings", () => {
   });
 
   it("should render slider with quality labels", async () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -39,7 +38,6 @@ describe("ExportQualitySettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<ExportQualitySettings />);
@@ -58,7 +56,7 @@ describe("ExportQualitySettings", () => {
   });
 
   it("should show loading state while fetching preferences", () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockImplementation(
+    vi.mocked(preferencesActions.getPreferencesAction).mockImplementation(
       () => new Promise(() => {})
     );
 
@@ -68,7 +66,8 @@ describe("ExportQualitySettings", () => {
   });
 
   it("should load and display initial quality value", async () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -83,7 +82,6 @@ describe("ExportQualitySettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<ExportQualitySettings />);
@@ -99,7 +97,8 @@ describe("ExportQualitySettings", () => {
   });
 
   it("should render with default quality when no preference exists", async () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -114,7 +113,6 @@ describe("ExportQualitySettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<ExportQualitySettings />);
