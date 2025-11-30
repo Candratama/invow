@@ -37,9 +37,10 @@ function LoginForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Use client-side navigation for post-login redirect
-      router.push(redirectTo);
+      // Refresh to sync server state with new session cookies
       router.refresh();
+      // Redirect will be handled by useEffect when user state updates
+      // Keep loading state true until redirect happens
     }
   };
 
