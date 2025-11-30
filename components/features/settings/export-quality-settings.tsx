@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { userPreferencesService } from "@/lib/db/services";
+import { getPreferencesAction } from "@/app/actions/preferences";
 import { useAuth } from "@/lib/auth/auth-context";
 
 export type ExportQuality = 50 | 100 | 150;
@@ -25,9 +25,14 @@ interface ExportQualitySettingsProps {
   onChange?: (quality: ExportQuality) => void;
 }
 
-export function ExportQualitySettings({ value, onChange }: ExportQualitySettingsProps) {
+export function ExportQualitySettings({
+  value,
+  onChange,
+}: ExportQualitySettingsProps) {
   const { user } = useAuth();
-  const [currentQuality, setCurrentQuality] = useState<ExportQuality>(value || 100);
+  const [currentQuality, setCurrentQuality] = useState<ExportQuality>(
+    value || 100
+  );
   const [loading, setLoading] = useState(true);
 
   // Load current quality on mount
@@ -37,16 +42,16 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
 
       try {
         setLoading(true);
-        const { data, error } = await userPreferencesService.getUserPreferences();
+        const result = await getPreferencesAction();
 
-        if (error) {
-          console.error("Error loading preferences:", error);
+        if (!result.success) {
+          console.error("Error loading preferences:", result.error);
           setLoading(false);
           return;
         }
 
-        if (data?.export_quality_kb) {
-          const quality = data.export_quality_kb as ExportQuality;
+        if (result.data?.export_quality_kb) {
+          const quality = result.data.export_quality_kb as ExportQuality;
           setCurrentQuality(quality);
           if (onChange) {
             onChange(quality);
@@ -81,7 +86,9 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
     return (
       <div className="space-y-4">
         <div>
-          <Label className="text-lg lg:text-xl font-semibold">Export Quality</Label>
+          <Label className="text-lg lg:text-xl font-semibold">
+            Export Quality
+          </Label>
           <p className="text-sm text-gray-600 mt-1">
             Choose the maximum file size for exported invoice images
           </p>
@@ -96,7 +103,9 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-lg lg:text-xl font-semibold">Export Quality</Label>
+        <Label className="text-lg lg:text-xl font-semibold">
+          Export Quality
+        </Label>
         <p className="text-sm text-gray-600 mt-1">
           Choose the maximum file size for exported invoice images
         </p>
@@ -108,9 +117,13 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
             {QUALITY_LABELS[currentQuality]}
           </span>
         </div>
-        
+
         <Slider
-          value={[Object.keys(QUALITY_MAP).find(key => QUALITY_MAP[Number(key)] === currentQuality) || 0].map(Number)}
+          value={[
+            Object.keys(QUALITY_MAP).find(
+              (key) => QUALITY_MAP[Number(key)] === currentQuality
+            ) || 0,
+          ].map(Number)}
           onValueChange={(value) => {
             const quality = QUALITY_MAP[value[0]];
             handleSliderChange(quality);
@@ -119,7 +132,7 @@ export function ExportQualitySettings({ value, onChange }: ExportQualitySettings
           step={1}
           className="w-full"
         />
-        
+
         <div className="flex justify-between text-xs text-gray-500">
           <span>Small</span>
           <span>Medium</span>

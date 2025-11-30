@@ -3,7 +3,6 @@
  * Handles user subscription management and invoice limit enforcement
  */
 
-import { createClient } from "@/lib/supabase/client";
 import type { UserSubscription } from "@/lib/db/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -19,11 +18,7 @@ interface SubscriptionStatus {
 import { TIER_LIMITS } from "@/lib/config/pricing";
 
 export class SubscriptionService {
-  private supabase: SupabaseClient;
-
-  constructor(supabaseClient?: SupabaseClient) {
-    this.supabase = supabaseClient || createClient();
-  }
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get user's current subscription
@@ -534,6 +529,3 @@ export class SubscriptionService {
     return thisMonthReset;
   }
 }
-
-// Export singleton instance
-export const subscriptionService = new SubscriptionService();

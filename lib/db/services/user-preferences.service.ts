@@ -3,7 +3,7 @@
  * Handles CRUD operations for user_preferences table
  */
 
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   UserPreferences,
   UserPreferencesInsert,
@@ -12,7 +12,7 @@ import type {
 import type { InvoiceTemplateId } from "@/components/features/invoice/templates";
 
 export class UserPreferencesService {
-  private supabase = createClient();
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get user preferences for the authenticated user
@@ -372,6 +372,3 @@ export class UserPreferencesService {
     }
   }
 }
-
-// Export singleton instance
-export const userPreferencesService = new UserPreferencesService();

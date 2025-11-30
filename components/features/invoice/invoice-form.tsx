@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Download, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useInvoiceStore } from "@/lib/store";
-import { InvoiceItem, Invoice } from "@/lib/types";
+import { InvoiceItem, Invoice, StoreSettings } from "@/lib/types";
 import {
   formatCurrency,
   parseLocalDate,
@@ -45,18 +46,11 @@ import {
   type InvoiceTemplateId,
 } from "@/components/features/invoice/templates";
 import { useAuth } from "@/lib/auth/auth-context";
-import {
-  useCreateInvoice,
-  useSubscriptionStatus,
-} from "@/lib/hooks/use-dashboard-data";
-import {
-  useStoreSettings,
-  storeSettingsQueryKey,
-} from "@/lib/hooks/use-store-settings";
-import { useDefaultStore } from "@/lib/hooks/use-default-store";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
-import { userPreferencesService, invoicesService } from "@/lib/db/services";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  upsertInvoiceWithItemsAction,
+  getNextInvoiceSequenceAction,
+} from "@/app/actions/invoices";
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -81,9 +75,31 @@ type ItemFormData = z.infer<typeof itemSchema>;
 
 interface InvoiceFormProps {
   onComplete?: () => void;
+  subscriptionStatus?: {
+    tier: string;
+    invoiceLimit: number;
+    currentMonthCount: number;
+    remainingInvoices: number;
+    resetDate: string | null;
+  } | null;
+  storeSettings?: StoreSettings | null;
+  defaultStore?: {
+    id: string;
+  } | null;
+  initialTaxEnabled?: boolean;
+  initialTaxPercentage?: number;
+  initialSelectedTemplate?: string;
 }
 
-export function InvoiceForm({ onComplete }: InvoiceFormProps) {
+export function InvoiceForm({
+  onComplete,
+  subscriptionStatus,
+  storeSettings,
+  defaultStore,
+  initialTaxEnabled = false,
+  initialTaxPercentage = 0,
+  initialSelectedTemplate = "classic",
+}: InvoiceFormProps) {
   const {
     currentInvoice,
     setCurrentInvoice,
@@ -95,27 +111,22 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
   } = useInvoiceStore();
 
   const { user } = useAuth();
+  const router = useRouter();
 
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Tax preferences state
-  const [taxEnabled, setTaxEnabled] = useState(false);
-  const [taxPercentage, setTaxPercentage] = useState(0);
+  const [taxEnabled, setTaxEnabled] = useState(initialTaxEnabled);
+  const [taxPercentage, setTaxPercentage] = useState(initialTaxPercentage);
 
   // Selected template state
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<InvoiceTemplateId>("classic");
-
-  // Use React Query hooks for subscription status, store settings, and invoice creation
-  const queryClient = useQueryClient();
-  const { data: subscriptionStatus, isLoading: isLoadingSubscription } =
-    useSubscriptionStatus();
-  const { data: storeSettings } = useStoreSettings();
-  const { data: defaultStore } = useDefaultStore();
-  const createInvoice = useCreateInvoice();
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplateId>(
+    initialSelectedTemplate as InvoiceTemplateId
+  );
 
   // Initialize invoice when component mounts
   useEffect(() => {
@@ -143,10 +154,11 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       // Get sequence number for today
       const today = new Date();
       const dateStr = formatDateForInput(today);
-      const { data: sequence } = await invoicesService.getNextInvoiceSequence(
+      const sequenceResult = await getNextInvoiceSequenceAction(
         defaultStore.id,
         dateStr
       );
+      const sequence = sequenceResult.data;
 
       // Generate invoice number with actual user ID
       const invoiceNumber = generateInvoiceNumber(
@@ -191,22 +203,6 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     setCurrentInvoice,
     updateCurrentInvoice,
   ]);
-
-  // Fetch tax preferences and selected template on mount
-  useEffect(() => {
-    const fetchUserPreferences = async () => {
-      try {
-        const { data } = await userPreferencesService.getUserPreferences();
-        setTaxEnabled(data.tax_enabled);
-        setTaxPercentage(data.tax_percentage ?? 0);
-        setSelectedTemplate(data.selected_template as InvoiceTemplateId);
-      } catch (error) {
-        console.error("Failed to fetch user preferences:", error);
-      }
-    };
-
-    fetchUserPreferences();
-  }, []);
 
   // Main form
   const form = useForm<InvoiceFormData>({
@@ -285,11 +281,11 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       const regenerateInvoiceNumber = async () => {
         if (user?.id && defaultStore?.id) {
           const dateStr = String(value);
-          const { data: sequence } =
-            await invoicesService.getNextInvoiceSequence(
-              defaultStore.id,
-              dateStr
-            );
+          const sequenceResult = await getNextInvoiceSequenceAction(
+            defaultStore.id,
+            dateStr
+          );
+          const sequence = sequenceResult.data;
           const newInvoiceNumber = generateInvoiceNumber(
             newDate,
             user.id,
@@ -358,24 +354,23 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     }
 
     setIsDownloading(true);
+    setIsSaving(true);
     try {
-      // Force refetch store settings to get latest brandColor and signature
-      await queryClient.refetchQueries({ queryKey: storeSettingsQueryKey });
-
       // Small delay to ensure DOM is ready with fresh data
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Save invoice using React Query mutation
+      // Save invoice using Server Action
       if (currentInvoice.id && user?.id) {
         try {
-          // Check if default store is available (already cached by React Query)
+          // Check if default store is available
           if (!defaultStore) {
             toast.error("No store found. Please set up your store first.");
             setIsDownloading(false);
+            setIsSaving(false);
             return;
           }
 
-          // Prepare invoice data for mutation
+          // Prepare invoice data for Server Action
           // Format date as YYYY-MM-DD for database (no time component)
           const invoiceDate = currentInvoice.invoiceDate
             ? formatDateForInput(new Date(currentInvoice.invoiceDate))
@@ -390,56 +385,57 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           );
 
           const invoiceData = {
-            invoice: {
-              id: currentInvoice.id,
-              store_id: defaultStore.id,
-              invoice_number: currentInvoice.invoiceNumber || "",
-              invoice_date: invoiceDate,
-              customer_name: currentInvoice.customer?.name || "",
-              customer_email: currentInvoice.customer?.email || "",
-              customer_address: currentInvoice.customer?.address || "",
-              customer_status: currentInvoice.customer?.status || "Customer",
-              subtotal: calculation.subtotal,
-              shipping_cost: calculation.shippingCost,
-              tax_amount: calculation.taxAmount,
-              total: calculation.total,
-              note: currentInvoice.note || "",
-              status: "synced" as const,
-            },
-            items: (currentInvoice.items || []).map((item, index) => ({
-              id: item.id,
-              description: item.description,
-              quantity: item.quantity,
-              price: item.price,
-              subtotal: item.subtotal,
-              position: index,
-            })),
+            id: currentInvoice.id,
+            store_id: defaultStore.id,
+            invoice_number: currentInvoice.invoiceNumber || "",
+            invoice_date: invoiceDate,
+            customer_name: currentInvoice.customer?.name || "",
+            customer_email: currentInvoice.customer?.email || "",
+            customer_address: currentInvoice.customer?.address || "",
+            customer_status: currentInvoice.customer?.status || "Customer",
+            subtotal: calculation.subtotal,
+            shipping_cost: calculation.shippingCost,
+            tax_amount: calculation.taxAmount,
+            total: calculation.total,
+            note: currentInvoice.note || "",
+            status: "synced" as const,
           };
 
-          // Use mutation to save invoice with optimistic updates
-          await createInvoice.mutateAsync(invoiceData);
+          const items = (currentInvoice.items || []).map((item, index) => ({
+            id: item.id,
+            description: item.description,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.subtotal,
+            position: index,
+          }));
 
-          // Success feedback is shown via optimistic update (< 500ms)
+          // Use Server Action to save invoice
+          const result = await upsertInvoiceWithItemsAction(invoiceData, items);
+
+          if (!result.success) {
+            const errorMessage = result.error || "Failed to save invoice";
+            if (errorMessage.includes("limit reached")) {
+              toast.error(
+                "You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices."
+              );
+            } else {
+              toast.error(errorMessage);
+            }
+            setIsDownloading(false);
+            setIsSaving(false);
+            return;
+          }
         } catch (error) {
           console.error("Failed to save invoice:", error);
-
-          // Display appropriate error messages
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
-          if (errorMessage.includes("limit reached")) {
-            toast.error(
-              "You have reached your monthly invoice limit. Please upgrade your plan to generate more invoices."
-            );
-          } else {
-            toast.error(
-              errorMessage || "Failed to save invoice. Please try again."
-            );
-          }
-
+          toast.error("Failed to save invoice. Please try again.");
           setIsDownloading(false);
+          setIsSaving(false);
           return;
         }
       }
+
+      setIsSaving(false);
 
       await generateJPEGFromInvoice(
         currentInvoice as Invoice,
@@ -463,6 +459,31 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
     <div className="min-h-screen bg-gray-50 pb-32">
       {/* Form Content */}
       <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 py-6 space-y-6 lg:px-8">
+        {/* Business Info Warning */}
+        {!defaultStore && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle
+                className="text-yellow-600 flex-shrink-0"
+                size={18}
+              />
+              <p className="font-medium text-yellow-800">
+                Business Info not configured. Please set up your Business Info
+                first.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+              onClick={() => router.push("/dashboard/account")}
+            >
+              Set Up Business Info
+            </Button>
+          </div>
+        )}
+
         {/* Invoice Number Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -685,8 +706,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 lg:fixed lg:border-t lg:p-4">
         <div className="max-w-2xl lg:max-w-4xl mx-auto space-y-3">
           {/* Warning message when near limit */}
-          {!isLoadingSubscription &&
-            subscriptionStatus &&
+          {subscriptionStatus &&
             subscriptionStatus.remainingInvoices <= 5 &&
             subscriptionStatus.remainingInvoices > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
@@ -709,54 +729,32 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
             )}
 
           {/* Error message when limit reached */}
-          {!isLoadingSubscription &&
-            subscriptionStatus &&
-            subscriptionStatus.remainingInvoices === 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="flex items-start gap-2 mb-2">
-                  <AlertTriangle
-                    size={18}
-                    className="text-red-600 mt-0.5 flex-shrink-0"
-                  />
-                  <div className="text-sm flex-1">
-                    <p className="font-medium text-red-800">
-                      Monthly limit reached
-                    </p>
-                    <p className="text-red-700 mt-0.5">
-                      You&apos;ve used all {subscriptionStatus.invoiceLimit}{" "}
-                      invoices for this month. Upgrade to generate more.
-                    </p>
-                  </div>
+          {subscriptionStatus && subscriptionStatus.remainingInvoices === 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-start gap-2 mb-2">
+                <AlertTriangle
+                  size={18}
+                  className="text-red-600 mt-0.5 flex-shrink-0"
+                />
+                <div className="text-sm flex-1">
+                  <p className="font-medium text-red-800">
+                    Monthly limit reached
+                  </p>
+                  <p className="text-red-700 mt-0.5">
+                    You&apos;ve used all {subscriptionStatus.invoiceLimit}{" "}
+                    invoices for this month. Upgrade to generate more.
+                  </p>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => (window.location.href = "/dashboard/account")}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                >
-                  Upgrade Plan
-                </Button>
               </div>
-            )}
-
-          {/* Show mutation error if any */}
-          {createInvoice.isError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle
-                size={18}
-                className="text-red-600 mt-0.5 flex-shrink-0"
-              />
-              <div className="text-sm">
-                <p className="font-medium text-red-800">
-                  Failed to save invoice
-                </p>
-                <p className="text-red-700 mt-0.5">
-                  {createInvoice.error instanceof Error
-                    ? createInvoice.error.message
-                    : "An error occurred while saving the invoice"}
-                </p>
-              </div>
+              <Button
+                type="button"
+                onClick={() => router.push("/dashboard/account")}
+                variant="outline"
+                size="sm"
+                className="w-full border-red-300 text-red-700 hover:bg-red-50"
+              >
+                Upgrade Plan
+              </Button>
             </div>
           )}
 
@@ -771,8 +769,7 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
                   !currentInvoice.items ||
                   currentInvoice.items.length === 0 ||
                   isDownloading ||
-                  (!isLoadingSubscription &&
-                    subscriptionStatus?.remainingInvoices === 0)
+                  subscriptionStatus?.remainingInvoices === 0
                 }
                 className="gap-2 w-full"
                 size="lg"
@@ -1049,6 +1046,8 @@ export function InvoiceForm({ onComplete }: InvoiceFormProps) {
           const templateProps = {
             invoice: currentInvoice as Invoice,
             storeSettings: storeSettings ?? null,
+            taxEnabled,
+            taxPercentage,
           };
 
           switch (selectedTemplate) {

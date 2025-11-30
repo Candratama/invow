@@ -3,7 +3,7 @@
  * Handles CRUD operations for store_contacts table
  */
 
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   StoreContact,
   StoreContactInsert,
@@ -11,7 +11,7 @@ import type {
 } from "@/lib/db/database.types";
 
 export class StoreContactsService {
-  private supabase = createClient();
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get all contacts for a store
@@ -313,6 +313,3 @@ export class StoreContactsService {
     }
   }
 }
-
-// Export singleton instance
-export const storeContactsService = new StoreContactsService();

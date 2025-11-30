@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { userPreferencesService } from "@/lib/db/services";
+import { getPreferencesAction } from "@/app/actions/preferences";
 import { useAuth } from "@/lib/auth/auth-context";
 
 interface TaxSettingsProps {
@@ -13,15 +13,17 @@ interface TaxSettingsProps {
   onTaxPercentageChange?: (percentage: string) => void;
 }
 
-export function TaxSettings({ 
-  taxEnabled: taxEnabledProp, 
+export function TaxSettings({
+  taxEnabled: taxEnabledProp,
   taxPercentage: taxPercentageProp,
   onTaxEnabledChange,
-  onTaxPercentageChange 
+  onTaxPercentageChange,
 }: TaxSettingsProps) {
   const { user } = useAuth();
   const [, setTaxEnabled] = useState(taxEnabledProp || false);
-  const [taxPercentage, setTaxPercentage] = useState<string>(taxPercentageProp || "0");
+  const [taxPercentage, setTaxPercentage] = useState<string>(
+    taxPercentageProp || "0"
+  );
   const [loading, setLoading] = useState(true);
 
   // Load current tax settings on mount
@@ -31,17 +33,20 @@ export function TaxSettings({
 
       try {
         setLoading(true);
-        const { data, error } = await userPreferencesService.getUserPreferences();
+        const result = await getPreferencesAction();
 
-        if (error) {
-          console.error("Error loading preferences:", error);
+        if (!result.success) {
+          console.error("Error loading preferences:", result.error);
           setLoading(false);
           return;
         }
 
-        if (data) {
-          const enabled = data.tax_enabled ?? false;
-          const percentage = data.tax_percentage !== null ? String(data.tax_percentage) : "0";
+        if (result.data) {
+          const enabled = result.data.tax_enabled ?? false;
+          const percentage =
+            result.data.tax_percentage !== null
+              ? String(result.data.tax_percentage)
+              : "0";
           setTaxEnabled(enabled);
           setTaxPercentage(percentage);
           if (onTaxEnabledChange) {
@@ -97,7 +102,9 @@ export function TaxSettings({
     return (
       <div className="space-y-4">
         <div>
-          <Label className="text-lg lg:text-xl font-semibold">Tax Settings</Label>
+          <Label className="text-lg lg:text-xl font-semibold">
+            Tax Settings
+          </Label>
           <p className="text-sm text-gray-600 mt-1">
             Enable and configure tax calculation for invoices
           </p>
@@ -111,10 +118,11 @@ export function TaxSettings({
 
   return (
     <div className="space-y-4">
-
       {/* Tax Percentage Input */}
       <div className="space-y-2">
-        <Label htmlFor="tax-percentage" className="text-sm font-medium">Tax Percentage (%)</Label>
+        <Label htmlFor="tax-percentage" className="text-sm font-medium">
+          Tax Percentage (%)
+        </Label>
         <div className="relative">
           <Input
             id="tax-percentage"
@@ -128,7 +136,7 @@ export function TaxSettings({
               const numValue = parseFloat(value);
               if (!isNaN(numValue) && numValue > 0) {
                 handleToggleChange(true);
-              } else if (value === '0' || value === '') {
+              } else if (value === "0" || value === "") {
                 handleToggleChange(false);
               }
             }}

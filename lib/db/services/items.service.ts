@@ -3,7 +3,7 @@
  * Handles CRUD operations for invoice_items table
  */
 
-import { createClient } from '@/lib/supabase/client'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   InvoiceItem,
   InvoiceItemInsert,
@@ -11,7 +11,7 @@ import type {
 } from '@/lib/db/database.types'
 
 export class ItemsService {
-  private supabase = createClient()
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get all items for a specific invoice
@@ -528,6 +528,3 @@ export class ItemsService {
     }
   }
 }
-
-// Export singleton instance
-export const itemsService = new ItemsService()

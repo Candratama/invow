@@ -4,8 +4,6 @@
  */
 
 import fc from 'fast-check';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 
 // ============================================================================
 // Type Definitions
@@ -186,37 +184,6 @@ export const subscriptionStatusArbitrary: fc.Arbitrary<MockSubscriptionStatus> =
 // ============================================================================
 // Test Helpers
 // ============================================================================
-
-/**
- * Create a QueryClient wrapper for testing React Query hooks
- */
-export const createTestQueryClient = () => {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: true,
-      },
-      mutations: {
-        retry: false,
-      },
-    },
-  });
-};
-
-/**
- * Create a wrapper component with QueryClient for testing
- */
-export const createWrapper = () => {
-  const queryClient = createTestQueryClient();
-
-  const Wrapper = ({ children }: { children: React.ReactNode }) => {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-
-  return { Wrapper, queryClient };
-};
 
 /**
  * Generate invalid business info data for validation testing

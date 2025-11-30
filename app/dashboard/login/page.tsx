@@ -37,8 +37,9 @@ function LoginForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Use hard redirect to ensure proper navigation after login
-      window.location.href = redirectTo;
+      // Use client-side navigation for post-login redirect
+      router.push(redirectTo);
+      router.refresh();
     }
   };
 
@@ -114,7 +115,10 @@ function LoginForm() {
             </Link>
             <div className="text-sm lg:text-base text-gray-600">
               Don&apos;t have an account?{" "}
-              <Link href="/dashboard/signup" className="text-primary hover:underline">
+              <Link
+                href="/dashboard/signup"
+                className="text-primary hover:underline"
+              >
                 Sign up
               </Link>
             </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fc from 'fast-check';
 import { UserPreferencesService } from '../user-preferences.service';
@@ -28,7 +29,8 @@ describe('UserPreferencesService - Property-Based Tests', () => {
     const { createClient } = await import('@/lib/supabase/client');
     mockSupabase = createClient();
     
-    service = new UserPreferencesService();
+    // Pass the mocked client to the service
+    service = new UserPreferencesService(mockSupabase as any);
     
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },

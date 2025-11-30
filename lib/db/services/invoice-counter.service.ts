@@ -4,10 +4,10 @@
  * Billing cycles are based on user's subscription start date (e.g., if registered on 15th, resets on 15th each month)
  */
 
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export class InvoiceCounterService {
-  private supabase = createClient();
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get current billing cycle invoice count for user
@@ -320,6 +320,3 @@ export class InvoiceCounterService {
     return `${year}-${month}-${day}`;
   }
 }
-
-// Export singleton instance
-export const invoiceCounterService = new InvoiceCounterService();

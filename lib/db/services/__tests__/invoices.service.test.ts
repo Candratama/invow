@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InvoicesService } from '../invoices.service';
 
@@ -28,7 +29,8 @@ describe('InvoicesService', () => {
     const { createClient } = await import('@/lib/supabase/client');
     mockSupabase = createClient();
     
-    service = new InvoicesService();
+    // Pass the mocked client to the service
+    service = new InvoicesService(mockSupabase as any);
     
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },

@@ -14,8 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { userPreferencesService } from "@/lib/db/services/user-preferences.service";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
+import { getPreferencesAction } from "@/app/actions/preferences";
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -48,9 +48,11 @@ export function InvoicePreview({
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const { data } = await userPreferencesService.getUserPreferences();
-        setTaxEnabled(data.tax_enabled);
-        setTaxPercentage(data.tax_percentage ?? 0);
+        const result = await getPreferencesAction();
+        if (result.success && result.data) {
+          setTaxEnabled(result.data.tax_enabled);
+          setTaxPercentage(result.data.tax_percentage ?? 0);
+        }
       } catch (error) {
         console.error("Failed to fetch user preferences:", error);
       }

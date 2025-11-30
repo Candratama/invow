@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useTransition } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { Camera, Upload, X, Plus, Edit2, Trash2, Star } from "lucide-react";
-import { storesService, storeContactsService } from "@/lib/db/services";
 import type { StoreContact } from "@/lib/db/database.types";
 import { compressImage, validateImageFile } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -17,8 +16,14 @@ import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { SignatureCanvas } from "@/components/ui/signature-pad";
 import SignaturePad from "signature_pad";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { storeSettingsQueryKey } from "@/lib/hooks/use-store-settings";
+import {
+  updateStoreAction,
+  createContactAction,
+  updateContactAction,
+  deleteContactAction,
+  setPrimaryContactAction,
+  getStoreAndContactsAction,
+} from "@/app/actions/store";
 import { useAuth } from "@/lib/auth/auth-context";
 
 const optionalText = z.string().optional().or(z.literal(""));
@@ -50,23 +55,42 @@ type ContactFormData = z.infer<typeof contactSchema>;
 interface BusinessInfoTabProps {
   onClose: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
+  initialStore?: {
+    id: string;
+    name?: string | null;
+    logo?: string | null;
+    address?: string | null;
+    whatsapp?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    store_description?: string | null;
+    tagline?: string | null;
+    store_number?: string | null;
+    brand_color?: string | null;
+  } | null;
+  initialContacts?: StoreContact[];
 }
 
 export function BusinessInfoTab({
   onClose,
   onDirtyChange,
+  initialStore,
+  initialContacts = [],
 }: BusinessInfoTabProps) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(!initialStore);
+  const [store, setStore] = useState(initialStore);
 
   // State for business info
-  const [logo, setLogo] = useState<string>("");
+  const [logo, setLogo] = useState<string>(initialStore?.logo || "");
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [storeId, setStoreId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State for authorized persons
+  const [contacts, setContacts] = useState<StoreContact[]>(initialContacts);
+
   const [isContactEditOpen, setIsContactEditOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<StoreContact | null>(
     null
@@ -79,16 +103,16 @@ export function BusinessInfoTab({
   const form = useForm<BusinessInfoFormData>({
     resolver: zodResolver(businessInfoSchema),
     defaultValues: {
-      name: "",
-      address: "",
-      whatsapp: "",
-      phone: "",
-      email: "",
-      website: "",
-      storeDescription: "",
-      tagline: "",
-      storeNumber: "",
-      brandColor: "#10b981",
+      name: initialStore?.name || "",
+      address: initialStore?.address || "",
+      whatsapp: initialStore?.whatsapp?.replace(/^\+62/, "") || "",
+      phone: initialStore?.phone || "",
+      email: initialStore?.email || "",
+      website: initialStore?.website || "",
+      storeDescription: initialStore?.store_description || "",
+      tagline: initialStore?.tagline || "",
+      storeNumber: initialStore?.store_number || "",
+      brandColor: initialStore?.brand_color || "#10b981",
     },
   });
 
@@ -100,56 +124,35 @@ export function BusinessInfoTab({
     },
   });
 
-  // Fetch store data - use separate query key to get full Store object with id
-  const { data: store, isLoading } = useQuery({
-    queryKey: ["store-full"],
-    queryFn: async () => {
-      const { data, error } = await storesService.getDefaultStore();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true, // Always fetch on mount to ensure fresh data
-    refetchOnWindowFocus: false,
-  });
-
-  // Fetch contacts - use store.id directly instead of storeId state
-  const { data: contacts = [] } = useQuery({
-    queryKey: ["store-contacts", store?.id],
-    queryFn: async () => {
-      if (!store?.id) return [];
-      const { data, error } = await storeContactsService.getContacts(store.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!store?.id,
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true, // Always fetch on mount
-    refetchOnWindowFocus: false,
-  });
-
-  // Update form when store data is loaded
+  // Fetch store data on mount if not provided
   useEffect(() => {
-    if (store?.id) {
-      setStoreId(store.id);
-      setLogo(store.logo || "");
-
-      const formValues = {
-        name: store.name || "",
-        address: store.address || "",
-        whatsapp: store.whatsapp?.replace(/^\+62/, "") || "",
-        phone: store.phone || "",
-        email: store.email || "",
-        website: store.website || "",
-        storeDescription: store.store_description || "",
-        tagline: store.tagline || "",
-        storeNumber: store.store_number || "",
-        brandColor: store.brand_color || "#10b981",
-      };
-
-      form.reset(formValues, { keepDirty: false });
+    if (!initialStore) {
+      startTransition(async () => {
+        setIsLoading(true);
+        const result = await getStoreAndContactsAction();
+        if (result.success && result.data) {
+          setStore(result.data.store);
+          setContacts(result.data.contacts);
+          if (result.data.store) {
+            setLogo(result.data.store.logo || "");
+            form.reset({
+              name: result.data.store.name || "",
+              address: result.data.store.address || "",
+              whatsapp: result.data.store.whatsapp?.replace(/^\+62/, "") || "",
+              phone: result.data.store.phone || "",
+              email: result.data.store.email || "",
+              website: result.data.store.website || "",
+              storeDescription: result.data.store.store_description || "",
+              tagline: result.data.store.tagline || "",
+              storeNumber: result.data.store.store_number || "",
+              brandColor: result.data.store.brand_color || "#10b981",
+            });
+          }
+        }
+        setIsLoading(false);
+      });
     }
-  }, [store, form]);
+  }, [form, initialStore]);
 
   // Track form dirty state
   useEffect(() => {
@@ -158,83 +161,6 @@ export function BusinessInfoTab({
       onDirtyChange(isDirty);
     }
   }, [form.formState.isDirty, onDirtyChange]);
-
-  // Mutations for contacts
-  const createContactMutation = useMutation({
-    mutationFn: async (contactData: {
-      store_id: string;
-      name: string;
-      title: string | null;
-      signature: string | null;
-      is_primary: boolean;
-    }) => {
-      const { data, error } = await storeContactsService.createContact(
-        contactData
-      );
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["store-contacts", store?.id],
-      });
-      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
-    },
-  });
-
-  const updateContactMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: { name: string; title: string | null; signature: string | null };
-    }) => {
-      const { error } = await storeContactsService.updateContact(id, data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["store-contacts", store?.id],
-      });
-      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
-    },
-  });
-
-  const deleteContactMutation = useMutation({
-    mutationFn: async (contactId: string) => {
-      const { error } = await storeContactsService.deleteContact(contactId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["store-contacts", store?.id],
-      });
-      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
-    },
-  });
-
-  const setPrimaryMutation = useMutation({
-    mutationFn: async ({
-      storeId,
-      contactId,
-    }: {
-      storeId: string;
-      contactId: string;
-    }) => {
-      const { error } = await storeContactsService.setPrimaryContact(
-        storeId,
-        contactId
-      );
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["store-contacts", store?.id],
-      });
-      queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
-    },
-  });
 
   // Logo upload handler
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,25 +219,50 @@ export function BusinessInfoTab({
   const handleDeleteContact = async (contact: StoreContact) => {
     if (!window.confirm(`Delete contact "${contact.name}"?`)) return;
 
-    try {
-      await deleteContactMutation.mutateAsync(contact.id);
-      toast.success("Contact deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting contact:", error);
-      toast.error("Failed to delete contact. Please try again.");
-    }
+    startTransition(async () => {
+      try {
+        const result = await deleteContactAction(contact.id);
+        if (!result.success) {
+          toast.error(result.error || "Failed to delete contact");
+          return;
+        }
+
+        // Update local state
+        setContacts(contacts.filter((c) => c.id !== contact.id));
+        toast.success("Contact deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting contact:", error);
+        toast.error("Failed to delete contact. Please try again.");
+      }
+    });
   };
 
   const handleSetPrimary = async (contact: StoreContact) => {
-    if (!storeId) return;
+    if (!initialStore?.id) return;
+    startTransition(async () => {
+      try {
+        const result = await setPrimaryContactAction(
+          initialStore.id,
+          contact.id
+        );
+        if (!result.success) {
+          toast.error(result.error || "Failed to set primary contact");
+          return;
+        }
 
-    try {
-      await setPrimaryMutation.mutateAsync({ storeId, contactId: contact.id });
-      toast.success("Primary contact updated!");
-    } catch (error) {
-      console.error("Error setting primary contact:", error);
-      toast.error("Failed to set primary contact. Please try again.");
-    }
+        // Update local state
+        setContacts(
+          contacts.map((c) => ({
+            ...c,
+            is_primary: c.id === contact.id,
+          }))
+        );
+        toast.success("Primary contact updated!");
+      } catch (error) {
+        console.error("Error setting primary contact:", error);
+        toast.error("Failed to set primary contact. Please try again.");
+      }
+    });
   };
 
   const handleOpenSignatureSheet = (initial?: string) => {
@@ -359,50 +310,67 @@ export function BusinessInfoTab({
   };
 
   const onContactSubmit = async (data: ContactFormData) => {
-    if (!storeId) {
-      toast.error("Store not found. Please refresh and try again.");
-      return;
-    }
-
-    try {
-      if (editingContact) {
-        await updateContactMutation.mutateAsync({
-          id: editingContact.id,
-          data: {
+    startTransition(async () => {
+      try {
+        if (editingContact) {
+          const result = await updateContactAction(editingContact.id, {
             name: data.name,
-            title: data.title || null,
-            signature: signature || null,
-          },
-        });
-        toast.success("Contact updated successfully!");
-      } else {
-        await createContactMutation.mutateAsync({
-          store_id: storeId,
-          name: data.name,
-          title: data.title || null,
-          signature: signature || null,
-          is_primary: contacts.length === 0,
-        });
-        toast.success("Contact added successfully!");
-      }
+            title: data.title || undefined,
+            signature: signature || undefined,
+          });
 
-      setIsContactEditOpen(false);
-      setEditingContact(null);
-      contactForm.reset();
-      setSignature("");
-    } catch (error) {
-      console.error("Error saving contact:", error);
-      toast.error("Failed to save contact. Please try again.");
-    }
+          if (!result.success) {
+            toast.error(result.error || "Failed to update contact");
+            return;
+          }
+
+          // Update local state
+          setContacts(
+            contacts.map((c) =>
+              c.id === editingContact.id
+                ? {
+                    ...c,
+                    name: data.name,
+                    title: data.title || null,
+                    signature: signature || null,
+                  }
+                : c
+            )
+          );
+          toast.success("Contact updated successfully!");
+        } else {
+          const result = await createContactAction({
+            name: data.name,
+            title: data.title || undefined,
+            signature: signature || undefined,
+            phone: "", // Required by action but not used in this form
+          });
+
+          if (!result.success) {
+            toast.error(result.error || "Failed to add contact");
+            return;
+          }
+
+          // Add to local state
+          if (result.data) {
+            setContacts([...contacts, result.data]);
+          }
+          toast.success("Contact added successfully!");
+        }
+
+        setIsContactEditOpen(false);
+        setEditingContact(null);
+        contactForm.reset();
+        setSignature("");
+      } catch (error) {
+        console.error("Error saving contact:", error);
+        toast.error("Failed to save contact. Please try again.");
+      }
+    });
   };
 
   // Business info submit handler
   const onSubmit = async (data: BusinessInfoFormData) => {
-    if (!storeId) {
-      toast.error("Store not found. Please refresh and try again.");
-      return;
-    }
-
     // Format WhatsApp
     let whatsapp = data.whatsapp.replace(/\D/g, "");
     if (whatsapp.startsWith("0")) {
@@ -413,52 +381,50 @@ export function BusinessInfoTab({
 
     const sanitize = (val?: string) => {
       const trimmed = val?.trim();
-      return trimmed || null;
+      return trimmed || undefined;
     };
 
-    setSaving(true);
-    try {
-      const { error } = await storesService.updateStore(storeId, {
-        name: data.name,
-        logo: logo || null,
-        address: data.address,
-        whatsapp: "+" + whatsapp,
-        phone: sanitize(data.phone),
-        email: sanitize(data.email),
-        website: sanitize(data.website),
-        store_description: sanitize(data.storeDescription),
-        tagline: sanitize(data.tagline),
-        store_number: sanitize(data.storeNumber),
-        brand_color: data.brandColor,
-      });
+    startTransition(async () => {
+      try {
+        const result = await updateStoreAction({
+          name: data.name,
+          logo: logo || undefined,
+          address: data.address,
+          whatsapp: "+" + whatsapp,
+          phone: sanitize(data.phone),
+          email: sanitize(data.email),
+          website: sanitize(data.website),
+          storeDescription: sanitize(data.storeDescription),
+          tagline: sanitize(data.tagline),
+          storeNumber: sanitize(data.storeNumber),
+          brandColor: data.brandColor,
+        });
 
-      if (error) {
-        toast.error(`Failed to save: ${error.message}`);
-        return;
+        if (!result.success) {
+          toast.error(result.error || "Failed to save business info");
+          return;
+        }
+
+        // Reset form with current values to clear dirty state
+        form.reset(data);
+
+        // Reset dirty state
+        if (onDirtyChange) {
+          onDirtyChange(false);
+        }
+
+        toast.success("Business info saved successfully!");
+      } catch (error) {
+        console.error("Error saving business info:", error);
+        toast.error("Failed to save business info. Please try again.");
       }
-
-      await queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
-      await queryClient.refetchQueries({ queryKey: storeSettingsQueryKey });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Reset dirty state
-      if (onDirtyChange) {
-        onDirtyChange(false);
-      }
-
-      toast.success("Business info saved successfully!");
-    } catch (error) {
-      console.error("Error saving business info:", error);
-      toast.error("Failed to save business info. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading business info...</div>
+      <div className="flex flex-col h-full items-center justify-center">
+        <p className="text-gray-600">Loading business info...</p>
       </div>
     );
   }
@@ -883,16 +849,16 @@ export function BusinessInfoTab({
               className="flex-1 min-h-[44px]"
               size="lg"
             >
-              Cancel
+              Back
             </Button>
             <Button
               type="submit"
               form="business-info-form"
               className="flex-1 bg-primary text-white hover:bg-primary/90 min-h-[44px]"
               size="lg"
-              disabled={saving}
+              disabled={isPending}
             >
-              {saving ? "Saving..." : "Save Business Info"}
+              {isPending ? "Saving..." : "Save Business Info"}
             </Button>
           </div>
         </div>
@@ -1010,13 +976,9 @@ export function BusinessInfoTab({
                 type="submit"
                 form="contact-form"
                 className="flex-1"
-                disabled={
-                  createContactMutation.isPending ||
-                  updateContactMutation.isPending
-                }
+                disabled={isPending}
               >
-                {createContactMutation.isPending ||
-                updateContactMutation.isPending
+                {isPending
                   ? "Saving..."
                   : editingContact
                   ? "Update"

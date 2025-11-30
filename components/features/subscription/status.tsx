@@ -1,41 +1,35 @@
 "use client";
 
-import { useEffect } from "react";
+import { useTransition } from "react";
 import { RefreshCw, Zap, Crown, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSubscriptionStatus } from "@/lib/hooks/use-dashboard-data";
-import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+
+interface SubscriptionData {
+  tier: string;
+  invoiceLimit: number;
+  currentMonthCount: number;
+  remainingInvoices: number;
+  resetDate: string | null;
+}
 
 interface SubscriptionStatusProps {
   className?: string;
-  triggerRefresh?: boolean; // External trigger to refresh data (toggle this value to trigger refresh)
+  subscription: SubscriptionData | null;
 }
 
 export default function SubscriptionStatus({
   className = "",
-  triggerRefresh = false,
+  subscription,
 }: SubscriptionStatusProps) {
-  const queryClient = useQueryClient();
-  
-  // Use React Query for subscription data - automatic caching and background refetching
-  const { 
-    data: subscription, 
-    isLoading, 
-    error,
-    refetch,
-    isFetching
-  } = useSubscriptionStatus();
-
-  // Refresh when external trigger changes (e.g., after payment)
-  useEffect(() => {
-    if (triggerRefresh) {
-      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-    }
-  }, [triggerRefresh, queryClient]);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   // Manual refresh handler
   const handleRefresh = () => {
-    refetch();
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   // Get tier display info
@@ -81,35 +75,6 @@ export default function SubscriptionStatus({
     });
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className={`rounded-lg border bg-card p-6 shadow-sm ${className}`}>
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 w-32 bg-gray-200 rounded" />
-          <div className="h-8 w-24 bg-gray-200 rounded" />
-          <div className="h-4 w-48 bg-gray-200 rounded" />
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className={`rounded-lg border bg-card p-6 shadow-sm ${className}`}>
-        <div className="space-y-3">
-          <p className="text-sm text-red-600">
-            {error instanceof Error ? error.message : 'Failed to load subscription'}
-          </p>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // No subscription data
   if (!subscription) {
     return null;
@@ -125,11 +90,15 @@ export default function SubscriptionStatus({
         {/* Header with tier and refresh button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`${tierInfo.bgColor} ${tierInfo.color} p-2 rounded-lg`}>
+            <div
+              className={`${tierInfo.bgColor} ${tierInfo.color} p-2 rounded-lg`}
+            >
               {tierInfo.icon}
             </div>
             <div>
-              <h3 className="text-lg lg:text-xl font-semibold">{tierInfo.name} Plan</h3>
+              <h3 className="text-lg lg:text-xl font-semibold">
+                {tierInfo.name} Plan
+              </h3>
               <p className="text-xs lg:text-sm text-muted-foreground">
                 Current subscription
               </p>
@@ -139,11 +108,11 @@ export default function SubscriptionStatus({
             variant="ghost"
             size="icon"
             onClick={handleRefresh}
-            disabled={isFetching}
+            disabled={isPending}
             className="h-8 w-8"
           >
             <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`}
             />
           </Button>
         </div>
@@ -192,7 +161,8 @@ export default function SubscriptionStatus({
         {subscription.resetDate && (
           <div className="pt-3 border-t">
             <p className="text-xs lg:text-sm text-muted-foreground">
-              {subscription.tier === 'free' ? 'Resets on' : 'Expires on'} {formatResetDate(new Date(subscription.resetDate))}
+              {subscription.tier === "free" ? "Resets on" : "Expires on"}{" "}
+              {formatResetDate(new Date(subscription.resetDate))}
             </p>
           </div>
         )}

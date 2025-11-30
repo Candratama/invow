@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { InvoiceTemplateProps } from "../types";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
-import { userPreferencesService } from "@/lib/db/services";
 
 /**
  * Compact Invoice Template
@@ -20,6 +19,8 @@ export function CompactInvoiceTemplate({
   invoice,
   storeSettings,
   preview = false,
+  taxEnabled = false,
+  taxPercentage = 0,
 }: InvoiceTemplateProps) {
   const {
     customer,
@@ -29,23 +30,6 @@ export function CompactInvoiceTemplate({
     invoiceNumber,
     invoiceDate,
   } = invoice;
-
-  const [taxEnabled, setTaxEnabled] = useState(false);
-  const [taxPercentage, setTaxPercentage] = useState(0);
-
-  useEffect(() => {
-    const fetchTaxPreferences = async () => {
-      try {
-        const { data } = await userPreferencesService.getUserPreferences();
-        setTaxEnabled(data.tax_enabled);
-        setTaxPercentage(data.tax_percentage ?? 0);
-      } catch (error) {
-        console.error("Failed to fetch tax preferences:", error);
-      }
-    };
-
-    fetchTaxPreferences();
-  }, []);
 
   const calculation = calculateTotal(
     subtotal,

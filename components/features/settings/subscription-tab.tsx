@@ -1,40 +1,71 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Gift, Zap, Crown, AlertCircle } from "lucide-react";
-import { subscriptionService } from "@/lib/db/services/subscription.service";
+import { getSubscriptionStatusAction } from "@/app/actions/subscription";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import UpgradeButton from "@/components/features/subscription/upgrade-button";
 import { TIER_CONFIGS } from "@/lib/config/pricing";
 
-interface SubscriptionTabProps {
-  onClose: () => void;
+interface SubscriptionStatus {
+  tier: string;
+  invoiceLimit: number;
+  remainingInvoices: number;
+  currentMonthCount: number;
+  monthYear: string;
+  resetDate: Date;
 }
 
-export function SubscriptionTab({ onClose }: SubscriptionTabProps) {
-  const { user, signOut } = useAuth();
+interface SubscriptionTabProps {
+  onClose: () => void;
+  initialSubscription?: SubscriptionStatus | null;
+}
 
-  // Fetch subscription status with deferred loading
-  const {
-    data: subscription,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["subscription-status", user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error("User not authenticated");
-      const { data, error } = await subscriptionService.getSubscriptionStatus(
-        user.id
-      );
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnMount: true, // Always fetch on mount to ensure fresh data
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-  });
+export function SubscriptionTab({
+  onClose,
+  initialSubscription,
+}: SubscriptionTabProps) {
+  const { user, signOut } = useAuth();
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(
+    initialSubscription || null
+  );
+  const [isLoading, setIsLoading] = useState(!initialSubscription);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Fetch subscription status using Server Action only if not provided via props
+  useEffect(() => {
+    // Skip fetching if initialSubscription was provided
+    if (initialSubscription) {
+      return;
+    }
+
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchSubscription = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const result = await getSubscriptionStatusAction();
+
+      if (result.error || !result.data) {
+        setError(
+          typeof result.error === "string"
+            ? new Error(result.error)
+            : result.error || new Error("Failed to load subscription")
+        );
+      } else {
+        setSubscription(result.data);
+      }
+
+      setIsLoading(false);
+    };
+
+    fetchSubscription();
+  }, [user?.id, initialSubscription]);
 
   // Get tier display info
   const getTierInfo = (tier: string) => {
@@ -332,7 +363,7 @@ export function SubscriptionTab({ onClose }: SubscriptionTabProps) {
             className="flex-1 min-h-[44px]"
             size="lg"
           >
-            Close
+            Back
           </Button>
         </div>
       </div>

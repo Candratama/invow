@@ -3,7 +3,7 @@
  * Handles CRUD operations for stores table
  */
 
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface StoreInsert {
   name: string;
@@ -65,7 +65,7 @@ export interface Store {
 }
 
 export class StoresService {
-  private supabase = createClient();
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get all stores for the authenticated user
@@ -473,6 +473,3 @@ export class StoresService {
     }
   }
 }
-
-// Export singleton instance
-export const storesService = new StoresService();

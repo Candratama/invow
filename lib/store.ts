@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { Invoice, InvoiceItem } from "./types";
 import { generateInvoiceNumber, generateUUID, parseLocalDate } from "./utils";
+import { getInvoiceByIdAction } from "@/app/actions/invoices";
 
 interface InvoiceStore {
   // Current invoice being edited (form state)
@@ -146,16 +147,16 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
   },
 
   loadCompleted: async (invoiceId: string) => {
-    // This method is kept for backward compatibility during transition
-    // The actual loading is now handled by React Query
-    // Load the invoice and set it as current
-    const { invoicesService } = await import("./db/services");
-    const { data, error } = await invoicesService.getInvoiceWithItems(invoiceId);
+    // Use Server Action instead of direct service import
+    // This ensures database access is properly isolated to the server
+    const result = await getInvoiceByIdAction(invoiceId);
     
-    if (error || !data) {
-      console.error("Failed to load invoice:", error);
+    if (!result.success || !result.data) {
+      console.error("Failed to load invoice:", result.error);
       return;
     }
+
+    const data = result.data;
 
     // Transform database format to app format
     const invoice: Partial<Invoice> = {

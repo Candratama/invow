@@ -3,7 +3,7 @@
  * Handles CRUD operations for user_settings table
  */
 
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   UserSettings,
   UserSettingsInsert,
@@ -11,7 +11,7 @@ import type {
 } from "@/lib/db/database.types";
 
 export class SettingsService {
-  private supabase = createClient();
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get user settings for the authenticated user
@@ -226,6 +226,3 @@ export class SettingsService {
     }
   }
 }
-
-// Export singleton instance
-export const settingsService = new SettingsService();

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     // Get initial session
@@ -64,17 +66,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     // Clear all caches for PWA
-    if ('caches' in window) {
+    if ("caches" in window) {
       const cacheNames = await caches.keys();
       await Promise.all(
-        cacheNames.map(cacheName => caches.delete(cacheName))
+        cacheNames.map((cacheName) => caches.delete(cacheName))
       );
     }
     // Clear localStorage and sessionStorage
     localStorage.clear();
     sessionStorage.clear();
-    // Force reload with cache bust
-    window.location.href = "/?v=" + Date.now();
+    // Use client-side navigation to redirect to home page
+    router.push("/");
+    // Refresh to ensure all server state is cleared
+    router.refresh();
   };
 
   const resetPassword = async (email: string) => {

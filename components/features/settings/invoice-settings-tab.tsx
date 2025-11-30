@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { Check, Eye, X } from "lucide-react";
-import { storesService, userPreferencesService } from "@/lib/db/services";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { storeSettingsQueryKey } from "@/lib/hooks/use-store-settings";
-import { userPreferencesQueryKey } from "@/lib/hooks/use-user-preferences";
+import { updatePreferencesAction } from "@/app/actions/preferences";
+import { updateStoreAction } from "@/app/actions/store";
 import {
   INVOICE_TEMPLATES,
   type InvoiceTemplateId,
@@ -34,6 +32,16 @@ type InvoiceSettingsFormData = z.infer<typeof invoiceSettingsSchema>;
 interface InvoiceSettingsTabProps {
   onClose: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
+  initialStore?: {
+    id: string;
+    payment_method?: string | null;
+  } | null;
+  initialPreferences?: {
+    selected_template?: string | null;
+    tax_enabled: boolean;
+    tax_percentage?: number | null;
+    export_quality_kb: number;
+  } | null;
 }
 
 // Template display information
@@ -54,68 +62,26 @@ const TEMPLATE_INFO: Record<
 export function InvoiceSettingsTab({
   onClose,
   onDirtyChange,
+  initialStore,
+  initialPreferences,
 }: InvoiceSettingsTabProps) {
-  const queryClient = useQueryClient();
-  const [saving, setSaving] = useState(false);
-  const [storeId, setStoreId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const [previewTemplate, setPreviewTemplate] =
     useState<InvoiceTemplateId | null>(null);
 
   const form = useForm<InvoiceSettingsFormData>({
     resolver: zodResolver(invoiceSettingsSchema),
     defaultValues: {
-      selectedTemplate: "classic",
-      paymentMethod: "",
-      taxEnabled: false,
-      taxPercentage: 0,
-      exportQuality: 100,
+      selectedTemplate: initialPreferences?.selected_template || "classic",
+      paymentMethod: initialStore?.payment_method || "",
+      taxEnabled: initialPreferences?.tax_enabled || false,
+      taxPercentage: initialPreferences?.tax_percentage || 0,
+      exportQuality: (initialPreferences?.export_quality_kb || 100) as
+        | 50
+        | 100
+        | 150,
     },
   });
-
-  // Fetch store data - use separate query key to get full Store object with id
-  const { data: store, isLoading: isLoadingStore } = useQuery({
-    queryKey: ["store-full"],
-    queryFn: async () => {
-      const { data, error } = await storesService.getDefaultStore();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true, // Always fetch on mount to ensure fresh data
-    refetchOnWindowFocus: false,
-  });
-
-  // Fetch user preferences
-  const { data: preferences, isLoading: isLoadingPreferences } = useQuery({
-    queryKey: userPreferencesQueryKey,
-    queryFn: async () => {
-      const { data, error } = await userPreferencesService.getUserPreferences();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: true, // Always fetch on mount to ensure fresh data
-    refetchOnWindowFocus: false,
-  });
-
-  // Update form when data is loaded
-  useEffect(() => {
-    if (store && preferences) {
-      if (store.id) {
-        setStoreId(store.id);
-      }
-
-      const formValues = {
-        selectedTemplate: preferences.selected_template || "classic",
-        paymentMethod: store.payment_method || "",
-        taxEnabled: preferences.tax_enabled,
-        taxPercentage: preferences.tax_percentage || 0,
-        exportQuality: preferences.export_quality_kb,
-      };
-
-      form.reset(formValues);
-    }
-  }, [store, preferences, form]);
 
   // Track form dirty state
   useEffect(() => {
@@ -130,76 +96,59 @@ export function InvoiceSettingsTab({
 
   // Submit handler
   const onSubmit = async (data: InvoiceSettingsFormData) => {
-    setSaving(true);
-    try {
-      // Execute all saves in parallel for better performance
-      const savePromises = [];
+    startTransition(async () => {
+      try {
+        // Execute all saves in parallel for better performance
+        const savePromises = [];
 
-      // Save payment method to store settings (only if store exists)
-      if (storeId) {
+        // Save payment method to store settings (only if store exists)
+        if (initialStore?.id) {
+          savePromises.push(
+            updateStoreAction({
+              paymentMethod: data.paymentMethod || undefined,
+            })
+          );
+        }
+
+        // Save preferences (tax settings, export quality, and template selection)
         savePromises.push(
-          storesService.updateStore(storeId, {
-            payment_method: data.paymentMethod || null,
+          updatePreferencesAction({
+            tax_enabled: data.taxEnabled,
+            tax_percentage: data.taxPercentage,
+            export_quality_kb: data.exportQuality,
+            selected_template: data.selectedTemplate as InvoiceTemplateId,
           })
         );
+
+        // Wait for all saves to complete
+        const results = await Promise.all(savePromises);
+
+        // Check for errors
+        const errors = results.filter((result) => !result.success);
+        if (errors.length > 0) {
+          const errorMessages = errors
+            .map((err) => err.error)
+            .filter(Boolean)
+            .join(", ");
+          toast.error(`Failed to save: ${errorMessages}`);
+          return;
+        }
+
+        // Reset form with current values to clear dirty state
+        form.reset(data);
+
+        // Reset dirty state
+        if (onDirtyChange) {
+          onDirtyChange(false);
+        }
+
+        toast.success("Invoice settings saved successfully!");
+      } catch (error) {
+        console.error("Error saving invoice settings:", error);
+        toast.error("Failed to save invoice settings. Please try again.");
       }
-
-      // Save tax settings, export quality, and template selection in parallel
-      savePromises.push(
-        userPreferencesService.updateTaxSettings(
-          data.taxEnabled,
-          data.taxPercentage
-        ),
-        userPreferencesService.updateExportQuality(data.exportQuality),
-        userPreferencesService.updateSelectedTemplate(
-          data.selectedTemplate as InvoiceTemplateId
-        )
-      );
-
-      // Wait for all saves to complete
-      const results = await Promise.all(savePromises);
-
-      // Check for errors
-      const errors = results.filter((result) => result.error);
-      if (errors.length > 0) {
-        const errorMessages = errors
-          .map((err) => err.error?.message)
-          .filter(Boolean)
-          .join(", ");
-        toast.error(`Failed to save: ${errorMessages}`);
-        return;
-      }
-
-      // Invalidate caches in parallel
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: userPreferencesQueryKey }),
-      ]);
-
-      // Reset form with current values to clear dirty state
-      form.reset(data);
-
-      // Reset dirty state
-      if (onDirtyChange) {
-        onDirtyChange(false);
-      }
-
-      toast.success("Invoice settings saved successfully!");
-    } catch (error) {
-      console.error("Error saving invoice settings:", error);
-      toast.error("Failed to save invoice settings. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+    });
   };
-
-  if (isLoadingStore || isLoadingPreferences) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading invoice settings...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -422,16 +371,16 @@ export function InvoiceSettingsTab({
             className="flex-1 min-h-[44px]"
             size="lg"
           >
-            Cancel
+            Back
           </Button>
           <Button
             type="submit"
             form="invoice-settings-form"
             className="flex-1 bg-primary text-white hover:bg-primary/90 min-h-[44px]"
             size="lg"
-            disabled={saving}
+            disabled={isPending}
           >
-            {saving ? "Saving..." : "Save Invoice Settings"}
+            {isPending ? "Saving..." : "Save Invoice Settings"}
           </Button>
         </div>
       </div>

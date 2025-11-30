@@ -12,6 +12,8 @@ export interface InvoiceTemplateProps {
   invoice: Invoice;
   storeSettings: StoreSettings | null;
   preview?: boolean;
+  taxEnabled?: boolean;
+  taxPercentage?: number;
 }
 
 /**

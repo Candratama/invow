@@ -3,6 +3,16 @@ import { MayarPaymentService } from "@/lib/db/services/mayar-payment.service";
 import { NextResponse } from "next/server";
 
 /**
+ * @deprecated This API route is deprecated and kept only for backward compatibility.
+ * Use the Server Action `createPaymentInvoiceAction()` from `app/actions/payments.ts` instead.
+ * 
+ * This route will be removed in a future version once all clients have migrated to Server Actions.
+ * 
+ * Migration guide:
+ * - Import: `import { createPaymentInvoiceAction } from '@/app/actions/payments'`
+ * - Call: `const result = await createPaymentInvoiceAction(tier)`
+ * - Response format: `{ success: boolean, data?: { invoiceId, paymentUrl, amount, tier }, error?: string }`
+ * 
  * POST /api/payments/create-invoice
  * Create a Mayar invoice for subscription upgrade
  */

@@ -14,8 +14,6 @@ import {
   authorizedPersonArbitrary,
   invoiceSettingsArbitrary,
   subscriptionStatusArbitrary,
-  createTestQueryClient,
-  createWrapper,
 } from './settings-test-utils';
 
 describe('Settings Test Utilities', () => {
@@ -120,24 +118,6 @@ describe('Settings Test Utilities', () => {
         }),
         { numRuns: 100 }
       );
-    });
-  });
-
-  describe('Test Helpers', () => {
-    it('should create a QueryClient with correct configuration', () => {
-      const queryClient = createTestQueryClient();
-      
-      expect(queryClient).toBeDefined();
-      expect(queryClient.getDefaultOptions().queries?.retry).toBe(false);
-      expect(queryClient.getDefaultOptions().queries?.staleTime).toBe(5 * 60 * 1000);
-    });
-
-    it('should create a wrapper with QueryClient', () => {
-      const { Wrapper, queryClient } = createWrapper();
-      
-      expect(Wrapper).toBeDefined();
-      expect(queryClient).toBeDefined();
-      expect(typeof Wrapper).toBe('function');
     });
   });
 });

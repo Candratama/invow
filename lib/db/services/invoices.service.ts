@@ -3,7 +3,7 @@
  * Handles CRUD operations for invoices table
  */
 
-import { createClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Invoice,
   InvoiceInsert,
@@ -17,7 +17,7 @@ export interface InvoiceWithItems extends Invoice {
 }
 
 export class InvoicesService {
-  private supabase = createClient();
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get all invoices for the authenticated user
@@ -249,7 +249,8 @@ export class InvoicesService {
       // Get default store_id if not provided
       let storeId = invoice.store_id;
       if (!storeId) {
-        const { storesService } = await import("./index");
+        const { StoresService } = await import("./index");
+        const storesService = new StoresService(this.supabase);
         const { data: defaultStore } = await storesService.getDefaultStore();
 
         if (!defaultStore) {
@@ -453,7 +454,8 @@ export class InvoicesService {
       // Get default store_id if not provided
       let storeId = invoice.store_id;
       if (!storeId) {
-        const { storesService } = await import("./index");
+        const { StoresService } = await import("./index");
+        const storesService = new StoresService(this.supabase);
         const { data: defaultStore } = await storesService.getDefaultStore();
 
         if (!defaultStore) {
@@ -680,6 +682,3 @@ export class InvoicesService {
     }
   }
 }
-
-// Export singleton instance
-export const invoicesService = new InvoicesService();

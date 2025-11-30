@@ -3,7 +3,6 @@
  * Handles payment processing with Mayar payment gateway using redirect-based verification
  */
 
-import { createClient } from "@/lib/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { safeLog, maskId } from "@/lib/utils/safe-logger";
 
@@ -21,7 +20,6 @@ import { TIER_PRICES } from "@/lib/config/pricing";
 const TIER_AMOUNTS: Record<string, number> = TIER_PRICES;
 
 export class MayarPaymentService {
-  private supabase: SupabaseClient;
   private maxRetries = 3;
   private retryDelayMs = 1000;
   
@@ -37,9 +35,7 @@ export class MayarPaymentService {
   // In-flight requests to prevent duplicate simultaneous calls
   private static inflightRequests = new Map<string, Promise<unknown[]>>();
 
-  constructor(supabaseClient?: SupabaseClient) {
-    this.supabase = supabaseClient || createClient();
-  }
+  constructor(private supabase: SupabaseClient) {}
   
   /**
    * Clear expired cache entries
@@ -629,6 +625,3 @@ export class MayarPaymentService {
     throw lastError || new Error("Failed to call Mayar API after retries");
   }
 }
-
-// Export singleton instance
-export const mayarPaymentService = new MayarPaymentService();

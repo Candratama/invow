@@ -35,10 +35,11 @@ function SignupForm() {
       // Redirect to return URL if provided, otherwise to dashboard
       const destination = returnUrl || "/dashboard";
       setTimeout(() => {
-        window.location.href = destination;
+        router.push(destination);
+        router.refresh();
       }, 1000);
     }
-  }, [success, user, returnUrl]);
+  }, [success, user, returnUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +84,15 @@ function SignupForm() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-sm p-6 lg:p-8 text-center">
           <>
             <div className="text-green-600 text-4xl mb-4">✓</div>
-            <h2 className="text-xl lg:text-2xl font-bold mb-2">Account Created!</h2>
+            <h2 className="text-xl lg:text-2xl font-bold mb-2">
+              Account Created!
+            </h2>
             <p className="text-sm lg:text-base text-gray-600 mb-4">
               Check your email to verify your account.
             </p>
-            <p className="text-sm lg:text-base text-gray-600">Redirecting to your dashboard...</p>
+            <p className="text-sm lg:text-base text-gray-600">
+              Redirecting to your dashboard...
+            </p>
           </>
         </div>
       </div>
@@ -169,7 +174,10 @@ function SignupForm() {
           <div className="mt-6 text-center">
             <div className="text-sm lg:text-base text-gray-600">
               Already have an account?{" "}
-              <Link href="/dashboard/login" className="text-primary hover:underline">
+              <Link
+                href="/dashboard/login"
+                className="text-primary hover:underline"
+              >
                 Sign in
               </Link>
             </div>
@@ -182,11 +190,13 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Loading...</p>
+        </div>
+      }
+    >
       <SignupForm />
     </Suspense>
   );

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Invoice, StoreSettings } from "../types";
 import { sanitizeFilename } from "../utils";
 import { exportAsJPEG, ImageExportError } from "./image-export.service";
-import { userPreferencesService } from "../db/services/user-preferences.service";
+import { getPreferencesAction } from "@/app/actions/preferences";
 
 export async function generateJPEGFromInvoice(
   invoice: Invoice,
@@ -26,8 +26,10 @@ export async function generateJPEGFromInvoice(
     let quality: 50 | 100 | 150 = qualityLimitKB || 100;
     if (!qualityLimitKB) {
       try {
-        const { data } = await userPreferencesService.getUserPreferences();
-        quality = data.export_quality_kb;
+        const result = await getPreferencesAction();
+        if (result.success && result.data) {
+          quality = result.data.export_quality_kb as 50 | 100 | 150;
+        }
         console.log(`📊 Using export quality: ${quality}KB`);
       } catch (error) {
         console.warn("⚠️ Failed to fetch export quality preference, using default (100KB):", error);
