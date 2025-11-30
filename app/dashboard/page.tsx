@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getInvoicesPaginated,
+  getInvoicesPaginatedWithTierLimit,
   getAllInvoices,
 } from "@/lib/db/data-access/invoices";
 import { getSubscriptionStatus } from "@/lib/db/data-access/subscription";
@@ -19,9 +19,10 @@ export default async function DashboardPage() {
   }
 
   // Fetch initial data on the server
+  // Use tier-limited pagination for invoice history
   const [invoicesResult, allInvoicesResult, subscriptionResult, storeResult] =
     await Promise.all([
-      getInvoicesPaginated(1, 10, "synced"),
+      getInvoicesPaginatedWithTierLimit(1, 10, "synced"),
       getAllInvoices("synced"),
       getSubscriptionStatus(user.id),
       getStoreSettings(user.id),
@@ -29,6 +30,8 @@ export default async function DashboardPage() {
 
   const initialInvoices = invoicesResult.data?.invoices || [];
   const initialAllInvoices = allInvoicesResult.data || [];
+  const initialHasMoreHistory = invoicesResult.data?.hasMoreHistory || false;
+  const initialHistoryLimitMessage = invoicesResult.data?.historyLimitMessage;
   const initialSubscriptionStatus = subscriptionResult.data
     ? {
         ...subscriptionResult.data,
@@ -36,6 +39,11 @@ export default async function DashboardPage() {
       }
     : null;
   const initialTotalPages = invoicesResult.data?.totalPages || 1;
+  // Extract primary contact info for signature display
+  // Signature visibility is controlled by getStoreSettings based on tier
+  const primaryContact = storeResult.data?.store_contacts?.find(
+    (contact) => contact.is_primary
+  );
   const initialStoreSettings = storeResult.data
     ? {
         name: storeResult.data.name,
@@ -45,9 +53,9 @@ export default async function DashboardPage() {
         phone: storeResult.data.phone || undefined,
         email: storeResult.data.email || undefined,
         website: storeResult.data.website || undefined,
-        adminName: storeResult.data.name, // Use store name as fallback
-        adminTitle: undefined,
-        signature: undefined,
+        adminName: primaryContact?.name || storeResult.data.name, // Use primary contact name or store name as fallback
+        adminTitle: primaryContact?.title || undefined,
+        signature: primaryContact?.signature || undefined, // Signature from primary contact (filtered by tier in getStoreSettings)
         storeDescription: storeResult.data.store_description || undefined,
         tagline: storeResult.data.tagline || undefined,
         storeNumber: storeResult.data.store_number || undefined,
@@ -69,6 +77,8 @@ export default async function DashboardPage() {
       initialTotalPages={initialTotalPages}
       initialStoreSettings={initialStoreSettings}
       initialDefaultStore={initialDefaultStore}
+      initialHasMoreHistory={initialHasMoreHistory}
+      initialHistoryLimitMessage={initialHistoryLimitMessage}
     />
   );
 }

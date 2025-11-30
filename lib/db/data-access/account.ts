@@ -5,6 +5,7 @@ import { StoresService } from '@/lib/db/services/stores.service'
 import { StoreContactsService } from '@/lib/db/services/store-contacts.service'
 import { SubscriptionService } from '@/lib/db/services/subscription.service'
 import { UserPreferencesService } from '@/lib/db/services/user-preferences.service'
+import { TierService } from '@/lib/db/services/tier.service'
 import type { StoreContact } from '@/lib/db/database.types'
 
 /**
@@ -72,19 +73,25 @@ export const getAccountPageData = cache(async (): Promise<AccountPageData> => {
   const contactsService = new StoreContactsService(supabase)
   const subscriptionService = new SubscriptionService(supabase)
   const preferencesService = new UserPreferencesService(supabase)
+  const tierService = new TierService(supabase)
 
   // Fetch all data in parallel for optimal performance
-  const [storeResult, subscriptionResult, preferencesResult] = await Promise.all([
+  const [storeResult, subscriptionResult, preferencesResult, premiumResult] = await Promise.all([
     storesService.getDefaultStore(),
     subscriptionService.getSubscriptionStatus(user.id),
-    preferencesService.getUserPreferences()
+    preferencesService.getUserPreferences(),
+    tierService.isPremium(user.id)
   ])
 
+  const isPremium = premiumResult.data ?? false
+
   // Extract store data
+  // Logo is only included if user is premium (Requirements 4.4)
+  // The logo data is retained in the database for re-subscription
   const store = storeResult.data ? {
     id: storeResult.data.id,
     name: storeResult.data.name,
-    logo: storeResult.data.logo,
+    logo: isPremium ? storeResult.data.logo : null,
     address: storeResult.data.address,
     whatsapp: storeResult.data.whatsapp,
     phone: storeResult.data.phone,

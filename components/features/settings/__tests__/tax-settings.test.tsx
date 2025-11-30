@@ -3,13 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TaxSettings } from "../tax-settings";
-import { userPreferencesService } from "@/lib/db/services";
+import * as preferencesActions from "@/app/actions/preferences";
 
-// Mock the services
-vi.mock("@/lib/db/services", () => ({
-  userPreferencesService: {
-    getUserPreferences: vi.fn(),
-  },
+// Mock the server action
+vi.mock("@/app/actions/preferences", () => ({
+  getPreferencesAction: vi.fn(),
 }));
 
 // Mock the auth context
@@ -25,7 +23,8 @@ describe("TaxSettings", () => {
   });
 
   it("should render tax percentage input", async () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -40,7 +39,6 @@ describe("TaxSettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<TaxSettings />);
@@ -58,7 +56,8 @@ describe("TaxSettings", () => {
     const user = userEvent.setup();
     const onTaxPercentageChange = vi.fn();
 
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -73,7 +72,6 @@ describe("TaxSettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<TaxSettings onTaxPercentageChange={onTaxPercentageChange} />);
@@ -92,7 +90,7 @@ describe("TaxSettings", () => {
   });
 
   it("should show loading state while fetching preferences", () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockImplementation(
+    vi.mocked(preferencesActions.getPreferencesAction).mockImplementation(
       () => new Promise(() => {})
     );
 
@@ -102,7 +100,8 @@ describe("TaxSettings", () => {
   });
 
   it("should load and display initial tax percentage value", async () => {
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -117,7 +116,6 @@ describe("TaxSettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<TaxSettings />);
@@ -138,7 +136,8 @@ describe("TaxSettings", () => {
     const user = userEvent.setup();
     const onTaxEnabledChange = vi.fn();
 
-    vi.mocked(userPreferencesService.getUserPreferences).mockResolvedValue({
+    vi.mocked(preferencesActions.getPreferencesAction).mockResolvedValue({
+      success: true,
       data: {
         id: "pref-123",
         user_id: "test-user-123",
@@ -153,7 +152,6 @@ describe("TaxSettings", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      error: null,
     });
 
     render(<TaxSettings onTaxEnabledChange={onTaxEnabledChange} />);

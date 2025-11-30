@@ -47,7 +47,7 @@ describe('Property 1: Server Actions have authentication guards (Payment)', () =
   it('should return Unauthorized error when authentication fails for createPaymentInvoiceAction', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         async (tier) => {
           // Mock createClient to return auth error
           const mockSupabase = {
@@ -76,7 +76,7 @@ describe('Property 1: Server Actions have authentication guards (Payment)', () =
   it('should check authentication before performing any payment operation', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         async (tier) => {
           // Mock createClient to return no user (null user without error)
           const mockSupabase = {
@@ -107,7 +107,7 @@ describe('Property 1: Server Actions have authentication guards (Payment)', () =
   it('should proceed with payment creation when user is authenticated', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom('starter') as fc.Arbitrary<'starter'>,
+        fc.constantFrom('premium') as fc.Arbitrary<'premium'>,
         async (tier) => {
           // Mock createClient to return authenticated user
           const mockSupabase = {

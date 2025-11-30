@@ -82,6 +82,9 @@ export interface Database {
           store_number: string | null
           payment_method: string | null
           brand_color: string
+          primary_color: string
+          secondary_color: string
+          accent_color: string
           invoice_prefix: string | null
           store_code: string
           invoice_number_format: string | null
@@ -110,6 +113,9 @@ export interface Database {
           store_number?: string | null
           payment_method?: string | null
           brand_color?: string
+          primary_color?: string
+          secondary_color?: string
+          accent_color?: string
           invoice_prefix?: string | null
           store_code: string
           invoice_number_format?: string | null
@@ -138,6 +144,9 @@ export interface Database {
           store_number?: string | null
           payment_method?: string | null
           brand_color?: string
+          primary_color?: string
+          secondary_color?: string
+          accent_color?: string
           invoice_prefix?: string | null
           store_code?: string
           invoice_number_format?: string | null

@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionTab } from "./subscription-tab";
 import { BusinessInfoTab } from "./business-info-tab";
 import { InvoiceSettingsTab } from "./invoice-settings-tab";
+import { ReportsTab } from "./reports-tab";
 
-type TabId = "subscription" | "business" | "invoice";
+type TabId = "subscription" | "business" | "invoice" | "reports";
 
 interface Tab {
   id: TabId;
@@ -23,6 +24,7 @@ const TABS: Tab[] = [
   { id: "subscription", label: "Subscription" },
   { id: "business", label: "Business Info" },
   { id: "invoice", label: "Invoice Settings" },
+  { id: "reports", label: "Reports" },
 ];
 
 interface SettingsDialogProps {
@@ -140,6 +142,7 @@ export function SettingsDialog({
                 onDirtyChange={setIsDirty}
               />
             )}
+            {activeTab === "reports" && <ReportsTab onClose={onClose} />}
           </div>
         </DialogContent>
       </Dialog>

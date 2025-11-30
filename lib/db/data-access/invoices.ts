@@ -20,6 +20,17 @@ export const getInvoicesPaginated = cache(async (page: number = 1, pageSize: num
   return await service.getInvoicesPaginated(page, pageSize, status)
 })
 
+/**
+ * Get paginated invoices with tier-based history limits
+ * - Free users: limited to last 10 transactions (count-based)
+ * - Premium users: limited to last 30 days (time-based)
+ */
+export const getInvoicesPaginatedWithTierLimit = cache(async (page: number = 1, pageSize: number = 10, status?: "draft" | "pending" | "synced") => {
+  const supabase = await createClient()
+  const service = new InvoicesService(supabase)
+  return await service.getInvoicesPaginatedWithTierLimit(page, pageSize, status)
+})
+
 export const getAllInvoices = cache(async (status?: "draft" | "pending" | "synced") => {
   const supabase = await createClient()
   const service = new InvoicesService(supabase)

@@ -43,6 +43,9 @@ export interface Store {
   store_number: string | null;
   payment_method: string | null;
   brand_color: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
   invoice_prefix: string;
   invoice_number_format: string | null;
   reset_counter_daily: boolean;

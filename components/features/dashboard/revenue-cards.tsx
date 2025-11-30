@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Eye, EyeOff, TrendingUp, FileText } from "lucide-react";
+import { Eye, EyeOff, TrendingUp, FileText, Zap, Lock } from "lucide-react";
 import { RevenueMetrics } from "@/lib/utils/revenue";
 import { formatCurrency } from "@/lib/utils";
 import { RevenueCardSkeleton } from "@/components/skeletons/revenue-card-skeleton";
+import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 
 interface RevenueCardsProps {
   metrics: RevenueMetrics;
@@ -29,8 +30,13 @@ function formatCurrencyWithDots(amount: number): string {
   return formatted; // Fallback to original if format doesn't match
 }
 
-export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }: RevenueCardsProps) {
+export function RevenueCards({
+  metrics,
+  subscriptionStatus,
+  isLoading = false,
+}: RevenueCardsProps) {
   const [isAmountVisible, setIsAmountVisible] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Show skeleton when loading
   if (isLoading) {
@@ -40,6 +46,8 @@ export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }:
   const toggleVisibility = () => {
     setIsAmountVisible(!isAmountVisible);
   };
+
+  const isPremium = subscriptionStatus?.tier === "premium";
 
   const displayMonthlyRevenue = isAmountVisible
     ? formatCurrency(metrics.monthlyRevenue).replace(/[\u00A0]+/, " ")
@@ -79,23 +87,70 @@ export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }:
             This Month
           </p>
           <div className="mb-4">
-            <h3 className="text-2xl lg:text-3xl font-bold mb-1">
-              {displayMonthlyRevenue}
-            </h3>
-            <p className="text-sm text-primary-foreground/80">
-              Revenue of {metrics.monthlyInvoiceCount} invoices
-            </p>
+            {/* Free users: Show only current month count */}
+            {/* Premium users: Show revenue and count */}
+            {isPremium ? (
+              <>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-1">
+                  {displayMonthlyRevenue}
+                </h3>
+                <p className="text-sm text-primary-foreground/80">
+                  Revenue of {metrics.monthlyInvoiceCount} invoices
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-2xl lg:text-3xl font-bold mb-1">
+                  {metrics.monthlyInvoiceCount} invoices
+                </h3>
+                <p className="text-sm text-primary-foreground/80">
+                  Created this month
+                </p>
+              </>
+            )}
           </div>
 
+          {/* Total Revenue & Invoice Count Section - Premium only shows full data */}
           <div className="border-t border-primary-foreground/20 pt-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-primary-foreground/80">
-                Total Revenue
-              </span>
-              <span className="text-sm font-medium text-primary-foreground/80">
-                {displayTotalRevenue}
-              </span>
-            </div>
+            {isPremium ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-primary-foreground/80">
+                    Total Revenue
+                  </span>
+                  <span className="text-sm font-medium text-primary-foreground/80">
+                    {displayTotalRevenue}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-primary-foreground/80">
+                    Total Invoices
+                  </span>
+                  <span className="text-sm font-medium text-primary-foreground/80">
+                    {metrics.invoiceCount}
+                  </span>
+                </div>
+              </>
+            ) : (
+              /* Free users: Show locked premium data teaser */
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="w-full flex items-center justify-between p-2 -m-2 rounded-lg hover:bg-primary-foreground/10 transition-colors group"
+              >
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-primary-foreground/60" />
+                  <span className="text-xs text-primary-foreground/80">
+                    Total Revenue & Stats
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-yellow-300" />
+                  <span className="text-xs font-medium text-primary-foreground/90 group-hover:text-primary-foreground">
+                    Premium
+                  </span>
+                </div>
+              </button>
+            )}
           </div>
 
           {/* Invoice Limit Section */}
@@ -109,7 +164,8 @@ export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }:
                   </span>
                 </div>
                 <span className="text-sm font-medium text-primary-foreground/80">
-                  {subscriptionStatus.remainingInvoices} / {subscriptionStatus.invoiceLimit}
+                  {subscriptionStatus.remainingInvoices} /{" "}
+                  {subscriptionStatus.invoiceLimit}
                 </span>
               </div>
               {/* Progress bar */}
@@ -117,7 +173,12 @@ export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }:
                 <div
                   className="h-full bg-primary-foreground/60 transition-all duration-300"
                   style={{
-                    width: `${((subscriptionStatus.invoiceLimit - subscriptionStatus.remainingInvoices) / subscriptionStatus.invoiceLimit) * 100}%`,
+                    width: `${
+                      ((subscriptionStatus.invoiceLimit -
+                        subscriptionStatus.remainingInvoices) /
+                        subscriptionStatus.invoiceLimit) *
+                      100
+                    }%`,
                   }}
                 />
               </div>
@@ -125,6 +186,14 @@ export function RevenueCards({ metrics, subscriptionStatus, isLoading = false }:
           )}
         </div>
       </div>
+
+      {/* Upgrade Modal for Free Users */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Dashboard Totals & Revenue"
+        featureDescription="View your total revenue, invoice count, and detailed business statistics."
+      />
     </div>
   );
 }

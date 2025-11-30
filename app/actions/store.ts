@@ -8,6 +8,9 @@ import type { StoreContact } from '@/lib/db/database.types'
 export async function updateStoreAction(data: {
   name?: string
   brandColor?: string
+  primaryColor?: string
+  secondaryColor?: string
+  accentColor?: string
   address?: string
   whatsapp?: string
   email?: string
@@ -99,6 +102,9 @@ export async function updateStoreAction(data: {
   if (data.storeNumber !== undefined) updateData.store_number = data.storeNumber
   if (data.paymentMethod !== undefined) updateData.payment_method = data.paymentMethod
   if (data.brandColor !== undefined) updateData.brand_color = data.brandColor
+  if (data.primaryColor !== undefined) updateData.primary_color = data.primaryColor
+  if (data.secondaryColor !== undefined) updateData.secondary_color = data.secondaryColor
+  if (data.accentColor !== undefined) updateData.accent_color = data.accentColor
 
   const result = await storesService.updateStore(store.id, updateData)
 
