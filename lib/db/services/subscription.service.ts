@@ -104,7 +104,7 @@ export class SubscriptionService {
   /**
    * Upgrade user to a paid tier
    * @param userId - User ID
-   * @param tier - Target tier ('starter' or 'pro')
+   * @param tier - Target tier ('starter')
    * @returns Success status
    */
   async upgradeToTier(userId: string, tier: string): Promise<{
@@ -386,7 +386,7 @@ export class SubscriptionService {
       const remaining =
         subscription.invoice_limit - subscription.current_month_count;
       
-      // For paid tiers (starter/pro), use subscription_end_date as reset date
+      // For paid tiers (starter), use subscription_end_date as reset date
       // For free tier, use billing cycle reset date
       let resetDate: Date;
       if (subscription.subscription_end_date && subscription.tier !== 'free') {

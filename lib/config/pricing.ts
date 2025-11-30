@@ -13,14 +13,12 @@ export interface TierConfig {
 }
 
 export const TIER_PRICES = {
-  starter: 1000,
-  pro: 500,
+  starter: 15000,
 } as const;
 
 export const TIER_LIMITS = {
   free: 30,
   starter: 200,
-  pro: 999999, // Unlimited
 } as const;
 
 export const TIER_CONFIGS: Record<string, TierConfig> = {
@@ -49,21 +47,6 @@ export const TIER_CONFIGS: Record<string, TierConfig> = {
       "Custom branding",
       "Priority support",
       "Advanced templates",
-    ],
-  },
-  pro: {
-    name: "Pro",
-    price: TIER_PRICES.pro,
-    priceFormatted: `Rp ${TIER_PRICES.pro.toLocaleString("id-ID")}`,
-    invoiceLimit: TIER_LIMITS.pro,
-    duration: 30, // 30 days
-    features: [
-      "Unlimited invoices",
-      "All Starter features",
-      "API access",
-      "White-label solution",
-      "Dedicated account manager",
-      "Custom integrations",
     ],
   },
 };

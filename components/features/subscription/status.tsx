@@ -49,13 +49,6 @@ export default function SubscriptionStatus({
           color: "text-blue-600",
           bgColor: "bg-blue-100",
         };
-      case "pro":
-        return {
-          name: "Pro",
-          icon: <Crown className="w-5 h-5" />,
-          color: "text-purple-600",
-          bgColor: "bg-purple-100",
-        };
       default:
         return {
           name: "Unknown",

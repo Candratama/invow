@@ -72,7 +72,7 @@ export class MayarPaymentService {
   /**
    * Create an invoice in Mayar for payment
    * @param userId - User ID
-   * @param tier - Subscription tier ('starter' or 'pro')
+   * @param tier - Subscription tier ('starter')
    * @returns Invoice ID and payment URL
    */
   async createInvoice(

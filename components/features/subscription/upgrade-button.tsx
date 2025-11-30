@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { createPaymentInvoiceAction } from "@/app/actions/payments";
 
 interface UpgradeButtonProps {
-  tier: "starter" | "pro";
+  tier: "starter";
   variant?: "default" | "outline";
   className?: string;
   children?: React.ReactNode;

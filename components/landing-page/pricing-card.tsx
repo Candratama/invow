@@ -25,9 +25,9 @@ export default function PricingCard({ tier }: PricingCardProps) {
     ? "relative rounded-2xl bg-white border-2 border-primary p-8 shadow-lg hover:shadow-xl transition-shadow"
     : "relative rounded-2xl bg-white border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow";
 
-  // Determine if this is a paid tier (Starter or Pro)
-  const isPaidTier = tier.name === "Starter" || tier.name === "Pro";
-  const tierType = tier.name.toLowerCase() as "starter" | "pro";
+  // Determine if this is a paid tier (Starter)
+  const isPaidTier = tier.name === "Starter";
+  const tierType = tier.name.toLowerCase() as "starter";
 
   return (
     <div className={cardClasses}>
@@ -39,8 +39,12 @@ export default function PricingCard({ tier }: PricingCardProps) {
         </div>
       )}
       <div className="mb-6">
-        <h3 className="text-xl lg:text-2xl font-semibold text-gray-900">{tier.name}</h3>
-        <p className="mt-2 text-sm lg:text-base text-gray-600">{tier.description}</p>
+        <h3 className="text-xl lg:text-2xl font-semibold text-gray-900">
+          {tier.name}
+        </h3>
+        <p className="mt-2 text-sm lg:text-base text-gray-600">
+          {tier.description}
+        </p>
         <div className="mt-6 flex items-baseline">
           <span className="text-2xl lg:text-3xl font-bold tracking-tight text-gray-900">
             {tier.price}

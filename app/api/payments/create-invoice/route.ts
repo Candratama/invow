@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const validTiers = ["starter", "pro"];
+    const validTiers = ["starter"];
     if (!validTiers.includes(tier.toLowerCase())) {
       return NextResponse.json(
         {
