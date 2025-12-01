@@ -46,8 +46,8 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: "business", label: "Business Info" },
-  { id: "subscription", label: "Subscription" },
   { id: "invoice", label: "Invoice Settings" },
+  { id: "subscription", label: "Subscription" },
 ];
 
 interface AccountClientProps {

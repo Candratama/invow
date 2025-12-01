@@ -107,7 +107,11 @@ export async function validateImageFile(
   return { valid: true };
 }
 
-export async function compressImage(file: File, maxSizeKB: number = 500): Promise<string> {
+export async function compressImage(
+  file: File, 
+  maxSizeKB: number = 500,
+  preserveTransparency: boolean = false
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -139,7 +143,17 @@ export async function compressImage(file: File, maxSizeKB: number = 500): Promis
         
         canvas.width = width;
         canvas.height = height;
+        
+        // For JPEG output, fill with white background first (prevents black background)
+        if (!preserveTransparency) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+        }
+        
         ctx.drawImage(img, 0, 0, width, height);
+        
+        // Use PNG for transparency, JPEG otherwise
+        const outputFormat = preserveTransparency ? 'image/png' : 'image/jpeg';
         
         // Try different quality levels to meet size requirement
         let quality = 0.9;
@@ -165,7 +179,7 @@ export async function compressImage(file: File, maxSizeKB: number = 500): Promis
                 tryCompress();
               }
             },
-            'image/jpeg',
+            outputFormat,
             quality
           );
         };

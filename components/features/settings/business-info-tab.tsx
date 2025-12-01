@@ -45,9 +45,6 @@ const businessInfoSchema = z.object({
   tagline: optionalText,
   storeNumber: optionalText,
   brandColor: hexColorSchema,
-  primaryColor: hexColorSchema,
-  secondaryColor: hexColorSchema,
-  accentColor: hexColorSchema,
 });
 
 type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
@@ -125,9 +122,6 @@ export function BusinessInfoTab({
       tagline: initialStore?.tagline || "",
       storeNumber: initialStore?.store_number || "",
       brandColor: initialStore?.brand_color || "#10b981",
-      primaryColor: initialStore?.primary_color || "#000000",
-      secondaryColor: initialStore?.secondary_color || "#666666",
-      accentColor: initialStore?.accent_color || "#0066cc",
     },
   });
 
@@ -161,9 +155,6 @@ export function BusinessInfoTab({
               tagline: result.data.store.tagline || "",
               storeNumber: result.data.store.store_number || "",
               brandColor: result.data.store.brand_color || "#10b981",
-              primaryColor: result.data.store.primary_color || "#000000",
-              secondaryColor: result.data.store.secondary_color || "#666666",
-              accentColor: result.data.store.accent_color || "#0066cc",
             });
           }
         }
@@ -316,9 +307,15 @@ export function BusinessInfoTab({
 
       // Compress signature to reduce size
       try {
-        // Convert data URL to blob
-        const response = await fetch(signatureDataURL);
-        const blob = await response.blob();
+        // Convert data URL to blob without using fetch
+        const base64Data = signatureDataURL.split(",")[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "image/png" });
         const file = new File([blob], "signature.png", { type: "image/png" });
 
         // Compress to 50KB max
@@ -372,7 +369,6 @@ export function BusinessInfoTab({
             name: data.name,
             title: data.title || undefined,
             signature: signature || undefined,
-            phone: "", // Required by action but not used in this form
           });
 
           if (!result.success) {
@@ -427,9 +423,6 @@ export function BusinessInfoTab({
           tagline: sanitize(data.tagline),
           storeNumber: sanitize(data.storeNumber),
           brandColor: data.brandColor,
-          primaryColor: data.primaryColor,
-          secondaryColor: data.secondaryColor,
-          accentColor: data.accentColor,
         });
 
         if (!result.success) {

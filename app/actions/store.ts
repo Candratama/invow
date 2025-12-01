@@ -120,9 +120,6 @@ export async function updateStoreAction(data: {
 
 export async function createContactAction(contactData: {
   name: string
-  phone: string
-  email?: string
-  address?: string
   title?: string
   signature?: string
 }) {
@@ -158,9 +155,6 @@ export async function createContactAction(contactData: {
 
 export async function updateContactAction(id: string, contactData: {
   name?: string
-  phone?: string
-  email?: string
-  address?: string
   title?: string
   signature?: string
 }) {

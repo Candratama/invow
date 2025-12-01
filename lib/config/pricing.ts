@@ -26,7 +26,7 @@ export interface TierFeatures {
 }
 
 export const TIER_PRICES = {
-  premium: 15000,
+  premium: 1000,
 } as const;
 
 export const TIER_LIMITS = {
