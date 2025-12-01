@@ -8,6 +8,7 @@ import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 export type GatedFeature =
   | "hasLogo"
   | "hasSignature"
+  | "hasBrandColor"
   | "hasCustomColors"
   | "hasMonthlyReport"
   | "hasDashboardTotals";
@@ -34,6 +35,7 @@ interface FeatureGateProps {
 const FEATURE_DISPLAY_NAMES: Record<GatedFeature, string> = {
   hasLogo: "Custom Logo",
   hasSignature: "Digital Signature",
+  hasBrandColor: "Custom Brand Color",
   hasCustomColors: "Custom Brand Colors",
   hasMonthlyReport: "Monthly Reports",
   hasDashboardTotals: "Dashboard Totals",
@@ -42,6 +44,8 @@ const FEATURE_DISPLAY_NAMES: Record<GatedFeature, string> = {
 const FEATURE_DESCRIPTIONS: Record<GatedFeature, string> = {
   hasLogo: "Add your company logo to invoices for a professional look.",
   hasSignature: "Add your digital signature to authenticate invoices.",
+  hasBrandColor:
+    "Choose your own brand color for invoices instead of the default gold.",
   hasCustomColors: "Customize invoice colors to match your brand identity.",
   hasMonthlyReport: "Get detailed monthly reports of your invoicing activity.",
   hasDashboardTotals: "View total invoice count and revenue on your dashboard.",

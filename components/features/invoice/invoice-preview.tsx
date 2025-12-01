@@ -17,11 +17,15 @@ import {
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
 import { getPreferencesAction } from "@/app/actions/preferences";
 
+import { DEFAULT_BRAND_COLOR } from "./types";
+
 interface InvoicePreviewProps {
   invoice: Invoice;
   storeSettings: StoreSettings | null;
   onDownloadJPEG: () => void;
   isGenerating: boolean;
+  /** User's subscription tier - defaults to 'free' */
+  tier?: string;
 }
 
 export function InvoicePreview({
@@ -29,6 +33,7 @@ export function InvoicePreview({
   storeSettings,
   onDownloadJPEG,
   isGenerating,
+  tier = "free",
 }: InvoicePreviewProps) {
   const {
     customer,
@@ -84,7 +89,11 @@ export function InvoicePreview({
     );
   }
 
-  const brandColor = storeSettings.brandColor || "#10b981";
+  // Free users always use default gold color, premium users can customize
+  const brandColor =
+    tier === "premium"
+      ? storeSettings.brandColor || DEFAULT_BRAND_COLOR
+      : DEFAULT_BRAND_COLOR;
 
   const splitCurrency = (value: number) => {
     const normalized = formatCurrency(value)

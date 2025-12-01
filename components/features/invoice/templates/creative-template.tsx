@@ -2,7 +2,7 @@
 
 import React from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { InvoiceTemplateProps } from "../types";
+import { InvoiceTemplateProps, DEFAULT_BRAND_COLOR } from "../types";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
 
 /**
@@ -21,6 +21,7 @@ export function CreativeInvoiceTemplate({
   preview = false,
   taxEnabled = false,
   taxPercentage = 0,
+  tier = "free",
 }: InvoiceTemplateProps) {
   const {
     customer,
@@ -38,8 +39,11 @@ export function CreativeInvoiceTemplate({
     taxPercentage
   );
 
-  // Get brand color directly from storeSettings
-  const brandColor = storeSettings?.brandColor || "#D4A72C";
+  // Free users always use default gold color, premium users can customize
+  const brandColor =
+    tier === "premium"
+      ? storeSettings?.brandColor || DEFAULT_BRAND_COLOR
+      : DEFAULT_BRAND_COLOR;
 
   const splitCurrency = (value: number) => {
     const normalized = formatCurrency(value)

@@ -724,34 +724,68 @@ export function BusinessInfoTab({
                   </div>
                 </FeatureGate>
 
-                <div>
-                  <Label htmlFor="brandColor" className="text-sm font-medium">
-                    Brand Color *
-                  </Label>
-                  <div className="flex items-center gap-2 sm:gap-3 mt-2">
-                    <Input
-                      id="brandColor"
-                      type="color"
-                      value={form.watch("brandColor")}
-                      onChange={(e) =>
-                        form.setValue("brandColor", e.target.value)
-                      }
-                      className="w-16 sm:w-20 h-11 sm:h-12 p-1 cursor-pointer"
-                    />
-                    <Input
-                      type="text"
-                      {...form.register("brandColor")}
-                      placeholder="#10b981"
-                      className="flex-1 min-h-[44px]"
-                      maxLength={7}
-                    />
+                <FeatureGate
+                  feature="hasBrandColor"
+                  hasAccess={isPremium}
+                  fallback={
+                    <div>
+                      <Label
+                        htmlFor="brandColor"
+                        className="text-sm font-medium"
+                      >
+                        Brand Color
+                      </Label>
+                      <div className="flex items-center gap-2 sm:gap-3 mt-2">
+                        <Input
+                          id="brandColor-locked"
+                          type="color"
+                          value="#d4af37"
+                          disabled
+                          className="w-16 sm:w-20 h-11 sm:h-12 p-1 cursor-not-allowed opacity-70"
+                        />
+                        <Input
+                          type="text"
+                          value="#d4af37"
+                          disabled
+                          placeholder="#d4af37"
+                          className="flex-1 min-h-[44px] cursor-not-allowed opacity-70"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Default gold color. Upgrade to Premium to customize.
+                      </p>
+                    </div>
+                  }
+                >
+                  <div>
+                    <Label htmlFor="brandColor" className="text-sm font-medium">
+                      Brand Color *
+                    </Label>
+                    <div className="flex items-center gap-2 sm:gap-3 mt-2">
+                      <Input
+                        id="brandColor"
+                        type="color"
+                        value={form.watch("brandColor")}
+                        onChange={(e) =>
+                          form.setValue("brandColor", e.target.value)
+                        }
+                        className="w-16 sm:w-20 h-11 sm:h-12 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        {...form.register("brandColor")}
+                        placeholder="#10b981"
+                        className="flex-1 min-h-[44px]"
+                        maxLength={7}
+                      />
+                    </div>
+                    {form.formState.errors.brandColor && (
+                      <p className="text-xs text-red-600 mt-1">
+                        {form.formState.errors.brandColor.message}
+                      </p>
+                    )}
                   </div>
-                  {form.formState.errors.brandColor && (
-                    <p className="text-xs text-red-600 mt-1">
-                      {form.formState.errors.brandColor.message}
-                    </p>
-                  )}
-                </div>
+                </FeatureGate>
 
                 {/* Custom Colors - Premium Feature */}
                 <FeatureGate feature="hasCustomColors" hasAccess={isPremium}>

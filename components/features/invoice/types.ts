@@ -4,6 +4,9 @@
 
 import { Invoice, StoreSettings } from "@/lib/types";
 
+/** Default gold color for free users */
+export const DEFAULT_BRAND_COLOR = "#d4af37";
+
 /**
  * Props for all invoice templates
  * All templates must accept these props
@@ -14,6 +17,8 @@ export interface InvoiceTemplateProps {
   preview?: boolean;
   taxEnabled?: boolean;
   taxPercentage?: number;
+  /** User's subscription tier - defaults to 'free' */
+  tier?: string;
 }
 
 /**

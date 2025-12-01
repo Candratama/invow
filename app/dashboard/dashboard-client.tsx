@@ -49,10 +49,12 @@ function PreviewView({
   onBack,
   onComplete,
   storeSettings,
+  tier = "free",
 }: {
   onBack: () => void;
   onComplete: () => void;
   storeSettings: StoreSettings | null;
+  tier?: string;
 }) {
   const { currentInvoice, saveCompleted } = useInvoiceStore();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -119,6 +121,7 @@ function PreviewView({
         storeSettings={storeSettings ?? null}
         onDownloadJPEG={handleDownloadJPEG}
         isGenerating={isGenerating}
+        tier={tier}
       />
     </>
   );
@@ -273,6 +276,7 @@ export default function DashboardClient({
           onBack={() => setView("form")}
           onComplete={handleInvoiceComplete}
           storeSettings={initialStoreSettings}
+          tier={initialSubscriptionStatus?.tier}
         />
       </div>
     );

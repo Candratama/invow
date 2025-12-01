@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear localStorage and sessionStorage
     localStorage.clear();
     sessionStorage.clear();
-    // Use client-side navigation to redirect to home page
-    router.push("/");
+    // Redirect to login page after logout
+    router.push("/dashboard/login");
     // Refresh to ensure all server state is cleared
     router.refresh();
   };
