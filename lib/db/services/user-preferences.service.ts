@@ -54,7 +54,7 @@ export class UserPreferencesService {
 
   /**
    * Get user preferences with default values if not found
-   * Returns default values: export_quality_kb = 100, tax_enabled = false, tax_percentage = null
+   * Returns default values: export_quality_kb = 50, tax_enabled = false, tax_percentage = null
    */
   async getUserPreferences(): Promise<{
     data: UserPreferences;
@@ -86,7 +86,7 @@ export class UserPreferencesService {
             date_format: "YYYY-MM-DD",
             currency: "USD",
             default_store_id: null,
-            export_quality_kb: 100,
+            export_quality_kb: 50,
             tax_enabled: false,
             tax_percentage: null,
             selected_template: "classic",

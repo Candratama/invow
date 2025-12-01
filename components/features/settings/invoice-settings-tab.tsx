@@ -108,7 +108,7 @@ export function InvoiceSettingsTab({
       paymentMethod: initialStore?.payment_method || "",
       taxEnabled: initialPreferences?.tax_enabled || false,
       taxPercentage: initialPreferences?.tax_percentage || 0,
-      exportQuality: (initialPreferences?.export_quality_kb || 100) as
+      exportQuality: (initialPreferences?.export_quality_kb || 50) as
         | 50
         | 100
         | 150,

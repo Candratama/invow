@@ -23,7 +23,7 @@ export async function generateJPEGFromInvoice(
     }
 
     // Fetch user export quality preference only if not provided
-    let quality: 50 | 100 | 150 = qualityLimitKB || 100;
+    let quality: 50 | 100 | 150 = qualityLimitKB || 50;
     if (!qualityLimitKB) {
       try {
         const result = await getPreferencesAction();
@@ -32,7 +32,7 @@ export async function generateJPEGFromInvoice(
         }
         console.log(`📊 Using export quality: ${quality}KB`);
       } catch (error) {
-        console.warn("⚠️ Failed to fetch export quality preference, using default (100KB):", error);
+        console.warn("⚠️ Failed to fetch export quality preference, using default (50KB):", error);
       }
     }
 

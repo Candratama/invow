@@ -45,8 +45,8 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "subscription", label: "Subscription" },
   { id: "business", label: "Business Info" },
+  { id: "subscription", label: "Subscription" },
   { id: "invoice", label: "Invoice Settings" },
 ];
 
@@ -75,9 +75,9 @@ export function AccountClient({
     // If autoUpgrade is present, open subscription tab
     if (autoUpgrade) return "subscription";
     // If tab parameter is valid, use it
-    if (tabParam === "business" || tabParam === "invoice") return tabParam;
-    // Default to subscription
-    return "subscription";
+    if (tabParam === "subscription" || tabParam === "invoice") return tabParam;
+    // Default to business info
+    return "business";
   };
 
   const defaultTab = getDefaultTab();
