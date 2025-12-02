@@ -238,7 +238,7 @@ export function AccountClient({
 
         {/* Tab Navigation - Fixed */}
         <div className="bg-white border-b z-20 shadow-sm flex-shrink-0">
-          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
+          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8 lg:pt-2">
             <div className="flex justify-start gap-1">
               {TABS.map((tab) => (
                 <button

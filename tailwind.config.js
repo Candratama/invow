@@ -16,20 +16,60 @@ module.exports = {
   		}
   	},
   	fontSize: {
-  		xs: ['0.75rem', { lineHeight: '1.5' }],
-  		sm: ['0.875rem', { lineHeight: '1.5' }],
-  		base: ['1rem', { lineHeight: '1.618' }],
-  		lg: ['1.125rem', { lineHeight: '1.618' }],
-  		xl: ['1.25rem', { lineHeight: '1.4' }],
-  		'2xl': ['1.5rem', { lineHeight: '1.4' }],
-  		'3xl': ['1.875rem', { lineHeight: '1.2' }],
-  		'4xl': ['2.25rem', { lineHeight: '1.2' }],
+  		xs: [
+  			'0.75rem',
+  			{
+  				lineHeight: '1.5'
+  			}
+  		],
+  		sm: [
+  			'0.875rem',
+  			{
+  				lineHeight: '1.5'
+  			}
+  		],
+  		base: [
+  			'1rem',
+  			{
+  				lineHeight: '1.618'
+  			}
+  		],
+  		lg: [
+  			'1.125rem',
+  			{
+  				lineHeight: '1.618'
+  			}
+  		],
+  		xl: [
+  			'1.25rem',
+  			{
+  				lineHeight: '1.4'
+  			}
+  		],
+  		'2xl': [
+  			'1.5rem',
+  			{
+  				lineHeight: '1.4'
+  			}
+  		],
+  		'3xl': [
+  			'1.875rem',
+  			{
+  				lineHeight: '1.2'
+  			}
+  		],
+  		'4xl': [
+  			'2.25rem',
+  			{
+  				lineHeight: '1.2'
+  			}
+  		]
   	},
   	fontWeight: {
   		normal: '400',
   		medium: '500',
   		semibold: '600',
-  		bold: '700',
+  		bold: '700'
   	},
   	extend: {
   		spacing: {
@@ -82,6 +122,16 @@ module.exports = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			sidebar: {
+  				DEFAULT: 'hsl(var(--sidebar-background))',
+  				foreground: 'hsl(var(--sidebar-foreground))',
+  				primary: 'hsl(var(--sidebar-primary))',
+  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+  				accent: 'hsl(var(--sidebar-accent))',
+  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+  				border: 'hsl(var(--sidebar-border))',
+  				ring: 'hsl(var(--sidebar-ring))'
   			}
   		},
   		borderRadius: {

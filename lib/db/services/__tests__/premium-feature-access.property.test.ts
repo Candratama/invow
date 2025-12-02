@@ -322,7 +322,8 @@ describe('Property 6: Premium feature access for premium users', () => {
     const fileContent = fs.readFileSync(businessInfoPath, 'utf-8')
 
     // Property: Color customization should be wrapped with FeatureGate
-    expect(fileContent).toContain('feature="hasCustomColors"')
+    // The actual feature name used is "hasBrandColor" for brand color customization
+    expect(fileContent).toContain('feature="hasBrandColor"')
   })
 
   it('should verify reports-tab allows monthly reports for premium users', () => {

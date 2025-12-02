@@ -8,12 +8,16 @@ export async function middleware(request: NextRequest) {
   // Protected routes that require authentication
   const protectedPaths = ["/dashboard"];
   const authPaths = ["/dashboard/login", "/dashboard/signup", "/dashboard/forgot-password"];
+  const adminPaths = ["/admin"];
 
   const path = request.nextUrl.pathname;
   const isProtectedPath = protectedPaths.some(
     (p) => path === p || path.startsWith(p + "/")
   );
   const isAuthPath = authPaths.some((p) => path.startsWith(p));
+  const isAdminPath = adminPaths.some(
+    (p) => path === p || path.startsWith(p + "/")
+  );
 
   // Check if user is authenticated
   let user = null;
@@ -36,8 +40,32 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     user = authUser;
-  } catch (error) {
+  } catch {
     // Silently continue without user - auth may not be ready yet
+  }
+
+  // Handle admin routes - requires authentication AND admin flag
+  if (isAdminPath) {
+    // Redirect unauthenticated users to login page
+    if (!user) {
+      const redirectUrl = new URL("/dashboard/login", request.url);
+      redirectUrl.searchParams.set("redirect", path);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Check if user has admin privileges via user metadata
+    const isAdminUser = user.user_metadata?.is_admin === true;
+
+    // Redirect non-admin users to dashboard with error message
+    if (!isAdminUser) {
+      const redirectUrl = new URL("/dashboard", request.url);
+      redirectUrl.searchParams.set("error", "unauthorized");
+      redirectUrl.searchParams.set("message", "Admin access required");
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Admin user authenticated - allow access
+    return response;
   }
 
   if (isProtectedPath && !user) {

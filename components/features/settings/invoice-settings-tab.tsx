@@ -101,6 +101,9 @@ export function InvoiceSettingsTab({
   const tier = (userTier === "premium" ? "premium" : "free") as TemplateTier;
   const templatesWithAccess = getAllTemplatesWithAccess(tier);
 
+  // Default export quality is 'standard' (50KB) - Requirements: default selection
+  const defaultExportQuality = 50 as const;
+
   const form = useForm<InvoiceSettingsFormData>({
     resolver: zodResolver(invoiceSettingsSchema),
     defaultValues: {
@@ -108,10 +111,8 @@ export function InvoiceSettingsTab({
       paymentMethod: initialStore?.payment_method || "",
       taxEnabled: initialPreferences?.tax_enabled || false,
       taxPercentage: initialPreferences?.tax_percentage || 0,
-      exportQuality: (initialPreferences?.export_quality_kb || 50) as
-        | 50
-        | 100
-        | 150,
+      exportQuality: (initialPreferences?.export_quality_kb ??
+        defaultExportQuality) as 50 | 100 | 150,
     },
   });
 
