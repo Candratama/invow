@@ -58,15 +58,17 @@ export interface TransactionRecord {
 
 /**
  * Create Supabase admin client with service role key
+ * Returns null if environment variables are missing
  */
 function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
+    console.error(
       "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables"
     );
+    return null;
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
@@ -232,6 +234,12 @@ export async function getRevenueAnalytics(
 }> {
   try {
     const supabaseAdmin = createAdminClient();
+    if (!supabaseAdmin) {
+      return {
+        data: null,
+        error: new Error("Database connection not available. Please check environment configuration."),
+      };
+    }
     const { from, to } = dateRange;
 
     // Get current period transactions
@@ -415,6 +423,13 @@ export async function exportRevenueCSV(
 }> {
   try {
     const supabaseAdmin = createAdminClient();
+    if (!supabaseAdmin) {
+      return {
+        data: null,
+        rowCount: 0,
+        error: new Error("Database connection not available. Please check environment configuration."),
+      };
+    }
     const { from, to } = dateRange;
 
     // Get completed transactions in date range
@@ -616,6 +631,12 @@ export async function getUserAnalytics(
 }> {
   try {
     const supabaseAdmin = createAdminClient();
+    if (!supabaseAdmin) {
+      return {
+        data: null,
+        error: new Error("Database connection not available. Please check environment configuration."),
+      };
+    }
     const { from, to } = dateRange;
 
     // Get all users from auth.users
@@ -805,6 +826,13 @@ export async function exportUserGrowthCSV(
 }> {
   try {
     const supabaseAdmin = createAdminClient();
+    if (!supabaseAdmin) {
+      return {
+        data: null,
+        rowCount: 0,
+        error: new Error("Database connection not available. Please check environment configuration."),
+      };
+    }
     const { from, to } = dateRange;
 
     // Get all users from auth.users
@@ -1002,6 +1030,12 @@ export async function getInvoiceAnalytics(
 }> {
   try {
     const supabaseAdmin = createAdminClient();
+    if (!supabaseAdmin) {
+      return {
+        data: null,
+        error: new Error("Database connection not available. Please check environment configuration."),
+      };
+    }
     const { from, to } = dateRange;
 
     // Get invoices in date range
@@ -1184,6 +1218,13 @@ export async function exportInvoiceCSV(
 }> {
   try {
     const supabaseAdmin = createAdminClient();
+    if (!supabaseAdmin) {
+      return {
+        data: null,
+        rowCount: 0,
+        error: new Error("Database connection not available. Please check environment configuration."),
+      };
+    }
     const { from, to } = dateRange;
 
     // Get invoices in date range

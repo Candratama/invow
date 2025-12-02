@@ -3,3 +3,8 @@
 - always use shadcn to create consistent ui component
 - always use next-devtool for creating nextjs best practice, and prioritize simple approach
 - kill node service after running tests
+- untuk data fetching, gunakan pola seperti di app/dashboard: fetch data di server component dengan unstable_cache dan revalidateTag, bukan fetch ulang setiap pindah halaman. Data hanya di-fetch ulang saat ada perubahan (revalidateTag) atau setelah cache expire. Contoh pattern:
+  - Server action dengan unstable_cache untuk caching
+  - revalidateTag setelah mutation untuk invalidate cache
+  - Server component untuk initial data fetch
+  - Client component hanya untuk interaksi UI
