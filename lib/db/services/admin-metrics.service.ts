@@ -1,6 +1,7 @@
 /**
  * Admin Metrics Service
  * Handles dashboard metrics queries for admin panel
+ * Uses optimized database functions to avoid N+1 queries
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -39,7 +40,6 @@ export interface TransactionListItem {
 
 /**
  * Create Supabase admin client with service role key
- * This client bypasses RLS and can access all data
  */
 function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,12 +59,9 @@ function createAdminClient() {
   });
 }
 
-
 /**
  * Get dashboard metrics for admin panel
- * Queries total users, users by tier, revenue, subscriptions, and invoices
- * 
- * @returns Dashboard metrics
+ * Uses optimized database function to get all metrics in one query
  */
 export async function getDashboardMetrics(): Promise<{
   data: DashboardMetrics | null;
@@ -73,68 +70,40 @@ export async function getDashboardMetrics(): Promise<{
   try {
     const supabaseAdmin = createAdminClient();
 
-    // Get all subscriptions to count users and tiers
-    const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin
-      .from("user_subscriptions")
-      .select("user_id, tier, subscription_end_date");
+    const { data, error } = await supabaseAdmin.rpc(
+      "get_admin_dashboard_metrics"
+    );
 
-    if (subscriptionsError) {
-      throw new Error(subscriptionsError.message);
+    if (error) {
+      throw new Error(error.message);
     }
 
-    const totalUsers = subscriptions?.length || 0;
-    const freeUsers = subscriptions?.filter((s) => s.tier === "free").length || 0;
-    const premiumUsers = subscriptions?.filter((s) => s.tier === "premium").length || 0;
-
-    // Count active subscriptions (end_date is null or > now)
-    const now = new Date().toISOString();
-    const activeSubscriptions = subscriptions?.filter((s) => {
-      if (!s.subscription_end_date) return true; // No end date = active
-      return s.subscription_end_date > now;
-    }).length || 0;
-
-    // Get total revenue from completed transactions
-    const { data: completedTransactions, error: revenueError } = await supabaseAdmin
-      .from("payment_transactions")
-      .select("amount, created_at")
-      .eq("status", "completed");
-
-    if (revenueError) {
-      throw new Error(revenueError.message);
+    if (!data || data.length === 0) {
+      return {
+        data: {
+          totalUsers: 0,
+          usersByTier: { free: 0, premium: 0 },
+          totalRevenue: 0,
+          monthlyRevenue: 0,
+          activeSubscriptions: 0,
+          totalInvoices: 0,
+        },
+        error: null,
+      };
     }
 
-    const totalRevenue = completedTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
-
-    // Calculate monthly revenue (current month)
-    const currentMonthStart = new Date();
-    currentMonthStart.setDate(1);
-    currentMonthStart.setHours(0, 0, 0, 0);
-    const currentMonthStartISO = currentMonthStart.toISOString();
-
-    const monthlyRevenue = completedTransactions?.filter((t) => {
-      return t.created_at >= currentMonthStartISO;
-    }).reduce((sum, t) => sum + t.amount, 0) || 0;
-
-    // Get total invoices count
-    const { count: totalInvoices, error: invoicesError } = await supabaseAdmin
-      .from("invoices")
-      .select("id", { count: "exact", head: true });
-
-    if (invoicesError) {
-      throw new Error(invoicesError.message);
-    }
-
+    const row = data[0];
     return {
       data: {
-        totalUsers,
+        totalUsers: Number(row.total_users),
         usersByTier: {
-          free: freeUsers,
-          premium: premiumUsers,
+          free: Number(row.free_users),
+          premium: Number(row.premium_users),
         },
-        totalRevenue,
-        monthlyRevenue,
-        activeSubscriptions,
-        totalInvoices: totalInvoices || 0,
+        totalRevenue: Number(row.total_revenue),
+        monthlyRevenue: Number(row.monthly_revenue),
+        activeSubscriptions: Number(row.active_subscriptions),
+        totalInvoices: Number(row.total_invoices),
       },
       error: null,
     };
@@ -147,13 +116,9 @@ export async function getDashboardMetrics(): Promise<{
   }
 }
 
-
 /**
  * Get recent payment transactions for admin dashboard
- * Returns transactions ordered by created_at descending
- * 
- * @param limit - Maximum number of transactions to return
- * @returns List of recent transactions with user emails
+ * Uses optimized database function to avoid N+1 queries
  */
 export async function getRecentTransactions(limit: number = 10): Promise<{
   data: TransactionListItem[] | null;
@@ -162,53 +127,50 @@ export async function getRecentTransactions(limit: number = 10): Promise<{
   try {
     const supabaseAdmin = createAdminClient();
 
-    // Get recent transactions
-    const { data: transactions, error: transactionsError } = await supabaseAdmin
-      .from("payment_transactions")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+    const { data, error } = await supabaseAdmin.rpc(
+      "get_admin_recent_transactions",
+      {
+        p_limit: limit,
+      }
+    );
 
-    if (transactionsError) {
-      throw new Error(transactionsError.message);
+    if (error) {
+      throw new Error(error.message);
     }
 
-    if (!transactions || transactions.length === 0) {
+    if (!data || data.length === 0) {
       return { data: [], error: null };
     }
 
-    // Get unique user IDs
-    const userIds = [...new Set(transactions.map((t) => t.user_id))];
+    const transactions: TransactionListItem[] = data.map(
+      (row: {
+        id: string;
+        user_id: string;
+        email: string;
+        amount: number;
+        tier: string;
+        status: string;
+        payment_method: string | null;
+        mayar_invoice_id: string;
+        created_at: string;
+        completed_at: string | null;
+        verified_at: string | null;
+      }) => ({
+        id: row.id,
+        userId: row.user_id,
+        userEmail: row.email || "Unknown",
+        amount: row.amount,
+        tier: row.tier,
+        status: row.status,
+        paymentMethod: row.payment_method,
+        mayarInvoiceId: row.mayar_invoice_id,
+        createdAt: row.created_at,
+        completedAt: row.completed_at,
+        verifiedAt: row.verified_at,
+      })
+    );
 
-    // Fetch user emails from auth
-    const userEmails: Record<string, string> = {};
-    for (const userId of userIds) {
-      try {
-        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId);
-        if (user?.user?.email) {
-          userEmails[userId] = user.user.email;
-        }
-      } catch {
-        // Skip if user not found
-      }
-    }
-
-    // Map transactions to list items
-    const transactionItems: TransactionListItem[] = transactions.map((t) => ({
-      id: t.id,
-      userId: t.user_id,
-      userEmail: userEmails[t.user_id] || "Unknown",
-      amount: t.amount,
-      tier: t.tier,
-      status: t.status,
-      paymentMethod: t.payment_method,
-      mayarInvoiceId: t.mayar_invoice_id,
-      createdAt: t.created_at,
-      completedAt: t.completed_at,
-      verifiedAt: t.verified_at,
-    }));
-
-    return { data: transactionItems, error: null };
+    return { data: transactions, error: null };
   } catch (error) {
     console.error("Error getting recent transactions:", error);
     return {

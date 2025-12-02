@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { Pagination } from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { UserListItem } from "@/lib/db/services/admin-users.service";
 
 interface UsersTableProps {
@@ -11,13 +12,8 @@ interface UsersTableProps {
   total: number;
   currentPage: number;
   pageSize: number;
-  onPageChange: (page: number) => void;
-  isLoading?: boolean;
 }
 
-/**
- * Format date to readable string
- */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString("id-ID", {
@@ -27,9 +23,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-/**
- * Get status badge styles
- */
 function getStatusBadgeStyles(status: string): string {
   switch (status) {
     case "active":
@@ -41,9 +34,6 @@ function getStatusBadgeStyles(status: string): string {
   }
 }
 
-/**
- * Get tier badge styles
- */
 function getTierBadgeStyles(tier: string): string {
   switch (tier) {
     case "premium":
@@ -55,82 +45,31 @@ function getTierBadgeStyles(tier: string): string {
   }
 }
 
-/**
- * Loading skeleton for users table
- */
-function UsersTableSkeleton({ rows = 5 }: { rows?: number }) {
-  return (
-    <div className="rounded-lg border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Tier
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Invoices
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Registered
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: rows }).map((_, i) => (
-              <tr key={i} className="border-b last:border-0">
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-48" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-20" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-24" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Users table component for admin user management
- * Displays user list with pagination and row click navigation
- */
 export function UsersTable({
   users,
   total,
   currentPage,
   pageSize,
-  onPageChange,
-  isLoading = false,
 }: UsersTableProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const totalPages = Math.ceil(total / pageSize);
 
-  const handleRowClick = (userId: string) => {
-    router.push(`/admin/users/${userId}`);
-  };
-
-  if (isLoading) {
-    return <UsersTableSkeleton />;
-  }
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (page > 1) {
+        params.set("page", page.toString());
+      } else {
+        params.delete("page");
+      }
+      startTransition(() => {
+        router.push(`/admin/users?${params.toString()}`, { scroll: false });
+      });
+    },
+    [router, searchParams]
+  );
 
   if (users.length === 0) {
     return (
@@ -142,7 +81,12 @@ export function UsersTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-card">
+      <div
+        className={cn(
+          "rounded-lg border bg-card",
+          isPending && "opacity-60 pointer-events-none"
+        )}
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -168,11 +112,15 @@ export function UsersTable({
               {users.map((user) => (
                 <tr
                   key={user.id}
-                  onClick={() => handleRowClick(user.id)}
                   className="border-b last:border-0 cursor-pointer transition-colors hover:bg-muted/50"
                 >
                   <td className="px-4 py-3">
-                    <span className="text-sm font-medium">{user.email}</span>
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="text-sm font-medium hover:underline"
+                    >
+                      {user.email}
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -218,7 +166,7 @@ export function UsersTable({
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={onPageChange}
+          onPageChange={handlePageChange}
         />
       )}
     </div>

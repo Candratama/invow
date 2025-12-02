@@ -1,6 +1,7 @@
 /**
  * Admin Subscriptions Service
  * Handles subscription management queries for admin panel
+ * Uses optimized database functions to avoid N+1 queries
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -9,8 +10,8 @@ import { createClient } from "@supabase/supabase-js";
  * Subscription filters interface
  */
 export interface SubscriptionFilters {
-  tier?: 'free' | 'premium' | 'all';
-  status?: 'active' | 'expired' | 'expiring_soon' | 'all';
+  tier?: "free" | "premium" | "all";
+  status?: "active" | "expired" | "expiring_soon" | "all";
   page?: number;
   pageSize?: number;
 }
@@ -27,7 +28,7 @@ export interface SubscriptionListItem {
   currentMonthCount: number;
   startDate: string | null;
   endDate: string | null;
-  status: 'active' | 'expired' | 'expiring_soon';
+  status: "active" | "expired" | "expiring_soon";
   limitExceeded: boolean;
 }
 
@@ -53,47 +54,47 @@ function createAdminClient() {
 }
 
 /**
- * Calculate subscription status based on end date
- * - 'active' if end_date is null or > now
- * - 'expiring_soon' if end_date is within 7 days
- * - 'expired' otherwise
+ * Calculate subscription status based on end date (for client-side use)
  */
-export function calculateSubscriptionStatus(endDate: string | null): 'active' | 'expired' | 'expiring_soon' {
-  if (!endDate) return 'active'; // No end date means active (free tier or unlimited)
-  
+export function calculateSubscriptionStatus(
+  endDate: string | null
+): "active" | "expired" | "expiring_soon" {
+  if (!endDate) return "active";
+
   const now = new Date();
   const end = new Date(endDate);
-  
+
   if (end <= now) {
-    return 'expired';
+    return "expired";
   }
-  
-  // Check if within 7 days
+
   const sevenDaysFromNow = new Date(now);
   sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-  
+
   if (end <= sevenDaysFromNow) {
-    return 'expiring_soon';
+    return "expiring_soon";
   }
-  
-  return 'active';
+
+  return "active";
 }
 
 /**
  * Check if invoice limit is exceeded
- * Returns true if current_month_count > invoice_limit
  */
-export function isLimitExceeded(currentMonthCount: number, invoiceLimit: number): boolean {
+export function isLimitExceeded(
+  currentMonthCount: number,
+  invoiceLimit: number
+): boolean {
   return currentMonthCount > invoiceLimit;
 }
 
 /**
  * Get paginated list of subscriptions with filters
- * 
- * @param filters - Filter options for the query
- * @returns Paginated list of subscriptions with total count
+ * Uses optimized database function to avoid N+1 queries
  */
-export async function getSubscriptions(filters: SubscriptionFilters = {}): Promise<{
+export async function getSubscriptions(
+  filters: SubscriptionFilters = {}
+): Promise<{
   data: { subscriptions: SubscriptionListItem[]; total: number } | null;
   error: Error | null;
 }> {
@@ -101,74 +102,50 @@ export async function getSubscriptions(filters: SubscriptionFilters = {}): Promi
     const supabaseAdmin = createAdminClient();
     const { tier, status, page = 1, pageSize = 10 } = filters;
 
-    // Get all subscriptions first
-    let query = supabaseAdmin
-      .from("user_subscriptions")
-      .select("*");
+    const { data, error } = await supabaseAdmin.rpc("get_admin_subscriptions", {
+      p_tier: tier || null,
+      p_status: status || null,
+      p_page: page,
+      p_page_size: pageSize,
+    });
 
-    // Apply tier filter at database level
-    if (tier && tier !== 'all') {
-      query = query.eq('tier', tier);
+    if (error) {
+      throw new Error(error.message);
     }
 
-    const { data: subscriptions, error: subscriptionsError } = await query;
-
-    if (subscriptionsError) {
-      throw new Error(subscriptionsError.message);
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
+    if (!data || data.length === 0) {
       return { data: { subscriptions: [], total: 0 }, error: null };
     }
 
-    // Get user emails from auth
-    const userIds = subscriptions.map((s) => s.user_id);
-    const userEmails: Record<string, string> = {};
-    
-    for (const userId of userIds) {
-      try {
-        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId);
-        if (user?.user) {
-          userEmails[userId] = user.user.email || "Unknown";
-        }
-      } catch {
-        // Skip if user not found
-        userEmails[userId] = "Unknown";
-      }
-    }
+    const subscriptions: SubscriptionListItem[] = data.map(
+      (row: {
+        id: string;
+        user_id: string;
+        email: string;
+        tier: string;
+        invoice_limit: number;
+        current_month_count: number;
+        subscription_start_date: string | null;
+        subscription_end_date: string | null;
+        status: string;
+        limit_exceeded: boolean;
+      }) => ({
+        id: row.id,
+        userId: row.user_id,
+        userEmail: row.email || "Unknown",
+        tier: row.tier,
+        invoiceLimit: row.invoice_limit,
+        currentMonthCount: row.current_month_count,
+        startDate: row.subscription_start_date,
+        endDate: row.subscription_end_date,
+        status: row.status as "active" | "expired" | "expiring_soon",
+        limitExceeded: row.limit_exceeded,
+      })
+    );
 
-    // Map subscriptions to list items with calculated status
-    let subscriptionItems: SubscriptionListItem[] = subscriptions.map((sub) => ({
-      id: sub.id,
-      userId: sub.user_id,
-      userEmail: userEmails[sub.user_id] || "Unknown",
-      tier: sub.tier,
-      invoiceLimit: sub.invoice_limit,
-      currentMonthCount: sub.current_month_count,
-      startDate: sub.subscription_start_date,
-      endDate: sub.subscription_end_date,
-      status: calculateSubscriptionStatus(sub.subscription_end_date),
-      limitExceeded: isLimitExceeded(sub.current_month_count, sub.invoice_limit),
-    }));
+    const total = data[0]?.total_count || 0;
 
-    // Apply status filter
-    if (status && status !== 'all') {
-      subscriptionItems = subscriptionItems.filter((s) => s.status === status);
-    }
-
-    // Sort by start date descending (most recent first)
-    subscriptionItems.sort((a, b) => {
-      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-      return dateB - dateA;
-    });
-
-    // Calculate pagination
-    const total = subscriptionItems.length;
-    const offset = (page - 1) * pageSize;
-    const paginatedSubscriptions = subscriptionItems.slice(offset, offset + pageSize);
-
-    return { data: { subscriptions: paginatedSubscriptions, total }, error: null };
+    return { data: { subscriptions, total: Number(total) }, error: null };
   } catch (error) {
     console.error("Error getting subscriptions:", error);
     return {

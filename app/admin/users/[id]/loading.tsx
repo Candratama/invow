@@ -1,17 +1,9 @@
-import { Suspense } from "react";
-import { notFound } from "next/navigation";
-import { getUserDetail } from "@/app/actions/admin";
-import { UserDetailContent } from "@/components/features/admin/user-detail-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-interface UserDetailPageProps {
-  params: Promise<{ id: string }>;
-}
-
-function UserDetailSkeleton() {
+export default function UserDetailLoading() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -37,25 +29,5 @@ function UserDetailSkeleton() {
         </div>
       </div>
     </div>
-  );
-}
-
-async function UserDetailData({ userId }: { userId: string }) {
-  const result = await getUserDetail(userId);
-
-  if (!result.success || !result.data) {
-    notFound();
-  }
-
-  return <UserDetailContent user={result.data} />;
-}
-
-export default async function UserDetailPage({ params }: UserDetailPageProps) {
-  const { id } = await params;
-
-  return (
-    <Suspense fallback={<UserDetailSkeleton />}>
-      <UserDetailData userId={id} />
-    </Suspense>
   );
 }

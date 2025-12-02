@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -18,53 +19,73 @@ export interface TransactionFiltersState {
 }
 
 interface TransactionFiltersProps {
-  filters: TransactionFiltersState;
-  onFiltersChange: (filters: TransactionFiltersState) => void;
+  initialFilters: TransactionFiltersState;
 }
 
 /**
  * Transaction filters component for admin payment transaction viewer
- * Provides status dropdown and date range picker filters
+ * Uses URL-based state for server-side filtering
  */
 export function TransactionFilters({
-  filters,
-  onFiltersChange,
+  initialFilters,
 }: TransactionFiltersProps) {
-  const handleStatusChange = useCallback(
-    (value: string) => {
-      onFiltersChange({
-        ...filters,
-        status: value as TransactionFiltersState["status"],
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const updateUrl = useCallback(
+    (updates: Partial<TransactionFiltersState>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      // Reset page when filters change
+      params.delete("page");
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value && value !== "all" && value !== "") {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
+      });
+
+      startTransition(() => {
+        router.push(`/admin/transactions?${params.toString()}`, {
+          scroll: false,
+        });
       });
     },
-    [filters, onFiltersChange]
+    [router, searchParams]
+  );
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      updateUrl({ status: value as TransactionFiltersState["status"] });
+    },
+    [updateUrl]
   );
 
   const handleDateFromChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      onFiltersChange({
-        ...filters,
-        dateFrom: e.target.value,
-      });
+      updateUrl({ dateFrom: e.target.value });
     },
-    [filters, onFiltersChange]
+    [updateUrl]
   );
 
   const handleDateToChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      onFiltersChange({
-        ...filters,
-        dateTo: e.target.value,
-      });
+      updateUrl({ dateTo: e.target.value });
     },
-    [filters, onFiltersChange]
+    [updateUrl]
   );
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-      {/* Status Filter */}
       <div className="w-full sm:w-[160px]">
-        <Select value={filters.status} onValueChange={handleStatusChange}>
+        <Select
+          value={initialFilters.status}
+          onValueChange={handleStatusChange}
+          disabled={isPending}
+        >
           <SelectTrigger>
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -77,7 +98,6 @@ export function TransactionFilters({
         </Select>
       </div>
 
-      {/* Date From Filter */}
       <div className="w-full sm:w-[160px]">
         <Label
           htmlFor="dateFrom"
@@ -88,13 +108,13 @@ export function TransactionFilters({
         <Input
           id="dateFrom"
           type="date"
-          value={filters.dateFrom}
+          defaultValue={initialFilters.dateFrom}
           onChange={handleDateFromChange}
           className="w-full"
+          disabled={isPending}
         />
       </div>
 
-      {/* Date To Filter */}
       <div className="w-full sm:w-[160px]">
         <Label
           htmlFor="dateTo"
@@ -105,9 +125,10 @@ export function TransactionFilters({
         <Input
           id="dateTo"
           type="date"
-          value={filters.dateTo}
+          defaultValue={initialFilters.dateTo}
           onChange={handleDateToChange}
           className="w-full"
+          disabled={isPending}
         />
       </div>
     </div>

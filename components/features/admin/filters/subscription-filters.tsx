@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -15,43 +16,66 @@ export interface SubscriptionFiltersState {
 }
 
 interface SubscriptionFiltersProps {
-  filters: SubscriptionFiltersState;
-  onFiltersChange: (filters: SubscriptionFiltersState) => void;
+  initialFilters: SubscriptionFiltersState;
 }
 
 /**
  * Subscription filters component for admin subscription management
- * Provides tier dropdown and status dropdown filters
+ * Uses URL-based state for server-side filtering
  */
 export function SubscriptionFilters({
-  filters,
-  onFiltersChange,
+  initialFilters,
 }: SubscriptionFiltersProps) {
-  const handleTierChange = useCallback(
-    (value: string) => {
-      onFiltersChange({
-        ...filters,
-        tier: value as SubscriptionFiltersState["tier"],
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const updateUrl = useCallback(
+    (updates: Partial<SubscriptionFiltersState>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      // Reset page when filters change
+      params.delete("page");
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value && value !== "all") {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
+      });
+
+      startTransition(() => {
+        router.push(`/admin/subscriptions?${params.toString()}`, {
+          scroll: false,
+        });
       });
     },
-    [filters, onFiltersChange]
+    [router, searchParams]
+  );
+
+  const handleTierChange = useCallback(
+    (value: string) => {
+      updateUrl({ tier: value as SubscriptionFiltersState["tier"] });
+    },
+    [updateUrl]
   );
 
   const handleStatusChange = useCallback(
     (value: string) => {
-      onFiltersChange({
-        ...filters,
-        status: value as SubscriptionFiltersState["status"],
-      });
+      updateUrl({ status: value as SubscriptionFiltersState["status"] });
     },
-    [filters, onFiltersChange]
+    [updateUrl]
   );
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      {/* Tier Filter */}
       <div className="w-full sm:w-[140px]">
-        <Select value={filters.tier} onValueChange={handleTierChange}>
+        <Select
+          value={initialFilters.tier}
+          onValueChange={handleTierChange}
+          disabled={isPending}
+        >
           <SelectTrigger>
             <SelectValue placeholder="All Tiers" />
           </SelectTrigger>
@@ -63,9 +87,12 @@ export function SubscriptionFilters({
         </Select>
       </div>
 
-      {/* Status Filter */}
       <div className="w-full sm:w-[160px]">
-        <Select value={filters.status} onValueChange={handleStatusChange}>
+        <Select
+          value={initialFilters.status}
+          onValueChange={handleStatusChange}
+          disabled={isPending}
+        >
           <SelectTrigger>
             <SelectValue placeholder="All Status" />
           </SelectTrigger>

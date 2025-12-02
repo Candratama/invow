@@ -1,6 +1,7 @@
 /**
  * Admin Transactions Service
  * Handles payment transaction management queries for admin panel
+ * Uses optimized database functions to avoid N+1 queries
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -9,7 +10,7 @@ import { createClient } from "@supabase/supabase-js";
  * Transaction filters interface
  */
 export interface TransactionFilters {
-  status?: 'pending' | 'completed' | 'failed' | 'all';
+  status?: "pending" | "completed" | "failed" | "all";
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -56,58 +57,51 @@ function createAdminClient() {
   });
 }
 
-
 /**
- * Calculate if a transaction is stale
- * A transaction is stale if status='pending' AND created_at > 24 hours ago
- * 
- * @param status - Transaction status
- * @param createdAt - Transaction creation timestamp
- * @returns true if transaction is stale
+ * Calculate if a transaction is stale (for client-side use)
  */
 export function isTransactionStale(status: string, createdAt: string): boolean {
-  if (status !== 'pending') return false;
-  
+  if (status !== "pending") return false;
+
   const now = new Date();
   const created = new Date(createdAt);
   const hoursDiff = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
-  
+
   return hoursDiff > 24;
 }
 
 /**
- * Check if a date is within a date range (inclusive)
- * 
- * @param date - Date to check
- * @param dateFrom - Start of range (optional)
- * @param dateTo - End of range (optional)
- * @returns true if date is within range
+ * Check if a date is within a date range (for client-side use)
  */
-export function isWithinDateRange(date: string, dateFrom?: string, dateTo?: string): boolean {
+export function isWithinDateRange(
+  date: string,
+  dateFrom?: string,
+  dateTo?: string
+): boolean {
   const checkDate = new Date(date);
-  
+
   if (dateFrom) {
     const from = new Date(dateFrom);
     from.setHours(0, 0, 0, 0);
     if (checkDate < from) return false;
   }
-  
+
   if (dateTo) {
     const to = new Date(dateTo);
     to.setHours(23, 59, 59, 999);
     if (checkDate > to) return false;
   }
-  
+
   return true;
 }
 
 /**
  * Get paginated list of transactions with filters
- * 
- * @param filters - Filter options for the query
- * @returns Paginated list of transactions with total count
+ * Uses optimized database function to avoid N+1 queries
  */
-export async function getTransactions(filters: TransactionFilters = {}): Promise<{
+export async function getTransactions(
+  filters: TransactionFilters = {}
+): Promise<{
   data: { transactions: TransactionListItem[]; total: number } | null;
   error: Error | null;
 }> {
@@ -115,72 +109,57 @@ export async function getTransactions(filters: TransactionFilters = {}): Promise
     const supabaseAdmin = createAdminClient();
     const { status, dateFrom, dateTo, page = 1, pageSize = 10 } = filters;
 
-    // Get all transactions
-    let query = supabaseAdmin
-      .from("payment_transactions")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabaseAdmin.rpc("get_admin_transactions", {
+      p_status: status || null,
+      p_date_from: dateFrom || null,
+      p_date_to: dateTo || null,
+      p_page: page,
+      p_page_size: pageSize,
+    });
 
-    // Apply status filter at database level
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
+    if (error) {
+      throw new Error(error.message);
     }
 
-    const { data: transactions, error: transactionsError } = await query;
-
-    if (transactionsError) {
-      throw new Error(transactionsError.message);
-    }
-
-    if (!transactions || transactions.length === 0) {
+    if (!data || data.length === 0) {
       return { data: { transactions: [], total: 0 }, error: null };
     }
 
-    // Get user emails from auth
-    const userIds = [...new Set(transactions.map((t) => t.user_id))];
-    const userEmails: Record<string, string> = {};
-    
-    for (const userId of userIds) {
-      try {
-        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId);
-        if (user?.user) {
-          userEmails[userId] = user.user.email || "Unknown";
-        }
-      } catch {
-        userEmails[userId] = "Unknown";
-      }
-    }
+    const transactions: TransactionListItem[] = data.map(
+      (row: {
+        id: string;
+        user_id: string;
+        email: string;
+        amount: number;
+        tier: string;
+        status: string;
+        payment_method: string | null;
+        mayar_invoice_id: string;
+        mayar_transaction_id: string | null;
+        created_at: string;
+        completed_at: string | null;
+        verified_at: string | null;
+        is_stale: boolean;
+      }) => ({
+        id: row.id,
+        userId: row.user_id,
+        userEmail: row.email || "Unknown",
+        amount: row.amount,
+        tier: row.tier,
+        status: row.status,
+        paymentMethod: row.payment_method,
+        mayarInvoiceId: row.mayar_invoice_id,
+        mayarTransactionId: row.mayar_transaction_id,
+        createdAt: row.created_at,
+        completedAt: row.completed_at,
+        verifiedAt: row.verified_at,
+        isStale: row.is_stale,
+      })
+    );
 
-    // Map transactions to list items with calculated stale flag
-    let transactionItems: TransactionListItem[] = transactions.map((t) => ({
-      id: t.id,
-      userId: t.user_id,
-      userEmail: userEmails[t.user_id] || "Unknown",
-      amount: t.amount,
-      tier: t.tier,
-      status: t.status,
-      paymentMethod: t.payment_method,
-      mayarInvoiceId: t.mayar_invoice_id,
-      mayarTransactionId: t.mayar_transaction_id,
-      createdAt: t.created_at,
-      completedAt: t.completed_at,
-      verifiedAt: t.verified_at,
-      isStale: isTransactionStale(t.status, t.created_at),
-    }));
+    const total = data[0]?.total_count || 0;
 
-    // Apply date range filter
-    if (dateFrom || dateTo) {
-      transactionItems = transactionItems.filter((t) => 
-        isWithinDateRange(t.createdAt, dateFrom, dateTo)
-      );
-    }
-
-    // Calculate pagination
-    const total = transactionItems.length;
-    const offset = (page - 1) * pageSize;
-    const paginatedTransactions = transactionItems.slice(offset, offset + pageSize);
-
-    return { data: { transactions: paginatedTransactions, total }, error: null };
+    return { data: { transactions, total: Number(total) }, error: null };
   } catch (error) {
     console.error("Error getting transactions:", error);
     return {
@@ -192,10 +171,6 @@ export async function getTransactions(filters: TransactionFilters = {}): Promise
 
 /**
  * Verify a transaction by setting verified_at timestamp
- * Only updates verified_at while preserving other fields
- * 
- * @param transactionId - The transaction ID to verify
- * @returns Success status
  */
 export async function verifyTransaction(transactionId: string): Promise<{
   success: boolean;
@@ -203,7 +178,7 @@ export async function verifyTransaction(transactionId: string): Promise<{
 }> {
   try {
     const supabaseAdmin = createAdminClient();
-    
+
     const now = new Date();
 
     const { error } = await supabaseAdmin

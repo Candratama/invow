@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { Pagination } from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Clock } from "lucide-react";
 import type { SubscriptionListItem } from "@/lib/db/services/admin-subscriptions.service";
 
@@ -12,13 +13,8 @@ interface SubscriptionsTableProps {
   total: number;
   currentPage: number;
   pageSize: number;
-  onPageChange: (page: number) => void;
-  isLoading?: boolean;
 }
 
-/**
- * Format date to readable string
- */
 function formatDate(dateString: string | null): string {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -29,9 +25,6 @@ function formatDate(dateString: string | null): string {
   });
 }
 
-/**
- * Get status badge styles
- */
 function getStatusBadgeStyles(status: string): string {
   switch (status) {
     case "active":
@@ -45,9 +38,6 @@ function getStatusBadgeStyles(status: string): string {
   }
 }
 
-/**
- * Get tier badge styles
- */
 function getTierBadgeStyles(tier: string): string {
   switch (tier) {
     case "premium":
@@ -59,9 +49,6 @@ function getTierBadgeStyles(tier: string): string {
   }
 }
 
-/**
- * Format status for display
- */
 function formatStatus(status: string): string {
   switch (status) {
     case "expiring_soon":
@@ -71,89 +58,33 @@ function formatStatus(status: string): string {
   }
 }
 
-/**
- * Loading skeleton for subscriptions table
- */
-function SubscriptionsTableSkeleton({ rows = 5 }: { rows?: number }) {
-  return (
-    <div className="rounded-lg border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                User
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Tier
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Usage
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Start Date
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                End Date
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: rows }).map((_, i) => (
-              <tr key={i} className="border-b last:border-0">
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-48" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-20" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-24" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-24" />
-                </td>
-                <td className="px-4 py-3">
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Subscriptions table component for admin subscription management
- * Displays subscription list with pagination and row click navigation
- * Shows warning indicators for expiring_soon and limit_exceeded subscriptions
- */
 export function SubscriptionsTable({
   subscriptions,
   total,
   currentPage,
   pageSize,
-  onPageChange,
-  isLoading = false,
 }: SubscriptionsTableProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const totalPages = Math.ceil(total / pageSize);
 
-  const handleRowClick = (userId: string) => {
-    router.push(`/admin/users/${userId}`);
-  };
-
-  if (isLoading) {
-    return <SubscriptionsTableSkeleton />;
-  }
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (page > 1) {
+        params.set("page", page.toString());
+      } else {
+        params.delete("page");
+      }
+      startTransition(() => {
+        router.push(`/admin/subscriptions?${params.toString()}`, {
+          scroll: false,
+        });
+      });
+    },
+    [router, searchParams]
+  );
 
   if (subscriptions.length === 0) {
     return (
@@ -165,7 +96,12 @@ export function SubscriptionsTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-card">
+      <div
+        className={cn(
+          "rounded-lg border bg-card",
+          isPending && "opacity-60 pointer-events-none"
+        )}
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -194,7 +130,6 @@ export function SubscriptionsTable({
               {subscriptions.map((subscription) => (
                 <tr
                   key={subscription.id}
-                  onClick={() => handleRowClick(subscription.userId)}
                   className={cn(
                     "border-b last:border-0 cursor-pointer transition-colors hover:bg-muted/50",
                     subscription.status === "expiring_soon" &&
@@ -204,9 +139,12 @@ export function SubscriptionsTable({
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
+                      <Link
+                        href={`/admin/users/${subscription.userId}`}
+                        className="text-sm font-medium hover:underline"
+                      >
                         {subscription.userEmail}
-                      </span>
+                      </Link>
                       {subscription.limitExceeded && (
                         <span title="Invoice limit exceeded">
                           <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -274,7 +212,7 @@ export function SubscriptionsTable({
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={onPageChange}
+          onPageChange={handlePageChange}
         />
       )}
     </div>
