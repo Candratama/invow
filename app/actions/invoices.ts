@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { InvoicesService } from '@/lib/db/services/invoices.service'
+import { SubscriptionService } from '@/lib/db/services/subscription.service'
 import { revalidatePath } from 'next/cache'
 import type { InvoiceInsert, InvoiceUpdate, InvoiceItemInsert } from '@/lib/db/database.types'
 
@@ -148,11 +149,43 @@ export async function upsertInvoiceWithItemsAction(
       return { success: false, error: 'Unauthorized' }
     }
 
-    const service = new InvoicesService(supabase)
-    const result = await service.upsertInvoiceWithItems(invoice, items)
+    const subscriptionService = new SubscriptionService(supabase)
+    const invoiceService = new InvoicesService(supabase)
+
+    // Check if this is a new invoice (not an update)
+    const isNewInvoice = invoice.status === 'synced' && invoice.id
+    let existingInvoice = null
+    
+    if (isNewInvoice && invoice.id) {
+      const { data } = await invoiceService.getInvoiceWithItems(invoice.id)
+      existingInvoice = data
+    }
+
+    // Only check and increment limit for NEW invoices (not updates)
+    const isFirstTimeSync = isNewInvoice && (!existingInvoice || existingInvoice.status === 'draft')
+    
+    if (isFirstTimeSync) {
+      // Check if user can generate invoice
+      const { data: canGenerate, error: limitError } = await subscriptionService.canGenerateInvoice(user.id)
+      
+      if (limitError) {
+        return { success: false, error: limitError.message }
+      }
+      
+      if (!canGenerate) {
+        return { success: false, error: 'Monthly invoice limit reached. Please upgrade your plan.' }
+      }
+    }
+
+    const result = await invoiceService.upsertInvoiceWithItems(invoice, items)
 
     if (result.error) {
       return { success: false, error: result.error.message }
+    }
+
+    // Increment invoice count only for new invoices (first time sync)
+    if (isFirstTimeSync) {
+      await subscriptionService.incrementInvoiceCount(user.id)
     }
 
     // Invoice upsert only affects dashboard invoice list

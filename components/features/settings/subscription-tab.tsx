@@ -239,12 +239,12 @@ export function SubscriptionTab({
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                         <h3 className="text-base sm:text-lg font-semibold">
                           Premium Plan
                         </h3>
                       </div>
-                      <p className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
+                      <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
                         {TIER_CONFIGS.premium.priceFormatted}
                       </p>
                       <p className="text-xs sm:text-sm text-muted-foreground">
@@ -254,7 +254,7 @@ export function SubscriptionTab({
                     <UpgradeButton
                       tier="premium"
                       variant="default"
-                      className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto min-h-[44px]"
+                      className="w-full sm:w-auto min-h-[44px]"
                     >
                       Upgrade to Premium
                     </UpgradeButton>
@@ -265,7 +265,7 @@ export function SubscriptionTab({
                         key={index}
                         className="flex items-start gap-2 text-xs sm:text-sm"
                       >
-                        <span className="text-blue-600 mt-0.5">✓</span>
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>{feature}</span>
                       </li>
                     ))}

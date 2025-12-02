@@ -32,7 +32,7 @@ const optionalText = z.string().optional().or(z.literal(""));
 
 const hexColorSchema = z
   .string()
-  .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color (e.g., #10b981)");
+  .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color (e.g., #d4af37)");
 
 const businessInfoSchema = z.object({
   name: z.string().min(3, "Store name must be at least 3 characters"),
@@ -121,7 +121,7 @@ export function BusinessInfoTab({
       storeDescription: initialStore?.store_description || "",
       tagline: initialStore?.tagline || "",
       storeNumber: initialStore?.store_number || "",
-      brandColor: initialStore?.brand_color || "#10b981",
+      brandColor: initialStore?.brand_color || "#d4af37",
     },
   });
 
@@ -154,7 +154,7 @@ export function BusinessInfoTab({
               storeDescription: result.data.store.store_description || "",
               tagline: result.data.store.tagline || "",
               storeNumber: result.data.store.store_number || "",
-              brandColor: result.data.store.brand_color || "#10b981",
+              brandColor: result.data.store.brand_color || "#d4af37",
             });
           }
         }
@@ -767,7 +767,7 @@ export function BusinessInfoTab({
                       <Input
                         type="text"
                         {...form.register("brandColor")}
-                        placeholder="#10b981"
+                        placeholder="#d4af37"
                         className="flex-1 min-h-[44px]"
                         maxLength={7}
                       />

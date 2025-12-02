@@ -11,6 +11,7 @@ import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skele
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Pagination } from "@/components/ui/pagination";
 import { InvoiceCard } from "@/components/features/dashboard/invoice-card";
+import { WelcomeBanner } from "@/components/features/onboarding/welcome-banner";
 import { useInvoiceStore } from "@/lib/store";
 import { Invoice } from "@/lib/types";
 import { parseLocalDate } from "@/lib/utils";
@@ -304,6 +305,12 @@ export default function DashboardClient({
             </p>
           </div>
 
+          {/* Welcome Banner for New Users */}
+          <WelcomeBanner
+            userName={userEmail}
+            hasBusinessInfo={!!initialDefaultStore}
+          />
+
           {/* Revenue Cards */}
           <RevenueCards
             metrics={revenueMetrics}
@@ -363,14 +370,19 @@ export default function DashboardClient({
 
       {/* Floating Action Button - Mobile only, Desktop uses different approach */}
       <div className="lg:hidden">
-        <FABButton onClick={handleNewInvoice} />
+        <FABButton onClick={handleNewInvoice} disabled={!initialDefaultStore} />
       </div>
 
       {/* Desktop: Fixed bottom-right button with better positioning */}
       <div className="hidden lg:block fixed bottom-8 right-8 z-40">
         <button
           onClick={handleNewInvoice}
-          className="bg-primary text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2 font-medium"
+          disabled={!initialDefaultStore}
+          className={`bg-primary text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2 font-medium ${
+            !initialDefaultStore
+              ? "opacity-50 cursor-not-allowed hover:bg-primary"
+              : ""
+          }`}
         >
           <Plus size={20} />
           New Invoice

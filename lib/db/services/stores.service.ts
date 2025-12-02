@@ -461,7 +461,7 @@ export class StoresService {
         store_number: settings.storeNumber || null,
         payment_method: settings.paymentMethod || null,
         email: settings.email || null,
-        brand_color: settings.brandColor || "#10b981",
+        brand_color: settings.brandColor || "#d4af37",
         is_active: true,
         invoice_prefix: "INV",
         invoice_number_format: null,
