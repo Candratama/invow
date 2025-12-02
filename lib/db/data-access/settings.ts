@@ -12,6 +12,11 @@ import type { StoreContact } from '@/lib/db/database.types'
  * Server-only data access layer for settings page
  * Uses unstable_cache with revalidateTag for proper server-side caching
  * Cache is invalidated via revalidateTag when mutations occur
+ * 
+ * IMPORTANT: Since services use cookies() internally via createClient(),
+ * we cannot use unstable_cache directly with the fetch functions.
+ * Instead, we fetch data normally and rely on Next.js Data Cache + revalidateTag
+ * for cache invalidation on mutations.
  */
 
 // Cache tags for settings-related data
@@ -65,8 +70,8 @@ export interface SettingsPageData {
 }
 
 /**
- * Internal function to fetch settings data
- * This is wrapped by unstable_cache for caching
+ * Fetch settings data directly from database
+ * This function handles all the data fetching logic
  */
 async function fetchSettingsData(userId: string): Promise<SettingsPageData> {
   const supabase = await createClient()
@@ -131,34 +136,26 @@ async function fetchSettingsData(userId: string): Promise<SettingsPageData> {
 }
 
 /**
- * Get settings page data with unstable_cache for server-side caching
- * Cache is tagged for granular invalidation via revalidateTag
+ * Get settings page data with caching
+ * 
+ * Note: Due to Next.js 15 restrictions, we cannot use unstable_cache
+ * with functions that call cookies() internally. Instead, we rely on:
+ * 1. Next.js fetch cache for Supabase requests
+ * 2. revalidateTag for cache invalidation on mutations
+ * 
+ * The SETTINGS_CACHE_TAGS are still used by server actions to invalidate
+ * the cache when mutations occur.
  * 
  * @param userId - The user ID to fetch settings for
  * @returns Promise<SettingsPageData> - The settings page data
  */
 export const getSettingsPageData = async (userId: string): Promise<SettingsPageData> => {
-  // Create cached function with user-specific cache key
-  const getCachedData = unstable_cache(
-    async () => fetchSettingsData(userId),
-    [`settings-page-data-${userId}`],
-    {
-      revalidate: CACHE_REVALIDATE,
-      tags: [
-        SETTINGS_CACHE_TAGS.store,
-        SETTINGS_CACHE_TAGS.contacts,
-        SETTINGS_CACHE_TAGS.subscription,
-        SETTINGS_CACHE_TAGS.preferences,
-      ],
-    }
-  )
-
-  return getCachedData()
+  return fetchSettingsData(userId)
 }
 
 /**
- * Get settings page data without authentication check
- * Used when user is already authenticated and userId is known
+ * Get settings page data for the current authenticated user
+ * Used by the settings page server component
  */
 export const getSettingsPageDataForUser = async (): Promise<SettingsPageData> => {
   const supabase = await createClient()

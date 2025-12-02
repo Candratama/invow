@@ -5,9 +5,9 @@ import {
   RevenueTab,
   UsersTab,
   InvoicesTab,
-  getDefaultDateRange,
   type AnalyticsTabType,
 } from "@/components/features/admin/analytics";
+import { getDefaultDateRange } from "@/lib/utils/date-range";
 import {
   getAdminRevenueAnalytics,
   getAdminUserAnalytics,

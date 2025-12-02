@@ -3,8 +3,9 @@
 - always use shadcn to create consistent ui component
 - always use next-devtool for creating nextjs best practice, and prioritize simple approach
 - kill node service after running tests
-- untuk data fetching, gunakan pola seperti di app/dashboard: fetch data di server component dengan unstable_cache dan revalidateTag, bukan fetch ulang setiap pindah halaman. Data hanya di-fetch ulang saat ada perubahan (revalidateTag) atau setelah cache expire. Contoh pattern:
-  - Server action dengan unstable_cache untuk caching
-  - revalidateTag setelah mutation untuk invalidate cache
+- untuk data fetching, gunakan pola seperti di app/dashboard:
   - Server component untuk initial data fetch
   - Client component hanya untuk interaksi UI
+  - revalidateTag setelah mutation untuk invalidate cache
+  - Define CACHE_TAGS constant di data-access layer untuk digunakan oleh server actions
+  - PENTING: Next.js 15 tidak mengizinkan cookies() di dalam unstable_cache. Karena Supabase client butuh cookies(), gunakan fetch biasa di server component dan andalkan revalidateTag untuk cache invalidation

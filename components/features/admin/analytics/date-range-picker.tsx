@@ -7,38 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, RefreshCw } from "lucide-react";
 import type { AnalyticsDateRange } from "@/lib/db/services/admin-analytics.service";
+// Re-export from shared utils for backward compatibility
+export {
+  getDefaultDateRange,
+  parseDateRangeFromParams,
+} from "@/lib/utils/date-range";
 
 interface DateRangePickerProps {
   dateRange: AnalyticsDateRange;
   basePath?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-}
-
-/**
- * Get default date range (last 30 days)
- */
-export function getDefaultDateRange(): AnalyticsDateRange {
-  const today = new Date();
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  return {
-    from: thirtyDaysAgo.toISOString().split("T")[0],
-    to: today.toISOString().split("T")[0],
-  };
-}
-
-/**
- * Parse date range from URL search params
- */
-export function parseDateRangeFromParams(
-  searchParams: URLSearchParams
-): AnalyticsDateRange {
-  const defaultRange = getDefaultDateRange();
-  const from = searchParams.get("from") || defaultRange.from;
-  const to = searchParams.get("to") || defaultRange.to;
-  return { from, to };
 }
 
 /**
