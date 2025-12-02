@@ -95,7 +95,8 @@ function applyFilters(
 
 // Generators
 const tierArb = fc.constantFrom('free', 'premium') as fc.Arbitrary<'free' | 'premium'>
-const tierFilterArb = fc.constantFrom('free', 'premium', 'all') as fc.Arbitrary<'free' | 'premium' | 'all'>
+// tierFilterArb is available for future use in tier filter tests
+// const tierFilterArb = fc.constantFrom('free', 'premium', 'all') as fc.Arbitrary<'free' | 'premium' | 'all'>
 const statusArb = fc.constantFrom('active', 'expired', 'none') as fc.Arbitrary<'active' | 'expired' | 'none'>
 
 const userListItemArb = fc.record({

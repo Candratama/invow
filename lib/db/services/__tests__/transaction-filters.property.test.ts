@@ -29,13 +29,15 @@ interface TransactionListItem {
   isStale: boolean
 }
 
-interface TransactionFilters {
-  status?: 'pending' | 'completed' | 'failed' | 'all'
-  dateFrom?: string
-  dateTo?: string
-  page?: number
-  pageSize?: number
-}
+// TransactionFilters interface is defined in admin-transactions.service.ts
+// Keeping this comment for reference of the expected shape:
+// interface TransactionFilters {
+//   status?: 'pending' | 'completed' | 'failed' | 'all'
+//   dateFrom?: string
+//   dateTo?: string
+//   page?: number
+//   pageSize?: number
+// }
 
 /**
  * Pure function that applies status filter to transactions
@@ -83,7 +85,8 @@ function verifyTransactionPure(
 
 // Generators
 const statusArb = fc.constantFrom('pending', 'completed', 'failed')
-const statusFilterArb = fc.constantFrom('pending', 'completed', 'failed', 'all') as fc.Arbitrary<'pending' | 'completed' | 'failed' | 'all'>
+// statusFilterArb is available for future use in status filter tests
+// const statusFilterArb = fc.constantFrom('pending', 'completed', 'failed', 'all') as fc.Arbitrary<'pending' | 'completed' | 'failed' | 'all'>
 const tierArb = fc.constantFrom('free', 'premium')
 
 // Generate timestamps within a reasonable range (last 2 years)

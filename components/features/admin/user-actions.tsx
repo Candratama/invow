@@ -144,13 +144,15 @@ export function UserActions({
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upgrade User to Premium</DialogTitle>
-                <DialogDescription>
-                  This will upgrade the user to premium tier with:
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>200 invoices per month limit</li>
-                    <li>30 days subscription period</li>
-                    <li>Access to all premium features</li>
-                  </ul>
+                <DialogDescription asChild>
+                  <div className="text-sm text-muted-foreground">
+                    This will upgrade the user to premium tier with:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>200 invoices per month limit</li>
+                      <li>30 days subscription period</li>
+                      <li>Access to all premium features</li>
+                    </ul>
+                  </div>
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -187,13 +189,15 @@ export function UserActions({
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Downgrade User to Free</DialogTitle>
-                <DialogDescription>
-                  This will downgrade the user to free tier:
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>10 invoices per month limit</li>
-                    <li>Subscription end date will be removed</li>
-                    <li>Premium features will be disabled</li>
-                  </ul>
+                <DialogDescription asChild>
+                  <div className="text-sm text-muted-foreground">
+                    This will downgrade the user to free tier:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>10 invoices per month limit</li>
+                      <li>Subscription end date will be removed</li>
+                      <li>Premium features will be disabled</li>
+                    </ul>
+                  </div>
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>

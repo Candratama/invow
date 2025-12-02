@@ -7,7 +7,12 @@
 
 import { createClient } from '@/lib/supabase/server';
 
-export interface CreateInvoiceResult {
+/**
+ * Result type for createMayarInvoiceAction
+ * Note: Types cannot be exported from 'use server' files
+ * Define this type in a separate types file if needed elsewhere
+ */
+interface CreateInvoiceResult {
   success: boolean;
   data?: {
     invoiceId: string;

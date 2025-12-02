@@ -2,3 +2,4 @@
 - always use related mcp to answer, do not speculate the answer 
 - always use shadcn to create consistent ui component
 - always use next-devtool for creating nextjs best practice, and prioritize simple approach
+- kill node service after running tests

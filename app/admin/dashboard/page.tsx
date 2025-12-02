@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import {
-  getAdminDashboardMetrics,
-  getAdminRecentTransactions,
+  getAdminDashboardMetricsAction,
+  getAdminRecentTransactionsAction,
 } from "@/app/actions/admin";
 import { MetricsCard } from "@/components/features/admin/metrics-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,9 +14,6 @@ import {
   UserCheck,
 } from "lucide-react";
 
-/**
- * Format currency value to IDR
- */
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -26,9 +23,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-/**
- * Format date to locale string
- */
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("id-ID", {
     day: "numeric",
@@ -39,9 +33,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-/**
- * Get status badge color
- */
 function getStatusColor(status: string): string {
   switch (status.toLowerCase()) {
     case "completed":
@@ -55,11 +46,8 @@ function getStatusColor(status: string): string {
   }
 }
 
-/**
- * Dashboard metrics grid component
- */
 async function DashboardMetrics() {
-  const result = await getAdminDashboardMetrics();
+  const result = await getAdminDashboardMetricsAction();
 
   if (!result.success || !result.data) {
     return (
@@ -120,9 +108,6 @@ async function DashboardMetrics() {
   );
 }
 
-/**
- * Loading skeleton for metrics grid
- */
 function MetricsSkeleton() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -139,11 +124,8 @@ function MetricsSkeleton() {
   );
 }
 
-/**
- * Recent transactions table component
- */
 async function RecentTransactions() {
-  const result = await getAdminRecentTransactions(10);
+  const result = await getAdminRecentTransactionsAction(10);
 
   if (!result.success) {
     return (
@@ -217,9 +199,6 @@ async function RecentTransactions() {
   );
 }
 
-/**
- * Loading skeleton for transactions table
- */
 function TransactionsSkeleton() {
   return (
     <div className="rounded-lg border bg-card shadow-sm">
@@ -271,10 +250,6 @@ function TransactionsSkeleton() {
   );
 }
 
-/**
- * Admin Dashboard Page
- * Displays system metrics and recent transactions
- */
 export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
@@ -285,12 +260,10 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      {/* Metrics Grid */}
       <Suspense fallback={<MetricsSkeleton />}>
         <DashboardMetrics />
       </Suspense>
 
-      {/* Recent Transactions */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-gray-900">
           Recent Transactions
