@@ -15,10 +15,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 describe('Property 2: Server Components fetch data', () => {
-  it('should verify account page is a Server Component (no "use client" directive)', () => {
+  it('should verify settings page is a Server Component (no "use client" directive)', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/page.tsx'),
+        fc.constantFrom('app/dashboard/settings/page.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
@@ -32,17 +32,17 @@ describe('Property 2: Server Components fetch data', () => {
     );
   });
 
-  it('should verify account page imports from data access layer', () => {
+  it('should verify settings page imports from data access layer', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/page.tsx'),
+        fc.constantFrom('app/dashboard/settings/page.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
           // Property: Page should import from data access layer
-          const hasDataAccessImport = fileContent.includes("from '@/lib/db/data-access/account'") ||
-                                      fileContent.includes('from "@/lib/db/data-access/account"');
+          const hasDataAccessImport = fileContent.includes("from '@/lib/db/data-access/settings'") ||
+                                      fileContent.includes('from "@/lib/db/data-access/settings"');
           expect(hasDataAccessImport).toBe(true);
         }
       ),
@@ -50,16 +50,16 @@ describe('Property 2: Server Components fetch data', () => {
     );
   });
 
-  it('should verify account page uses async function for data fetching', () => {
+  it('should verify settings page uses async function for data fetching', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/page.tsx'),
+        fc.constantFrom('app/dashboard/settings/page.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
           // Property: Page should be an async function (Server Component pattern)
-          const hasAsyncFunction = fileContent.includes('async function AccountPage') ||
+          const hasAsyncFunction = fileContent.includes('async function SettingsPage') ||
                                    fileContent.includes('export default async function');
           expect(hasAsyncFunction).toBe(true);
         }
@@ -68,33 +68,33 @@ describe('Property 2: Server Components fetch data', () => {
     );
   });
 
-  it('should verify account page calls getAccountPageData', () => {
+  it('should verify settings page calls getSettingsPageDataForUser', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/page.tsx'),
+        fc.constantFrom('app/dashboard/settings/page.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
-          // Property: Page should call getAccountPageData function
-          const callsGetAccountPageData = fileContent.includes('getAccountPageData()') ||
-                                          fileContent.includes('await getAccountPageData');
-          expect(callsGetAccountPageData).toBe(true);
+          // Property: Page should call getSettingsPageDataForUser function
+          const callsGetSettingsPageData = fileContent.includes('getSettingsPageDataForUser()') ||
+                                          fileContent.includes('await getSettingsPageDataForUser');
+          expect(callsGetSettingsPageData).toBe(true);
         }
       ),
       { numRuns: 100 }
     );
   });
 
-  it('should verify account page passes data as props to client component', () => {
+  it('should verify settings page passes data as props to client component', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/page.tsx'),
+        fc.constantFrom('app/dashboard/settings/page.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
-          // Property: Page should pass data as props to AccountClient
+          // Property: Page should pass data as props to SettingsClient
           const passesStoreProps = fileContent.includes('initialStore=');
           const passesContactsProps = fileContent.includes('initialContacts=');
           const passesSubscriptionProps = fileContent.includes('initialSubscription=');
@@ -113,7 +113,7 @@ describe('Property 2: Server Components fetch data', () => {
   it('should verify data access layer uses server-only import', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('lib/db/data-access/account.ts'),
+        fc.constantFrom('lib/db/data-access/settings.ts'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
@@ -127,21 +127,21 @@ describe('Property 2: Server Components fetch data', () => {
     );
   });
 
-  it('should verify data access layer uses React cache()', () => {
+  it('should verify data access layer uses unstable_cache', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('lib/db/data-access/account.ts'),
+        fc.constantFrom('lib/db/data-access/settings.ts'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
-          // Property: Data access layer should use React cache() for memoization
-          const importsCacheFromReact = fileContent.includes("import { cache } from 'react'") ||
-                                        fileContent.includes('import { cache } from "react"');
-          const usesCacheWrapper = fileContent.includes('cache(async');
+          // Property: Data access layer should use unstable_cache for caching
+          const importsUnstableCache = fileContent.includes("import { unstable_cache") ||
+                                        fileContent.includes('unstable_cache');
+          const usesUnstableCacheWrapper = fileContent.includes('unstable_cache(');
           
-          expect(importsCacheFromReact).toBe(true);
-          expect(usesCacheWrapper).toBe(true);
+          expect(importsUnstableCache).toBe(true);
+          expect(usesUnstableCacheWrapper).toBe(true);
         }
       ),
       { numRuns: 100 }
@@ -151,7 +151,7 @@ describe('Property 2: Server Components fetch data', () => {
   it('should verify data access layer imports from server supabase client', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('lib/db/data-access/account.ts'),
+        fc.constantFrom('lib/db/data-access/settings.ts'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');

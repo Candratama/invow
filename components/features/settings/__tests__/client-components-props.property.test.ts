@@ -142,24 +142,24 @@ describe('Property 3: Client Components receive data via props', () => {
     );
   });
 
-  it('should verify AccountClient passes props to all settings tabs', () => {
+  it('should verify SettingsClient passes props to all settings tabs', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/account-client.tsx'),
+        fc.constantFrom('app/dashboard/settings/settings-client.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
-          // Property: AccountClient should pass initialStore to BusinessInfoTab
+          // Property: SettingsClient should pass initialStore to BusinessInfoTab
           const passesStoreToBusinessInfo = fileContent.includes('<BusinessInfoTab') && 
                                              fileContent.includes('initialStore=');
-          // Property: AccountClient should pass initialContacts to BusinessInfoTab
+          // Property: SettingsClient should pass initialContacts to BusinessInfoTab
           const passesContactsToBusinessInfo = fileContent.includes('<BusinessInfoTab') && 
                                                 fileContent.includes('initialContacts=');
-          // Property: AccountClient should pass initialSubscription to SubscriptionTab
+          // Property: SettingsClient should pass initialSubscription to SubscriptionTab
           const passesSubscriptionToSubscription = fileContent.includes('<SubscriptionTab') && 
                                                     fileContent.includes('initialSubscription=');
-          // Property: AccountClient should pass initialPreferences to InvoiceSettingsTab
+          // Property: SettingsClient should pass initialPreferences to InvoiceSettingsTab
           const passesPreferencesToInvoice = fileContent.includes('<InvoiceSettingsTab') && 
                                               fileContent.includes('initialPreferences=');
 
@@ -173,15 +173,15 @@ describe('Property 3: Client Components receive data via props', () => {
     );
   });
 
-  it('should verify AccountClient interface accepts all initial data props', () => {
+  it('should verify SettingsClient interface accepts all initial data props', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('app/dashboard/account/account-client.tsx'),
+        fc.constantFrom('app/dashboard/settings/settings-client.tsx'),
         (filePath) => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
-          // Property: AccountClientProps interface should have all required props
+          // Property: SettingsClientProps interface should have all required props
           const hasInitialStore = fileContent.includes('initialStore:');
           const hasInitialContacts = fileContent.includes('initialContacts:');
           const hasInitialSubscription = fileContent.includes('initialSubscription:');

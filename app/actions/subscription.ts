@@ -19,7 +19,7 @@ export async function upgradeSubscriptionAction(tier: string) {
 
   if (result.success) {
     revalidatePath('/dashboard')
-    revalidatePath('/account')
+    revalidatePath('/dashboard/settings')
   }
 
   return result

@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { UserPreferencesService } from '@/lib/db/services/user-preferences.service'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { SETTINGS_CACHE_TAGS } from '@/lib/db/data-access/settings'
 import type { InvoiceTemplateId } from '@/components/features/invoice/templates'
 
 export async function getPreferencesAction() {
@@ -57,8 +58,9 @@ export async function updatePreferencesAction(updates: {
       return { success: false, error: result.error.message }
     }
 
-    // Preferences affect account page settings and dashboard invoice display
-    revalidatePath('/dashboard/account')
+    // Invalidate preferences cache and revalidate paths
+    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
     return { success: true, data: result.data }
@@ -87,8 +89,9 @@ export async function updateExportQualityAction(quality: 50 | 100 | 150) {
       return { success: false, error: result.error.message }
     }
 
-    // Export quality affects account settings and dashboard invoice export
-    revalidatePath('/dashboard/account')
+    // Invalidate preferences cache and revalidate paths
+    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
     return { success: true, data: result.data }
@@ -120,8 +123,9 @@ export async function updateTaxSettingsAction(
       return { success: false, error: result.error.message }
     }
 
-    // Tax settings affect account settings and dashboard invoice calculations
-    revalidatePath('/dashboard/account')
+    // Invalidate preferences cache and revalidate paths
+    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
     return { success: true, data: result.data }
@@ -150,8 +154,9 @@ export async function updateSelectedTemplateAction(template: InvoiceTemplateId) 
       return { success: false, error: result.error.message }
     }
 
-    // Template selection affects account settings and dashboard invoice display
-    revalidatePath('/dashboard/account')
+    // Invalidate preferences cache and revalidate paths
+    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
     return { success: true, data: result.data }

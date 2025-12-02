@@ -5,6 +5,17 @@ const nextConfig = {
     return config;
   },
 
+  // Redirects for renamed routes
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/account',
+        destination: '/dashboard/settings',
+        permanent: true,
+      },
+    ];
+  },
+
   // Security headers including CSP
   async headers() {
     return [

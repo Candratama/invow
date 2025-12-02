@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import type { StoreContact } from "@/lib/db/database.types";
 import type {
-  AccountPageStore,
-  AccountPageSubscription,
-  AccountPagePreferences,
-} from "@/lib/db/data-access/account";
+  SettingsPageStore,
+  SettingsPageSubscription,
+  SettingsPagePreferences,
+} from "@/lib/db/data-access/settings";
 
 // Lazy load tabs for better performance
 const SubscriptionTab = lazy(() =>
@@ -50,19 +50,19 @@ const TABS: Tab[] = [
   { id: "subscription", label: "Subscription" },
 ];
 
-interface AccountClientProps {
-  initialStore: AccountPageStore | null;
+interface SettingsClientProps {
+  initialStore: SettingsPageStore | null;
   initialContacts: StoreContact[];
-  initialSubscription: AccountPageSubscription | null;
-  initialPreferences: AccountPagePreferences | null;
+  initialSubscription: SettingsPageSubscription | null;
+  initialPreferences: SettingsPagePreferences | null;
 }
 
-export function AccountClient({
+export function SettingsClient({
   initialStore,
   initialContacts,
   initialSubscription,
   initialPreferences,
-}: AccountClientProps) {
+}: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
@@ -229,7 +229,7 @@ export function AccountClient({
                   <span>Back</span>
                 </button>
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                  Account Settings
+                  Settings
                 </h1>
               </div>
             </div>

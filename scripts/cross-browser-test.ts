@@ -97,7 +97,7 @@ const testPages = [
   '/dashboard',
   '/dashboard/login',
   '/dashboard/signup',
-  '/dashboard/account'
+  '/dashboard/settings'
 ];
 
 console.log('Cross-Browser Typography Testing Script');

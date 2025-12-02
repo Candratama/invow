@@ -76,7 +76,7 @@ export function WelcomeBanner({
           </div>
 
           <Button
-            onClick={() => router.push("/dashboard/account")}
+            onClick={() => router.push("/dashboard/settings")}
             className="gap-2 w-full sm:w-auto"
             size="lg"
           >

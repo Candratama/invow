@@ -55,7 +55,7 @@ export default function UpgradeButton({
       // Check if user is authenticated using useAuth() hook
       if (requireAuth && !user) {
         // User not logged in, redirect to signup with return URL that includes autoUpgrade
-        const returnUrl = `/dashboard/account?autoUpgrade=${tier}`;
+        const returnUrl = `/dashboard/settings?autoUpgrade=${tier}`;
         router.push(
           `/dashboard/signup?returnUrl=${encodeURIComponent(returnUrl)}`
         );

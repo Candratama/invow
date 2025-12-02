@@ -218,10 +218,9 @@ async function main() {
     // Pages
     'app/page.tsx',
     'app/dashboard/page.tsx',
-    'app/dashboard/account/page.tsx',
+    'app/dashboard/settings/page.tsx',
     'app/dashboard/login/page.tsx',
     'app/dashboard/signup/page.tsx',
-    'app/account/page.tsx',
     
     // Components - Dashboard
     'components/features/dashboard/invoice-card.tsx',

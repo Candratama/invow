@@ -72,7 +72,7 @@ describe('Property 4: No direct service imports in client code', () => {
       'components/features/settings/invoice-settings-tab.tsx',
       'components/features/settings/subscription-tab.tsx',
       'app/dashboard/dashboard-client.tsx',
-      'app/dashboard/account/account-client.tsx',
+      'app/dashboard/settings/settings-client.tsx',
     ];
 
     fc.assert(

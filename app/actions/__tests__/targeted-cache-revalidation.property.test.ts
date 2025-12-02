@@ -56,6 +56,8 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn((path: string) => {
     revalidatePathCalls.push(path)
   }),
+  revalidateTag: vi.fn(),
+  unstable_cache: vi.fn((fn) => fn),
 }))
 
 import { createClient } from '@/lib/supabase/server'
@@ -86,7 +88,7 @@ const INVALID_PATTERNS = [
   /\/\*/, // Catch-all patterns like /dashboard/*
   /\[\[/, // Catch-all segments like [[...slug]]
   /\[\.\.\./, // Rest parameters like [...slug]
-  /^\/account$/, // Incorrect path (should be /dashboard/account)
+  /^\/account$/, // Incorrect path (should be /dashboard/settings)
 ]
 
 /**
@@ -294,22 +296,22 @@ describe('Property 5: Targeted Cache Revalidation', () => {
 
           const revalidatedPaths = vi.mocked(revalidatePath).mock.calls.map(call => call[0])
 
-          // Contact actions should only affect account page
+          // Contact actions should only affect settings page
           if (actionType === 'contact') {
-            expect(revalidatedPaths).toContain('/dashboard/account')
+            expect(revalidatedPaths).toContain('/dashboard/settings')
             expect(revalidatedPaths).not.toContain('/dashboard')
           }
 
           // Invoice actions should only affect dashboard
           if (actionType === 'invoice') {
             expect(revalidatedPaths).toContain('/dashboard')
-            expect(revalidatedPaths).not.toContain('/dashboard/account')
+            expect(revalidatedPaths).not.toContain('/dashboard/settings')
           }
 
           // Store and preferences affect both pages
           if (actionType === 'store' || actionType === 'preferences') {
             expect(revalidatedPaths).toContain('/dashboard')
-            expect(revalidatedPaths).toContain('/dashboard/account')
+            expect(revalidatedPaths).toContain('/dashboard/settings')
           }
         }
       ),
@@ -317,7 +319,7 @@ describe('Property 5: Targeted Cache Revalidation', () => {
     )
   })
 
-  it('should use correct path format /dashboard/account instead of /account', async () => {
+  it('should use correct path format /dashboard/settings instead of /account', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom(
@@ -332,7 +334,7 @@ describe('Property 5: Targeted Cache Revalidation', () => {
           revalidatePathCalls.length = 0
           vi.mocked(revalidatePath).mockClear()
 
-          // Call actions that should revalidate account page
+          // Call actions that should revalidate settings page
           switch (actionName) {
             case 'updatePreferences':
               await updatePreferencesAction({ export_quality_kb: 100 })
@@ -356,11 +358,11 @@ describe('Property 5: Targeted Cache Revalidation', () => {
 
           const revalidatedPaths = vi.mocked(revalidatePath).mock.calls.map(call => call[0])
 
-          // Should use /dashboard/account, not /account
+          // Should use /dashboard/settings, not /account
           expect(revalidatedPaths).not.toContain('/account')
           
           // Should contain the correct path
-          expect(revalidatedPaths).toContain('/dashboard/account')
+          expect(revalidatedPaths).toContain('/dashboard/settings')
         }
       ),
       { numRuns: 100 }

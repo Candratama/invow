@@ -1,4 +1,4 @@
-import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { StoresService } from '@/lib/db/services/stores.service'
@@ -9,12 +9,23 @@ import { TierService } from '@/lib/db/services/tier.service'
 import type { StoreContact } from '@/lib/db/database.types'
 
 /**
- * Server-only data access layer for account page
- * Uses React cache() for request memoization
- * Fetches all account-related data in parallel for optimal performance
+ * Server-only data access layer for settings page
+ * Uses unstable_cache with revalidateTag for proper server-side caching
+ * Cache is invalidated via revalidateTag when mutations occur
  */
 
-export interface AccountPageStore {
+// Cache tags for settings-related data
+export const SETTINGS_CACHE_TAGS = {
+  store: 'settings-store',
+  contacts: 'settings-contacts',
+  subscription: 'settings-subscription',
+  preferences: 'settings-preferences',
+} as const
+
+// Cache revalidation time in seconds
+const CACHE_REVALIDATE = 60
+
+export interface SettingsPageStore {
   id: string
   name?: string | null
   logo?: string | null
@@ -30,7 +41,7 @@ export interface AccountPageStore {
   payment_method?: string | null
 }
 
-export interface AccountPageSubscription {
+export interface SettingsPageSubscription {
   tier: string
   invoiceLimit: number
   remainingInvoices: number
@@ -39,34 +50,26 @@ export interface AccountPageSubscription {
   resetDate: Date
 }
 
-export interface AccountPagePreferences {
+export interface SettingsPagePreferences {
   selected_template?: string | null
   tax_enabled: boolean
   tax_percentage?: number | null
   export_quality_kb: number
 }
 
-export interface AccountPageData {
-  store: AccountPageStore | null
+export interface SettingsPageData {
+  store: SettingsPageStore | null
   contacts: StoreContact[]
-  subscription: AccountPageSubscription | null
-  preferences: AccountPagePreferences | null
+  subscription: SettingsPageSubscription | null
+  preferences: SettingsPagePreferences | null
 }
 
-export const getAccountPageData = cache(async (): Promise<AccountPageData> => {
+/**
+ * Internal function to fetch settings data
+ * This is wrapped by unstable_cache for caching
+ */
+async function fetchSettingsData(userId: string): Promise<SettingsPageData> {
   const supabase = await createClient()
-  
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    return {
-      store: null,
-      contacts: [],
-      subscription: null,
-      preferences: null
-    }
-  }
 
   // Initialize services
   const storesService = new StoresService(supabase)
@@ -78,9 +81,9 @@ export const getAccountPageData = cache(async (): Promise<AccountPageData> => {
   // Fetch all data in parallel for optimal performance
   const [storeResult, subscriptionResult, preferencesResult, premiumResult] = await Promise.all([
     storesService.getDefaultStore(),
-    subscriptionService.getSubscriptionStatus(user.id),
+    subscriptionService.getSubscriptionStatus(userId),
     preferencesService.getUserPreferences(),
-    tierService.isPremium(user.id)
+    tierService.isPremium(userId)
   ])
 
   const isPremium = premiumResult.data ?? false
@@ -125,4 +128,50 @@ export const getAccountPageData = cache(async (): Promise<AccountPageData> => {
     subscription: subscriptionResult.data,
     preferences
   }
-})
+}
+
+/**
+ * Get settings page data with unstable_cache for server-side caching
+ * Cache is tagged for granular invalidation via revalidateTag
+ * 
+ * @param userId - The user ID to fetch settings for
+ * @returns Promise<SettingsPageData> - The settings page data
+ */
+export const getSettingsPageData = async (userId: string): Promise<SettingsPageData> => {
+  // Create cached function with user-specific cache key
+  const getCachedData = unstable_cache(
+    async () => fetchSettingsData(userId),
+    [`settings-page-data-${userId}`],
+    {
+      revalidate: CACHE_REVALIDATE,
+      tags: [
+        SETTINGS_CACHE_TAGS.store,
+        SETTINGS_CACHE_TAGS.contacts,
+        SETTINGS_CACHE_TAGS.subscription,
+        SETTINGS_CACHE_TAGS.preferences,
+      ],
+    }
+  )
+
+  return getCachedData()
+}
+
+/**
+ * Get settings page data without authentication check
+ * Used when user is already authenticated and userId is known
+ */
+export const getSettingsPageDataForUser = async (): Promise<SettingsPageData> => {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return {
+      store: null,
+      contacts: [],
+      subscription: null,
+      preferences: null
+    }
+  }
+
+  return getSettingsPageData(user.id)
+}

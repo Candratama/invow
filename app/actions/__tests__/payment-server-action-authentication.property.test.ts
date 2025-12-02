@@ -34,6 +34,8 @@ vi.mock('@/lib/db/services/mayar-payment.service', () => ({
 // Mock next/cache
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+  unstable_cache: vi.fn((fn) => fn),
 }))
 
 import { createClient } from '@/lib/supabase/server'

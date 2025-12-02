@@ -203,7 +203,7 @@ if (require.main === module) {
   console.log('  - http://localhost:3001/');
   console.log('  - http://localhost:3001/dashboard/login');
   console.log('  - http://localhost:3001/dashboard/signup');
-  console.log('  - http://localhost:3001/dashboard/account\n');
+  console.log('  - http://localhost:3001/dashboard/settings\n');
   console.log('Viewports to test:');
   console.log('  - Mobile: 375×667');
   console.log('  - Tablet: 768×1024');

@@ -1,16 +1,16 @@
 import { Suspense } from "react";
-import { getAccountPageData } from "@/lib/db/data-access/account";
-import { AccountClient } from "./account-client";
+import { getSettingsPageDataForUser } from "@/lib/db/data-access/settings";
+import { SettingsClient } from "./settings-client";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 
-export default async function AccountPage() {
-  // Fetch all account data on the server
+export default async function SettingsPage() {
+  // Fetch all settings data on the server with unstable_cache
   const { store, contacts, subscription, preferences } =
-    await getAccountPageData();
+    await getSettingsPageDataForUser();
 
   return (
     <Suspense fallback={<SettingsSkeleton />}>
-      <AccountClient
+      <SettingsClient
         initialStore={store}
         initialContacts={contacts}
         initialSubscription={subscription}

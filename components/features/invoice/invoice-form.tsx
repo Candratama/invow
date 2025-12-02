@@ -477,7 +477,7 @@ export function InvoiceForm({
               variant="outline"
               size="sm"
               className="mt-3 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
-              onClick={() => router.push("/dashboard/account")}
+              onClick={() => router.push("/dashboard/settings")}
             >
               Set Up Business Info
             </Button>
@@ -748,7 +748,7 @@ export function InvoiceForm({
               </div>
               <Button
                 type="button"
-                onClick={() => router.push("/dashboard/account")}
+                onClick={() => router.push("/dashboard/settings")}
                 variant="outline"
                 size="sm"
                 className="w-full border-red-300 text-red-700 hover:bg-red-50"

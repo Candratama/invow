@@ -54,7 +54,7 @@ export default function UpgradeModal({
       // Check if user is authenticated
       if (!user) {
         // Redirect to signup with return URL that includes autoUpgrade
-        const returnUrl = `/dashboard/account?autoUpgrade=premium`;
+        const returnUrl = `/dashboard/settings?autoUpgrade=premium`;
         router.push(
           `/dashboard/signup?returnUrl=${encodeURIComponent(returnUrl)}`
         );

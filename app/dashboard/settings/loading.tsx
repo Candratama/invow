@@ -1,6 +1,6 @@
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 
-export default function AccountLoading() {
+export default function SettingsLoading() {
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden">
       {/* Header Skeleton */}
@@ -9,7 +9,7 @@ export default function AccountLoading() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <div className="h-10 w-16 bg-gray-200 rounded animate-pulse" />
-              <div className="h-7 w-40 bg-gray-200 rounded animate-pulse" />
+              <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
             </div>
           </div>
         </div>
