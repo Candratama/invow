@@ -163,7 +163,8 @@ export function BusinessInfoTab({
         setIsLoading(false);
       });
     }
-  }, [form, initialStore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialStore]);
 
   // Track form dirty state (including logo changes)
   const logoChanged = logo !== (initialStore?.logo || "");

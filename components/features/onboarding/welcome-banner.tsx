@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, ArrowRight, FileText, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,20 +15,42 @@ export function WelcomeBanner({
   hasBusinessInfo,
 }: WelcomeBannerProps) {
   const router = useRouter();
-  // Initialize state from localStorage to prevent flash
-  const [isDismissed, setIsDismissed] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("welcomeBannerDismissed") === "true";
+  const [shouldShow, setShouldShow] = useState(false);
+
+  // Check localStorage and business info after mount
+  useEffect(() => {
+    // If user already has business info, they're an existing user - never show banner
+    if (hasBusinessInfo) {
+      return;
     }
-    return false;
-  });
+
+    const dismissed = localStorage.getItem("welcomeBannerDismissed") === "true";
+    const hasSeenBanner = localStorage.getItem("welcomeBannerSeen") === "true";
+    const isExistingUser = localStorage.getItem("isExistingUser") === "true";
+
+    // Show banner only if:
+    // 1. User is NOT an existing user (first time user) AND
+    // 2. User hasn't dismissed it AND
+    // 3. User hasn't seen it before AND
+    // 4. User doesn't have business info
+    if (!isExistingUser && !dismissed && !hasSeenBanner && !hasBusinessInfo) {
+      setShouldShow(true);
+      // Mark as seen so it won't show again on reload
+      localStorage.setItem("welcomeBannerSeen", "true");
+    }
+
+    // Mark user as existing for future sessions
+    if (!isExistingUser) {
+      localStorage.setItem("isExistingUser", "true");
+    }
+  }, [hasBusinessInfo]);
 
   const handleDismiss = () => {
     localStorage.setItem("welcomeBannerDismissed", "true");
-    setIsDismissed(true);
+    setShouldShow(false);
   };
 
-  if (hasBusinessInfo || isDismissed) {
+  if (!shouldShow) {
     return null;
   }
 
