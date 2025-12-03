@@ -9,16 +9,17 @@ import type { StoreContact } from '@/lib/db/database.types'
 
 /**
  * Server-only data access layer for settings page
- * Uses unstable_cache with revalidateTag for proper server-side caching
- * Cache is invalidated via revalidateTag when mutations occur
  * 
- * IMPORTANT: Since services use cookies() internally via createClient(),
- * we cannot use unstable_cache directly with the fetch functions.
- * Instead, we fetch data normally and rely on Next.js Data Cache + revalidateTag
- * for cache invalidation on mutations.
+ * Cache Strategy:
+ * - Data is fetched directly from database via services
+ * - Cache invalidation uses revalidateTag when mutations occur
+ * - SETTINGS_CACHE_TAGS are used by server actions to invalidate cache
+ * 
+ * Note: unstable_cache cannot be used here because services call cookies()
+ * internally via createClient(), which is not allowed in cached functions.
  */
 
-// Cache tags for settings-related data
+// Cache tags for settings-related data (used by server actions for revalidation)
 export const SETTINGS_CACHE_TAGS = {
   store: 'settings-store',
   contacts: 'settings-contacts',
