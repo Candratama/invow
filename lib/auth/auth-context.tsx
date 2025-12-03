@@ -75,10 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear localStorage and sessionStorage
     localStorage.clear();
     sessionStorage.clear();
-    // Redirect to login page after logout
-    router.push("/dashboard/login");
-    // Refresh to ensure all server state is cleared
-    router.refresh();
+    // Use window.location for hard redirect to ensure clean state
+    window.location.href = "/dashboard/login";
   };
 
   const resetPassword = async (email: string) => {

@@ -4,7 +4,19 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { TIER_FEATURES, type TierFeatures } from "@/lib/config/pricing";
+
+export interface TierFeatures {
+  invoiceLimit: number;
+  templateCount: number;
+  hasLogo: boolean;
+  hasSignature: boolean;
+  hasCustomColors: boolean;
+  historyLimit: number;
+  historyType: 'count' | 'days';
+  hasDashboardTotals: boolean;
+  exportQualities: string[];
+  hasMonthlyReport: boolean;
+}
 
 export type FeatureName = keyof TierFeatures;
 
@@ -13,8 +25,54 @@ export interface HistoryLimit {
   type: 'count' | 'days';
 }
 
+// Default free tier features as fallback
+const DEFAULT_FREE_FEATURES: TierFeatures = {
+  invoiceLimit: 10,
+  templateCount: 1,
+  hasLogo: false,
+  hasSignature: false,
+  hasCustomColors: false,
+  historyLimit: 10,
+  historyType: 'count',
+  hasDashboardTotals: false,
+  exportQualities: ['standard'],
+  hasMonthlyReport: false,
+};
+
 export class TierService {
   constructor(private supabase: SupabaseClient) {}
+
+  /**
+   * Get tier features from database
+   * @param tier - Tier name
+   * @returns TierFeatures object
+   */
+  private async getTierFeaturesFromDB(tier: string): Promise<TierFeatures> {
+    const { data } = await this.supabase
+      .from("subscription_plans")
+      .select("*")
+      .eq("tier", tier)
+      .eq("is_active", true)
+      .single();
+
+    if (!data) {
+      return DEFAULT_FREE_FEATURES;
+    }
+
+    // Map database fields to TierFeatures
+    return {
+      invoiceLimit: data.invoice_limit,
+      templateCount: data.features.includes("premium templates") ? 3 : 1,
+      hasLogo: data.features.some((f: string) => f.toLowerCase().includes("logo")),
+      hasSignature: data.features.some((f: string) => f.toLowerCase().includes("signature")),
+      hasCustomColors: data.features.some((f: string) => f.toLowerCase().includes("color")),
+      historyLimit: tier === "premium" ? 30 : 10,
+      historyType: tier === "premium" ? "days" : "count",
+      hasDashboardTotals: data.features.some((f: string) => f.toLowerCase().includes("dashboard")),
+      exportQualities: tier === "premium" ? ["standard", "high", "print-ready"] : ["standard"],
+      hasMonthlyReport: data.features.some((f: string) => f.toLowerCase().includes("report")),
+    };
+  }
 
   /**
    * Get user's current tier
@@ -73,19 +131,14 @@ export class TierService {
 
       if (tierError) {
         // Return free tier features on error
-        return { data: TIER_FEATURES.free, error: tierError };
+        return { data: DEFAULT_FREE_FEATURES, error: tierError };
       }
 
-      const features = TIER_FEATURES[tier];
-      if (!features) {
-        // Unknown tier, default to free
-        return { data: TIER_FEATURES.free, error: null };
-      }
-
+      const features = await this.getTierFeaturesFromDB(tier);
       return { data: features, error: null };
     } catch (error) {
       return {
-        data: TIER_FEATURES.free,
+        data: DEFAULT_FREE_FEATURES,
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }
@@ -149,8 +202,8 @@ export class TierService {
         // Default to free tier limits on error
         return {
           data: {
-            limit: TIER_FEATURES.free.historyLimit,
-            type: TIER_FEATURES.free.historyType,
+            limit: DEFAULT_FREE_FEATURES.historyLimit,
+            type: DEFAULT_FREE_FEATURES.historyType,
           },
           error,
         };
@@ -166,8 +219,8 @@ export class TierService {
     } catch (error) {
       return {
         data: {
-          limit: TIER_FEATURES.free.historyLimit,
-          type: TIER_FEATURES.free.historyType,
+          limit: DEFAULT_FREE_FEATURES.historyLimit,
+          type: DEFAULT_FREE_FEATURES.historyType,
         },
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
@@ -212,13 +265,13 @@ export class TierService {
       const { data: features, error } = await this.getUserFeatures(userId);
 
       if (error) {
-        return { data: TIER_FEATURES.free.templateCount, error };
+        return { data: DEFAULT_FREE_FEATURES.templateCount, error };
       }
 
       return { data: features.templateCount, error: null };
     } catch (error) {
       return {
-        data: TIER_FEATURES.free.templateCount,
+        data: DEFAULT_FREE_FEATURES.templateCount,
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }
@@ -237,13 +290,13 @@ export class TierService {
       const { data: features, error } = await this.getUserFeatures(userId);
 
       if (error) {
-        return { data: TIER_FEATURES.free.exportQualities, error };
+        return { data: DEFAULT_FREE_FEATURES.exportQualities, error };
       }
 
       return { data: features.exportQualities, error: null };
     } catch (error) {
       return {
-        data: TIER_FEATURES.free.exportQualities,
+        data: DEFAULT_FREE_FEATURES.exportQualities,
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }

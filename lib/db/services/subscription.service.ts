@@ -15,10 +15,22 @@ interface SubscriptionStatus {
   resetDate: Date;
 }
 
-import { TIER_LIMITS } from "@/lib/config/pricing";
-
 export class SubscriptionService {
   constructor(private supabase: SupabaseClient) {}
+
+  /**
+   * Get invoice limit for a tier from database
+   */
+  private async getTierLimit(tier: string): Promise<number> {
+    const { data } = await this.supabase
+      .from("subscription_plans")
+      .select("invoice_limit")
+      .eq("tier", tier)
+      .eq("is_active", true)
+      .single();
+
+    return data?.invoice_limit || 10; // Default to 10 if not found
+  }
 
   /**
    * Get user's current subscription
@@ -75,12 +87,14 @@ export class SubscriptionService {
       const subscriptionStartDate = now.toISOString();
       const currentCycle = this.getCurrentBillingCycle(now);
 
+      const freeLimit = await this.getTierLimit("free");
+
       const { data, error } = await this.supabase
         .from("user_subscriptions")
         .insert({
           user_id: userId,
           tier: "free",
-          invoice_limit: TIER_LIMITS.free,
+          invoice_limit: freeLimit,
           current_month_count: 0,
           month_year: currentCycle,
           subscription_start_date: subscriptionStartDate,
@@ -112,9 +126,9 @@ export class SubscriptionService {
     error: Error | null;
   }> {
     try {
-      const limit = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
-      if (!limit) {
-        throw new Error(`Invalid tier: ${tier}`);
+      const limit = await this.getTierLimit(tier);
+      if (!limit || limit <= 0) {
+        throw new Error(`Invalid tier or tier not found: ${tier}`);
       }
 
       // Get or create subscription first

@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { createPaymentInvoiceAction } from "@/app/actions/payments";
 
 interface UpgradeButtonProps {
-  tier: "premium";
+  tier: "premium" | "pro" | string;
   variant?: "default" | "outline";
   className?: string;
   children?: React.ReactNode;
@@ -64,7 +64,7 @@ export default function UpgradeButton({
       }
 
       // Call the Server Action instead of API route
-      const result = await createPaymentInvoiceAction(tier);
+      const result = await createPaymentInvoiceAction(tier as "premium");
 
       if (!result.success) {
         throw new Error(result.error || "Failed to create payment invoice");

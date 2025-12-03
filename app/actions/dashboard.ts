@@ -6,7 +6,7 @@ import { getSubscriptionStatus } from "@/lib/db/data-access/subscription";
 import { getStoreSettings } from "@/lib/db/data-access/store";
 import { getRevenueMetrics } from "@/lib/db/data-access/revenue";
 
-export async function getDashboardDataAction() {
+export async function getDashboardDataAction(page: number = 1) {
   try {
     const supabase = await createClient();
     const {
@@ -19,7 +19,7 @@ export async function getDashboardDataAction() {
 
     const [invoicesResult, revenueResult, subscriptionResult, storeResult] =
       await Promise.all([
-        getInvoicesPaginatedWithTierLimit(1, 10, "synced"),
+        getInvoicesPaginatedWithTierLimit(page, 10, "synced"),
         getRevenueMetrics(user.id),
         getSubscriptionStatus(user.id),
         getStoreSettings(user.id),

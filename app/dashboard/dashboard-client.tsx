@@ -123,7 +123,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const invalidateDashboard = useInvalidateDashboard();
 
   // Use React Query with initial data from server
-  const { data, isLoading } = useDashboardData(initialData || undefined);
+  const { data, isLoading } = useDashboardData(
+    currentPage,
+    initialData || undefined
+  );
 
   // Extract data from query result
   const invoices = (data?.invoices || []) as InvoiceWithItems[];

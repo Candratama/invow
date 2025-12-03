@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Gift, Zap, AlertCircle } from "lucide-react";
 import { getSubscriptionStatusAction } from "@/app/actions/subscription";
+import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import UpgradeButton from "@/components/features/subscription/upgrade-button";
-import { TIER_CONFIGS } from "@/lib/config/pricing";
+import { useQuery } from "@tanstack/react-query";
 
 interface SubscriptionStatus {
   tier: string;
@@ -26,46 +26,44 @@ export function SubscriptionTab({
   onClose,
   initialSubscription,
 }: SubscriptionTabProps) {
-  const { user, signOut } = useAuth();
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(
-    initialSubscription || null
-  );
-  const [isLoading, setIsLoading] = useState(!initialSubscription);
-  const [error, setError] = useState<Error | null>(null);
+  const { signOut } = useAuth();
 
-  // Fetch subscription status using Server Action only if not provided via props
-  useEffect(() => {
-    // Skip fetching if initialSubscription was provided
-    if (initialSubscription) {
-      return;
-    }
-
-    if (!user?.id) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchSubscription = async () => {
-      setIsLoading(true);
-      setError(null);
-
+  // Fetch subscription status with React Query
+  const {
+    data: subscription,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["subscription-status"],
+    queryFn: async () => {
       const result = await getSubscriptionStatusAction();
-
       if (result.error || !result.data) {
-        setError(
+        throw new Error(
           typeof result.error === "string"
-            ? new Error(result.error)
-            : result.error || new Error("Failed to load subscription")
+            ? result.error
+            : "Failed to load subscription"
         );
-      } else {
-        setSubscription(result.data);
       }
+      return result.data;
+    },
+    initialData: initialSubscription || undefined,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
-      setIsLoading(false);
-    };
-
-    fetchSubscription();
-  }, [user?.id, initialSubscription]);
+  // Fetch pricing plans from database
+  const { data: plans } = useQuery({
+    queryKey: ["subscription-plans"],
+    queryFn: async () => {
+      const result = await getSubscriptionPlansAction(false);
+      if (!result.success) throw new Error(result.error);
+      return result.data || [];
+    },
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
   // Get tier display info
   const getTierInfo = (tier: string) => {
@@ -136,7 +134,9 @@ export function SubscriptionTab({
   const tierInfo = getTierInfo(subscription.tier);
   const usagePercentage =
     (subscription.currentMonthCount / subscription.invoiceLimit) * 100;
-  const tierConfig = TIER_CONFIGS[subscription.tier];
+
+  // Find current tier config from plans data
+  const tierConfig = plans?.find((p) => p.tier === subscription.tier);
 
   return (
     <div className="flex flex-col h-full">
@@ -227,50 +227,56 @@ export function SubscriptionTab({
           </div>
 
           {/* Upgrade Options Section - Only show for free tier */}
-          {subscription.tier === "free" && (
+          {subscription.tier === "free" && plans && plans.length > 0 && (
             <div>
               <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4">
                 Upgrade Your Plan
               </h2>
 
               <div className="space-y-3 sm:space-y-4">
-                {/* Premium Plan */}
-                <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                        <h3 className="text-base sm:text-lg font-semibold">
-                          Premium Plan
-                        </h3>
-                      </div>
-                      <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
-                        {TIER_CONFIGS.premium.priceFormatted}
-                      </p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        per 30 days
-                      </p>
-                    </div>
-                    <UpgradeButton
-                      tier="premium"
-                      variant="default"
-                      className="w-full sm:w-auto min-h-[44px]"
+                {plans
+                  .filter((plan) => plan.tier !== "free" && plan.isActive)
+                  .map((plan) => (
+                    <div
+                      key={plan.tier}
+                      className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm"
                     >
-                      Upgrade to Premium
-                    </UpgradeButton>
-                  </div>
-                  <ul className="space-y-2">
-                    {TIER_CONFIGS.premium.features.map((feature, index) => (
-                      <li
-                        key={index}
-                        className="flex items-start gap-2 text-xs sm:text-sm"
-                      >
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                            <h3 className="text-base sm:text-lg font-semibold">
+                              {plan.name}
+                            </h3>
+                          </div>
+                          <p className="text-xl sm:text-2xl font-bold text-primary mb-1">
+                            {plan.priceFormatted}
+                          </p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            per 30 days
+                          </p>
+                        </div>
+                        <UpgradeButton
+                          tier={plan.tier as "premium" | "pro"}
+                          variant="default"
+                          className="w-full sm:w-auto min-h-[44px]"
+                        >
+                          Upgrade to {plan.name}
+                        </UpgradeButton>
+                      </div>
+                      <ul className="space-y-2">
+                        {plan.features.map((feature, index) => (
+                          <li
+                            key={index}
+                            className="flex items-start gap-2 text-xs sm:text-sm"
+                          >
+                            <span className="text-primary mt-0.5">✓</span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
               </div>
             </div>
           )}

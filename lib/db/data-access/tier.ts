@@ -1,8 +1,7 @@
 import { cache } from 'react'
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import { TierService, type FeatureName, type HistoryLimit } from '@/lib/db/services/tier.service'
-import type { TierFeatures } from '@/lib/config/pricing'
+import { TierService, type FeatureName, type HistoryLimit, type TierFeatures } from '@/lib/db/services/tier.service'
 
 /**
  * Server-only data access layer for tier features

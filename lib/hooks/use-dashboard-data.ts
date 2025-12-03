@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 // Query keys untuk cache management
 export const dashboardKeys = {
   all: ["dashboard"] as const,
-  data: () => [...dashboardKeys.all, "data"] as const,
+  data: (page?: number) =>
+    [...dashboardKeys.all, "data", page || 1] as const,
 };
 
 export interface DashboardData {
@@ -37,24 +38,29 @@ export interface DashboardData {
  * Hook untuk fetch dashboard data dengan React Query caching
  * Data akan di-cache dan tidak refetch saat navigasi
  */
-export function useDashboardData(initialData?: DashboardData) {
+export function useDashboardData(
+  page: number = 1,
+  initialData?: DashboardData
+) {
   return useQuery({
-    queryKey: dashboardKeys.data(),
+    queryKey: dashboardKeys.data(page),
     queryFn: async () => {
       // Import dynamically to avoid server-only module in client
       const { getDashboardDataAction } = await import(
         "@/app/actions/dashboard"
       );
-      const result = await getDashboardDataAction();
+      const result = await getDashboardDataAction(page);
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch dashboard data");
       }
       return result.data as DashboardData;
     },
-    // Gunakan initial data dari server jika ada
-    initialData,
+    // Gunakan initial data dari server jika ada (hanya untuk page 1)
+    initialData: page === 1 ? initialData : undefined,
     // Data dianggap fresh selama 5 menit
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 }
 

@@ -27,6 +27,8 @@ export function useSettingsData(initialData?: SettingsPageData) {
     },
     initialData,
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 }
 

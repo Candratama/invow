@@ -24,13 +24,7 @@ export async function getSubscriptionPlansAction(includeInactive = false): Promi
   error?: string
 }> {
   try {
-    console.log('[getSubscriptionPlansAction] Fetching plans, includeInactive:', includeInactive)
     const result = await getSubscriptionPlans(includeInactive)
-    console.log('[getSubscriptionPlansAction] Result:', { 
-      hasData: !!result.data, 
-      dataLength: result.data?.length,
-      error: result.error?.message 
-    })
     if (result.error) {
       return { success: false, error: result.error.message }
     }

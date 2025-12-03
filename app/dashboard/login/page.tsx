@@ -31,16 +31,19 @@ function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const { error } = await signIn(email, password);
+    try {
+      const { error } = await signIn(email, password);
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else {
+        // Redirect immediately after successful signin to /dashboard (ignore redirect param)
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
-    } else {
-      // Refresh to sync server state with new session cookies
-      router.refresh();
-      // Redirect will be handled by useEffect when user state updates
-      // Keep loading state true until redirect happens
     }
   };
 

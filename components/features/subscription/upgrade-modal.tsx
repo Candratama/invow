@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Zap, Check } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { createPaymentInvoiceAction } from "@/app/actions/payments";
-import { TIER_CONFIGS } from "@/lib/config/pricing";
+import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -41,10 +41,27 @@ export default function UpgradeModal({
 }: UpgradeModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [premiumConfig, setPremiumConfig] = useState<{
+    priceFormatted: string;
+  } | null>(null);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const premiumConfig = TIER_CONFIGS.premium;
+  // Fetch premium plan config from database
+  useEffect(() => {
+    const fetchPremiumConfig = async () => {
+      const result = await getSubscriptionPlansAction(false);
+      if (result.success && result.data) {
+        const premium = result.data.find((p) => p.tier === "premium");
+        if (premium) {
+          setPremiumConfig({
+            priceFormatted: premium.priceFormatted,
+          });
+        }
+      }
+    };
+    fetchPremiumConfig();
+  }, []);
 
   const handleUpgrade = async () => {
     setIsLoading(true);
@@ -114,7 +131,7 @@ export default function UpgradeModal({
           {/* Price */}
           <div className="text-center mb-4">
             <span className="text-3xl font-bold">
-              {premiumConfig.priceFormatted}
+              {premiumConfig?.priceFormatted || "Loading..."}
             </span>
             <span className="text-muted-foreground">/30 days</span>
           </div>

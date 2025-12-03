@@ -15,10 +15,6 @@ interface CreateInvoiceResponse {
 const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id";
 const MAYAR_API_KEY = process.env.MAYAR_API_KEY;
 
-import { TIER_PRICES } from "@/lib/config/pricing";
-
-const TIER_AMOUNTS: Record<string, number> = TIER_PRICES;
-
 export class MayarPaymentService {
   private maxRetries = 3;
   private retryDelayMs = 1000;
@@ -87,9 +83,21 @@ export class MayarPaymentService {
         throw new Error("MAYAR_API_KEY is not configured");
       }
 
-      const amount = TIER_AMOUNTS[tier];
-      if (!amount) {
-        throw new Error(`Invalid tier: ${tier}`);
+      // Fetch price from database
+      const { data: planData, error: planError } = await this.supabase
+        .from("subscription_plans")
+        .select("price")
+        .eq("tier", tier)
+        .eq("is_active", true)
+        .single();
+
+      if (planError || !planData) {
+        throw new Error(`Invalid tier or plan not found: ${tier}`);
+      }
+
+      const amount = planData.price;
+      if (!amount || amount <= 0) {
+        throw new Error(`Invalid price for tier: ${tier}`);
       }
 
       // Get user info for invoice

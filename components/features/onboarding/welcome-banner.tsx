@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, ArrowRight, FileText, Sparkles } from "lucide-react";
+import { Building2, ArrowRight, FileText, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface WelcomeBannerProps {
@@ -14,8 +15,20 @@ export function WelcomeBanner({
   hasBusinessInfo,
 }: WelcomeBannerProps) {
   const router = useRouter();
+  // Initialize state from localStorage to prevent flash
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("welcomeBannerDismissed") === "true";
+    }
+    return false;
+  });
 
-  if (hasBusinessInfo) {
+  const handleDismiss = () => {
+    localStorage.setItem("welcomeBannerDismissed", "true");
+    setIsDismissed(true);
+  };
+
+  if (hasBusinessInfo || isDismissed) {
     return null;
   }
 
@@ -28,7 +41,15 @@ export function WelcomeBanner({
     : "there";
 
   return (
-    <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6 mb-6 lg:p-8">
+    <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-6 mb-6 lg:p-8 relative">
+      <button
+        onClick={handleDismiss}
+        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+        aria-label="Dismiss banner"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3">
