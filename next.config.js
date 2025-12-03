@@ -1,8 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
+  },
+
+  // Image optimization
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+  },
+
+  // Optimize package imports
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@hugeicons/react'],
   },
 
   // Redirects for renamed routes

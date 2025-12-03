@@ -1,5 +1,35 @@
 # AGENTS.md - Project Guidelines
 
+## Recent Performance & UX Improvements (Dec 2024)
+
+### ✅ Implemented Improvements
+1. **Keyboard Shortcuts** - Ctrl+N untuk new invoice, Escape untuk back
+2. **Better Loading States** - Separate loading untuk invoices vs updating
+3. **Improved Toast Notifications** - Dengan descriptions yang lebih informatif
+4. **Enhanced Empty States** - Visual yang lebih engaging dengan CTA
+5. **Smooth Page Transitions** - Fade-in animations untuk form/preview
+6. **Optimized Bundle** - Package imports optimization untuk lucide-react
+7. **Better Touch Feedback** - Active states dan touch-action optimization
+8. **Image Optimization** - WebP/AVIF support dengan 30-day cache
+9. **Tooltip Hints** - Keyboard shortcuts hints di buttons
+10. **Error Boundary** - Graceful error handling dengan fallback UI
+
+### 📦 New Utilities
+- `lib/hooks/use-debounce.ts` - Debouncing untuk auto-save
+- `lib/hooks/use-pull-to-refresh.ts` - Pull-to-refresh untuk mobile
+- `lib/hooks/use-keyboard-shortcuts.ts` - Reusable keyboard shortcuts
+- `components/ui/error-boundary.tsx` - Error boundary component
+
+### 🎯 Next Improvements (Optional)
+- Search functionality di dashboard
+- Bulk actions untuk admin pages
+- Offline support dengan service worker
+- Web Vitals monitoring
+
+---
+
+# AGENTS.md - Project Guidelines
+
 ## General Rules
 - Never create useless md files like summary or documentation unless explicitly requested
 - Always use related MCP tools to answer questions, do not speculate

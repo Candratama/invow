@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, lazy } from "react";
-import { Plus, ArrowLeft } from "lucide-react";
+import { useState, useTransition, lazy, useEffect, useCallback } from "react";
+import { Plus, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FABButton } from "@/components/ui/fab-button";
 import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
@@ -10,6 +10,7 @@ import PaymentSuccessHandler from "@/components/features/payment/success-handler
 import { Pagination } from "@/components/ui/pagination";
 import { InvoiceCard } from "@/components/features/dashboard/invoice-card";
 import { WelcomeBanner } from "@/components/features/onboarding/welcome-banner";
+import { Button } from "@/components/ui/button";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
@@ -192,15 +193,34 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
     })) || [];
 
-  const handleNewInvoice = () => {
+  const handleNewInvoice = useCallback(() => {
     initializeNewInvoice();
     setView("form");
-  };
+  }, [initializeNewInvoice]);
 
   const handleOpenCompleted = async (invoiceId: string) => {
     await loadCompleted(invoiceId);
     setView("form");
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + N = New Invoice
+      if ((e.ctrlKey || e.metaKey) && e.key === "n" && view === "home") {
+        e.preventDefault();
+        if (defaultStore) handleNewInvoice();
+      }
+      // Escape = Back to home
+      if (e.key === "Escape" && view !== "home") {
+        e.preventDefault();
+        setView("home");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [view, defaultStore, handleNewInvoice]);
 
   const handleDeleteCompleted = async (
     e: React.MouseEvent,
@@ -211,11 +231,14 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       startTransition(async () => {
         const result = await deleteInvoiceAction(invoiceId);
         if (result.success) {
-          // Invalidate cache to refetch data
           invalidateDashboard();
-          toast.success("Invoice deleted successfully");
+          toast.success("Invoice deleted", {
+            description: "The invoice has been removed from your records",
+          });
         } else {
-          toast.error(result.error || "Failed to delete invoice");
+          toast.error("Failed to delete", {
+            description: result.error || "Please try again",
+          });
         }
       });
     }
@@ -229,7 +252,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
   if (view === "form") {
     return (
-      <div className="fixed inset-0 z-50 bg-gray-50 overflow-y-auto">
+      <div className="fixed inset-0 z-50 bg-gray-50 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-200">
         <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button
@@ -258,7 +281,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
   if (view === "preview") {
     return (
-      <div className="fixed inset-0 z-50 bg-gray-50">
+      <div className="fixed inset-0 z-50 bg-gray-50 animate-in fade-in slide-in-from-right-4 duration-200">
         <PreviewView
           onBack={() => setView("form")}
           onComplete={handleInvoiceComplete}
@@ -301,8 +324,16 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           />
 
           <>
-            {isPending || isLoadingInvoices ? (
+            {isLoadingInvoices ? (
               <InvoicesListSkeleton />
+            ) : isPending ? (
+              <div className="bg-white p-8 rounded-lg shadow-sm text-center">
+                <Loader2
+                  className="animate-spin mx-auto mb-2 text-primary"
+                  size={24}
+                />
+                <p className="text-gray-500">Updating...</p>
+              </div>
             ) : completedInvoices.length > 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
@@ -337,10 +368,24 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               </div>
             ) : (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
-                <p className="text-gray-500">No invoices yet</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Create your first invoice to get started
-                </p>
+                <div className="max-w-sm mx-auto">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Plus className="text-primary" size={32} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No invoices yet
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Create your first invoice to start tracking your sales and
+                    revenue
+                  </p>
+                  {defaultStore && (
+                    <Button onClick={handleNewInvoice} className="gap-2">
+                      <Plus size={18} />
+                      Create First Invoice
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </>
@@ -355,6 +400,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         <button
           onClick={handleNewInvoice}
           disabled={!defaultStore}
+          title={
+            defaultStore ? "New Invoice (Ctrl+N)" : "Set up Business Info first"
+          }
           className={`bg-primary text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2 font-medium ${
             !defaultStore
               ? "opacity-50 cursor-not-allowed hover:bg-primary"

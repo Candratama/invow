@@ -193,7 +193,27 @@
     /* Improve tap highlighting */
     button,
     [role="button"] {
-        -webkit-tap-highlight-color: rgba(16, 185, 129, 0.2);
+        -webkit-tap-highlight-color: rgba(234, 179, 8, 0.2);
+        touch-action: manipulation;
+    }
+
+    /* Prevent text selection on buttons */
+    button,
+    [role="button"] {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Smooth transitions for interactive elements */
+    button,
+    a,
+    [role="button"] {
+        transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+    }
+
+    button:active,
+    [role="button"]:active {
+        transform: scale(0.98);
     }
 }
 
