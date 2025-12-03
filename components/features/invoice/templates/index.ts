@@ -40,14 +40,14 @@ export const TEMPLATE_CONFIGS: Record<InvoiceTemplateId, TemplateConfig> = {
     id: 'classic',
     name: 'Classic',
     description: 'Traditional invoice layout',
-    tier: 'free',
+    tier: 'premium',
     component: 'ClassicInvoiceTemplate',
   },
   simple: {
     id: 'simple',
     name: 'Simple',
     description: 'Clean and minimal design',
-    tier: 'premium',
+    tier: 'free',
     component: 'SimpleInvoiceTemplate',
   },
   modern: {

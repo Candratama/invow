@@ -314,7 +314,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
           <WelcomeBanner
             userName={userEmail}
-            hasBusinessInfo={!!defaultStore}
+            hasBusinessInfo={
+              !!storeSettings?.name &&
+              !!storeSettings?.address &&
+              !!storeSettings?.whatsapp
+            }
           />
 
           <RevenueCards

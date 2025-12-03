@@ -19,6 +19,12 @@ import {
   type InvoiceTemplateId,
   type TemplateTier,
 } from "@/components/features/invoice/templates";
+import {
+  getTemplatesWithAccessInfo,
+  convertDbRulesToClientFormat,
+  type TemplateAccessRule,
+} from "@/lib/utils/template-access";
+import { getTemplateAccessRulesAction } from "@/app/actions/template-access";
 import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 import Image from "next/image";
 
@@ -81,6 +87,8 @@ interface InvoiceSettingsTabProps {
   } | null;
   /** User's subscription tier - defaults to 'free' */
   userTier?: string;
+  /** User's email for whitelist checking */
+  userEmail?: string;
 }
 
 export function InvoiceSettingsTab({
@@ -89,6 +97,7 @@ export function InvoiceSettingsTab({
   initialStore,
   initialPreferences,
   userTier = "free",
+  userEmail = "",
 }: InvoiceSettingsTabProps) {
   const [isPending, startTransition] = useTransition();
   const [previewTemplate, setPreviewTemplate] =
@@ -96,23 +105,62 @@ export function InvoiceSettingsTab({
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isExportUpgradeModalOpen, setIsExportUpgradeModalOpen] =
     useState(false);
+  const [accessRules, setAccessRules] = useState<TemplateAccessRule[]>([]);
+  const [isLoadingRules, setIsLoadingRules] = useState(true);
 
-  // Get templates with access information based on user tier
+  // Fetch template access rules from database
+  useEffect(() => {
+    const fetchAccessRules = async () => {
+      setIsLoadingRules(true);
+      const result = await getTemplateAccessRulesAction();
+      if (result.success && result.data) {
+        setAccessRules(convertDbRulesToClientFormat(result.data));
+      }
+      setIsLoadingRules(false);
+    };
+    fetchAccessRules();
+  }, []);
+
+  // Get templates with access information based on user tier and email
   const tier = (userTier === "premium" ? "premium" : "free") as TemplateTier;
-  const templatesWithAccess = getAllTemplatesWithAccess(tier);
+  const allTemplates = getAllTemplatesWithAccess(tier);
 
-  // Default export quality is 'standard' (50KB) - Requirements: default selection
+  // Filter templates based on access rules from database (only after loaded)
+  const templatesWithAccess = isLoadingRules
+    ? [] // Don't show any templates while loading
+    : getTemplatesWithAccessInfo(allTemplates, tier, userEmail, accessRules);
+
+  // Default values for free users
+  const defaultTemplate = "simple";
   const defaultExportQuality = 50 as const;
+
+  // For free users, ensure they use accessible template and quality
+  const getDefaultTemplate = () => {
+    const savedTemplate = initialPreferences?.selected_template;
+    // If free user has a premium template saved, reset to simple
+    if (tier === "free" && savedTemplate && savedTemplate !== "simple") {
+      return defaultTemplate;
+    }
+    return savedTemplate || defaultTemplate;
+  };
+
+  const getDefaultExportQuality = () => {
+    const savedQuality = initialPreferences?.export_quality_kb;
+    // If free user has premium quality saved, reset to standard (50)
+    if (tier === "free" && savedQuality && savedQuality !== 50) {
+      return defaultExportQuality;
+    }
+    return (savedQuality ?? defaultExportQuality) as 50 | 100 | 150;
+  };
 
   const form = useForm<InvoiceSettingsFormData>({
     resolver: zodResolver(invoiceSettingsSchema),
     defaultValues: {
-      selectedTemplate: initialPreferences?.selected_template || "classic",
+      selectedTemplate: getDefaultTemplate(),
       paymentMethod: initialStore?.payment_method || "",
       taxEnabled: initialPreferences?.tax_enabled || false,
       taxPercentage: initialPreferences?.tax_percentage || 0,
-      exportQuality: (initialPreferences?.export_quality_kb ??
-        defaultExportQuality) as 50 | 100 | 150,
+      exportQuality: getDefaultExportQuality(),
     },
   });
 
@@ -206,97 +254,111 @@ export function InvoiceSettingsTab({
                 : "All 8 templates available with Premium."}
             </p>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {templatesWithAccess.map((template) => {
-                const isSelected =
-                  form.watch("selectedTemplate") === template.id;
-                const isLocked = template.isLocked;
+              {isLoadingRules ? (
+                // Loading skeleton
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-[3/4] bg-gray-100 rounded-lg animate-pulse"
+                  />
+                ))
+              ) : templatesWithAccess.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No templates available
+                </div>
+              ) : null}
+              {!isLoadingRules &&
+                templatesWithAccess.map((template) => {
+                  const isSelected =
+                    form.watch("selectedTemplate") === template.id;
+                  const isLocked = template.isLocked;
 
-                const handleTemplateClick = () => {
-                  if (isLocked) {
-                    // Trigger upgrade modal for locked templates (Requirements: 3.3)
-                    setIsUpgradeModalOpen(true);
-                  } else {
-                    form.setValue("selectedTemplate", template.id, {
-                      shouldDirty: true,
-                    });
-                  }
-                };
+                  const handleTemplateClick = () => {
+                    if (isLocked) {
+                      // Trigger upgrade modal for locked templates (Requirements: 3.3)
+                      setIsUpgradeModalOpen(true);
+                    } else {
+                      form.setValue("selectedTemplate", template.id, {
+                        shouldDirty: true,
+                      });
+                    }
+                  };
 
-                return (
-                  <div key={template.id} className="relative group">
-                    <div
-                      onClick={handleTemplateClick}
-                      className={`w-full overflow-hidden rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer ${
-                        isSelected
-                          ? "border-primary ring-2 ring-primary/20"
-                          : isLocked
-                          ? "border-gray-200 opacity-75"
-                          : "border-gray-200 hover:border-primary/50"
-                      }`}
-                    >
-                      {/* Preview Image */}
-                      <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
-                        <Image
-                          src={`/template/${template.id}.jpg`}
-                          alt={`${template.name} template preview`}
-                          width={400}
-                          height={533}
-                          className={`w-full h-full object-cover object-top transition-transform group-hover:scale-105 ${
-                            isLocked ? "grayscale-[30%]" : ""
-                          }`}
-                        />
+                  return (
+                    <div key={template.id} className="relative group">
+                      <div
+                        onClick={handleTemplateClick}
+                        className={`w-full overflow-hidden rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer ${
+                          isSelected
+                            ? "border-primary ring-2 ring-primary/20"
+                            : isLocked
+                            ? "border-gray-200 opacity-75"
+                            : "border-gray-200 hover:border-primary/50"
+                        }`}
+                      >
+                        {/* Preview Image */}
+                        <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
+                          <Image
+                            src={`/template/${template.id}.jpg`}
+                            alt={`${template.name} template preview`}
+                            width={400}
+                            height={533}
+                            className={`w-full h-full object-cover object-top transition-transform group-hover:scale-105 ${
+                              isLocked ? "grayscale-[30%]" : ""
+                            }`}
+                          />
 
-                        {/* Lock Overlay for Premium Templates (Requirements: 3.4) */}
-                        {isLocked && (
-                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium rounded-full shadow-md">
-                              <Lock className="w-3 h-3" />
-                              <span>Premium</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Preview Button Overlay */}
-                        {!isLocked && (
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center pointer-events-none">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewTemplate(template.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity bg-white text-gray-900 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:bg-gray-100 pointer-events-auto"
-                            >
-                              <Eye size={16} />
-                              Preview
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Template Info */}
-                      <div className="p-3 bg-white">
-                        <div className="font-semibold text-sm mb-1 flex items-center gap-2">
-                          {template.name}
+                          {/* Lock Overlay for Premium Templates (Requirements: 3.4) */}
                           {isLocked && (
-                            <Lock className="w-3 h-3 text-amber-500" />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium rounded-full shadow-md">
+                                <Lock className="w-3 h-3" />
+                                <span>Premium</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Preview Button Overlay */}
+                          {!isLocked && (
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center pointer-events-none">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewTemplate(template.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity bg-white text-gray-900 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg hover:bg-gray-100 pointer-events-auto"
+                              >
+                                <Eye size={16} />
+                                Preview
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 line-clamp-1">
-                          {template.description}
-                        </div>
-                      </div>
 
-                      {/* Selected Badge */}
-                      {isSelected && !isLocked && (
-                        <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg pointer-events-none">
-                          <Check className="w-4 h-4 text-white" />
+                        {/* Template Info */}
+                        <div className="p-3 bg-white">
+                          <div className="font-semibold text-sm mb-1 flex items-center gap-2">
+                            {template.name}
+                            {isLocked && (
+                              <Lock className="w-3 h-3 text-amber-500" />
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 line-clamp-1">
+                            {template.description}
+                          </div>
                         </div>
-                      )}
+
+                        {/* Selected Badge */}
+                        {isSelected && !isLocked && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg pointer-events-none">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
 

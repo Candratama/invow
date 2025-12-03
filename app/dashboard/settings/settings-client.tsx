@@ -344,6 +344,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
                   initialStore={initialStore}
                   initialPreferences={initialPreferences}
                   userTier={initialSubscription?.tier || "free"}
+                  userEmail={user?.email || ""}
                 />
               </div>
             )}

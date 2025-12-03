@@ -20,6 +20,28 @@
 - `lib/hooks/use-keyboard-shortcuts.ts` - Reusable keyboard shortcuts
 - `components/ui/error-boundary.tsx` - Error boundary component
 
+### 🎨 Admin Features
+- **Template Management** (`/admin/templates`) - Manage invoice templates
+  - View all 8 templates dengan preview images dari `public/template/`
+  - Toggle enable/disable templates dengan Switch
+  - Preview full-size template images
+  - **Access Control Settings:**
+    - Free (All Users) - Available untuk semua user
+    - Premium Only - Hanya untuk premium subscribers
+    - Whitelist - Hanya untuk email tertentu
+  - Email whitelist management per template
+  - Badge untuk Premium/Free/Whitelist templates
+  - Templates: Classic, Simple, Modern, Elegant, Bold, Compact, Creative, Corporate
+  - Template data dari `components/features/invoice/templates/`
+
+### 🔒 Template Access Control
+- **Enforcement** (`lib/utils/template-access.ts`)
+  - Filter templates berdasarkan user tier (free/premium)
+  - Filter templates berdasarkan email whitelist
+  - Hide whitelist templates dari non-whitelisted users
+  - Only show enabled templates
+  - Integrated dengan invoice settings tab
+
 ### 🎯 Next Improvements (Optional)
 - Search functionality di dashboard
 - Bulk actions untuk admin pages

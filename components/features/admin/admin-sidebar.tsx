@@ -11,6 +11,7 @@ import {
   Store,
   BarChart3,
   Tags,
+  Palette,
 } from "lucide-react";
 import {
   Sidebar,
@@ -65,6 +66,11 @@ const navItems = [
     title: "Pricing",
     href: "/admin/pricing",
     icon: Tags,
+  },
+  {
+    title: "Templates",
+    href: "/admin/templates",
+    icon: Palette,
   },
 ];
 
