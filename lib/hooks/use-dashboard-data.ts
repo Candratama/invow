@@ -5,6 +5,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 // Query keys untuk cache management
 export const dashboardKeys = {
   all: ["dashboard"] as const,
+  revenue: () => [...dashboardKeys.all, "revenue"] as const,
+  invoices: (page?: number) =>
+    [...dashboardKeys.all, "invoices", page || 1] as const,
   data: (page?: number) =>
     [...dashboardKeys.all, "data", page || 1] as const,
 };
@@ -65,6 +68,87 @@ export function useDashboardData(
 }
 
 /**
+ * Hook untuk fetch revenue data saja (tidak berubah saat pagination)
+ */
+export function useRevenueData(initialData?: DashboardData) {
+  return useQuery<{
+    revenueMetrics: DashboardData["revenueMetrics"];
+    subscriptionStatus: DashboardData["subscriptionStatus"];
+    storeSettings: unknown;
+    defaultStore: { id: string } | null;
+  }>({
+    queryKey: dashboardKeys.revenue(),
+    queryFn: async () => {
+      const { getDashboardDataAction } = await import(
+        "@/app/actions/dashboard"
+      );
+      const result = await getDashboardDataAction(1);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch revenue data");
+      }
+      return {
+        revenueMetrics: result.data?.revenueMetrics || null,
+        subscriptionStatus: result.data?.subscriptionStatus || null,
+        storeSettings: result.data?.storeSettings || null,
+        defaultStore: result.data?.defaultStore || null,
+      };
+    },
+    initialData: initialData
+      ? {
+          revenueMetrics: initialData.revenueMetrics,
+          subscriptionStatus: initialData.subscriptionStatus,
+          storeSettings: initialData.storeSettings,
+          defaultStore: initialData.defaultStore,
+        }
+      : undefined,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Hook untuk fetch invoice list saja (berubah saat pagination)
+ */
+export function useInvoiceList(page: number = 1, initialData?: DashboardData) {
+  return useQuery<{
+    invoices: unknown[];
+    totalPages: number;
+    hasMoreHistory: boolean;
+    historyLimitMessage?: string;
+  }>({
+    queryKey: dashboardKeys.invoices(page),
+    queryFn: async () => {
+      const { getDashboardDataAction } = await import(
+        "@/app/actions/dashboard"
+      );
+      const result = await getDashboardDataAction(page);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch invoices");
+      }
+      return {
+        invoices: result.data?.invoices || [],
+        totalPages: result.data?.totalPages || 1,
+        hasMoreHistory: result.data?.hasMoreHistory || false,
+        historyLimitMessage: result.data?.historyLimitMessage,
+      };
+    },
+    initialData:
+      page === 1 && initialData
+        ? {
+            invoices: initialData.invoices,
+            totalPages: initialData.totalPages,
+            hasMoreHistory: initialData.hasMoreHistory,
+            historyLimitMessage: initialData.historyLimitMessage,
+          }
+        : undefined,
+    staleTime: 2 * 60 * 1000, // 2 minutes for invoice list
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
  * Hook untuk invalidate dashboard cache
  * Panggil setelah mutation (create/update/delete invoice)
  */
@@ -72,6 +156,8 @@ export function useInvalidateDashboard() {
   const queryClient = useQueryClient();
 
   return () => {
-    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    // Invalidate both revenue and invoices
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.revenue() });
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.invoices() });
   };
 }

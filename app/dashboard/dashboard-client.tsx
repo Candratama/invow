@@ -17,7 +17,8 @@ import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { deleteInvoiceAction } from "@/app/actions/invoices";
 import {
-  useDashboardData,
+  useRevenueData,
+  useInvoiceList,
   useInvalidateDashboard,
   type DashboardData,
 } from "@/lib/hooks/use-dashboard-data";
@@ -132,15 +133,22 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
   const invalidateDashboard = useInvalidateDashboard();
 
-  // Use React Query with initial data from server
-  const { data, isLoading } = useDashboardData(
+  // Separate queries for revenue (static) and invoices (paginated)
+  const { data: revenueData, isLoading: isLoadingRevenue } = useRevenueData(
+    initialData || undefined
+  );
+  const { data: invoiceData, isLoading: isLoadingInvoices } = useInvoiceList(
     currentPage,
     initialData || undefined
   );
 
-  // Extract data from query result
-  const invoices = (data?.invoices || []) as InvoiceWithItems[];
-  const revenueMetrics = data?.revenueMetrics || {
+  // Extract data from query results
+  const invoices = (invoiceData?.invoices || []) as InvoiceWithItems[];
+  const totalPages = invoiceData?.totalPages || 1;
+  const hasMoreHistory = invoiceData?.hasMoreHistory || false;
+  const historyLimitMessage = invoiceData?.historyLimitMessage;
+
+  const revenueMetrics = revenueData?.revenueMetrics || {
     totalRevenue: 0,
     monthlyRevenue: 0,
     invoiceCount: 0,
@@ -148,12 +156,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     averageOrderValue: 0,
     monthlyAverageOrderValue: 0,
   };
-  const subscriptionStatus = data?.subscriptionStatus || null;
-  const storeSettings = data?.storeSettings as StoreSettings | null;
-  const defaultStore = data?.defaultStore || null;
-  const totalPages = data?.totalPages || 1;
-  const hasMoreHistory = data?.hasMoreHistory || false;
-  const historyLimitMessage = data?.historyLimitMessage;
+  const subscriptionStatus = revenueData?.subscriptionStatus || null;
+  const storeSettings = revenueData?.storeSettings as StoreSettings | null;
+  const defaultStore = revenueData?.defaultStore || null;
 
   // Transform paginated invoices for display
   const completedInvoices =
@@ -292,11 +297,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           <RevenueCards
             metrics={revenueMetrics}
             subscriptionStatus={subscriptionStatus}
-            isLoading={isLoading}
+            isLoading={isLoadingRevenue}
           />
 
           <>
-            {isPending || isLoading ? (
+            {isPending || isLoadingInvoices ? (
               <InvoicesListSkeleton />
             ) : completedInvoices.length > 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
