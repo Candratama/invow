@@ -13,13 +13,16 @@ import * as fc from 'fast-check'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// Define the expected cache tags (must match SETTINGS_CACHE_TAGS in settings.ts)
+// Expected cache tags (must match SETTINGS_CACHE_TAGS in settings.ts)
+// Used for reference in test assertions
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const EXPECTED_CACHE_TAGS = {
   store: 'settings-store',
   contacts: 'settings-contacts',
   subscription: 'settings-subscription',
   preferences: 'settings-preferences',
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
   const actionsDir = path.join(process.cwd(), 'app/actions')

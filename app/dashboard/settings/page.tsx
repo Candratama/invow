@@ -1,22 +1,27 @@
 import { Suspense } from "react";
-import { getSettingsPageDataForUser } from "@/lib/db/data-access/settings";
+import { headers } from "next/headers";
+import { getSettingsDataAction } from "@/app/actions/settings";
 import { SettingsClient } from "./settings-client";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 
 export default async function SettingsPage() {
-  // Fetch all settings data on the server with unstable_cache
-  const { store, contacts, subscription, preferences, isPremium } =
-    await getSettingsPageDataForUser();
+  // Check if this is a client-side navigation
+  const headersList = await headers();
+  const referer = headersList.get("referer") || "";
+  const host = headersList.get("host") || "";
+  const isClientNavigation =
+    referer.includes(host) && referer.includes("/dashboard");
+
+  // Skip server fetch for client navigation - React Query will use cached data
+  let initialData = null;
+  if (!isClientNavigation) {
+    const result = await getSettingsDataAction();
+    initialData = result.success && result.data ? result.data : null;
+  }
 
   return (
     <Suspense fallback={<SettingsSkeleton />}>
-      <SettingsClient
-        initialStore={store}
-        initialContacts={contacts}
-        initialSubscription={subscription}
-        initialPreferences={preferences}
-        initialIsPremium={isPremium}
-      />
+      <SettingsClient initialData={initialData} />
     </Suspense>
   );
 }

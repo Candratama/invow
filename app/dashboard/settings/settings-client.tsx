@@ -18,7 +18,9 @@ import type {
   SettingsPageStore,
   SettingsPageSubscription,
   SettingsPagePreferences,
+  SettingsPageData,
 } from "@/lib/db/data-access/settings";
+import { useSettingsData } from "@/lib/hooks/use-settings-data";
 
 // Lazy load tabs for better performance
 const SubscriptionTab = lazy(() =>
@@ -51,20 +53,21 @@ const TABS: Tab[] = [
 ];
 
 interface SettingsClientProps {
-  initialStore: SettingsPageStore | null;
-  initialContacts: StoreContact[];
-  initialSubscription: SettingsPageSubscription | null;
-  initialPreferences: SettingsPagePreferences | null;
-  initialIsPremium: boolean;
+  initialData: SettingsPageData | null;
 }
 
-export function SettingsClient({
-  initialStore,
-  initialContacts,
-  initialSubscription,
-  initialPreferences,
-  initialIsPremium,
-}: SettingsClientProps) {
+export function SettingsClient({ initialData }: SettingsClientProps) {
+  // Use React Query with initial data from server
+  const { data } = useSettingsData(initialData || undefined);
+
+  // Extract data from query result
+  const initialStore = (data?.store as SettingsPageStore) || null;
+  const initialContacts = (data?.contacts as StoreContact[]) || [];
+  const initialSubscription =
+    (data?.subscription as SettingsPageSubscription) || null;
+  const initialPreferences =
+    (data?.preferences as SettingsPagePreferences) || null;
+  const initialIsPremium = data?.isPremium || false;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();

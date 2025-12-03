@@ -1,9 +1,7 @@
-import { Suspense } from "react";
+import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { getAdminStores } from "@/app/actions/admin-stores";
-import { StoreFilters } from "@/components/features/admin/stores/store-filters";
-import { StoresTableWrapper } from "@/components/features/admin/stores/stores-table-wrapper";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StoresClient } from "./stores-client";
 
 const PAGE_SIZE = 10;
 
@@ -14,29 +12,6 @@ interface StoresPageProps {
     search?: string;
     page?: string;
   }>;
-}
-
-function StoresPageSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="mt-2 h-4 w-64" />
-      </div>
-      <div className="flex gap-4 flex-wrap">
-        <Skeleton className="h-10 w-[180px]" />
-        <Skeleton className="h-10 w-[140px]" />
-        <Skeleton className="h-10 w-[200px]" />
-      </div>
-      <div className="rounded-lg border bg-card">
-        <div className="p-4 space-y-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -54,7 +29,6 @@ async function getFilterOptions() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Get users
   const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
   const users = (usersData?.users || []).map((u) => ({
     id: u.id,
@@ -64,90 +38,58 @@ async function getFilterOptions() {
   return { users };
 }
 
-async function StoresContent({
-  searchParams,
-}: {
-  searchParams: Awaited<StoresPageProps["searchParams"]>;
-}) {
-  const userId = searchParams.userId || "";
-  const isActive = searchParams.isActive as
-    | "all"
-    | "true"
-    | "false"
-    | undefined;
-  const search = searchParams.search || "";
-  const page = parseInt(searchParams.page || "1", 10);
-
-  // Convert isActive string to boolean or undefined
-  let isActiveFilter: boolean | "all" | undefined;
-  if (isActive === "true") {
-    isActiveFilter = true;
-  } else if (isActive === "false") {
-    isActiveFilter = false;
-  } else {
-    isActiveFilter = "all";
-  }
-
-  const [result, filterOptions] = await Promise.all([
-    getAdminStores({
-      userId: userId || undefined,
-      isActive: isActiveFilter === "all" ? undefined : isActiveFilter,
-      search: search || undefined,
-      page,
-      pageSize: PAGE_SIZE,
-    }),
-    getFilterOptions(),
-  ]);
-
-  const stores = result.data?.stores || [];
-  const total = result.data?.total || 0;
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Stores</h1>
-        <p className="text-sm text-muted-foreground">
-          View and manage all stores from all users
-        </p>
-      </div>
-
-      <StoreFilters
-        initialFilters={{
-          userId,
-          isActive: isActive || "all",
-          search,
-        }}
-        users={filterOptions.users}
-      />
-
-      {result.error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-800">{result.error}</p>
-        </div>
-      )}
-
-      <StoresTableWrapper
-        stores={stores}
-        total={total}
-        currentPage={page}
-        pageSize={PAGE_SIZE}
-      />
-
-      {!result.error && (
-        <div className="text-sm text-muted-foreground">
-          Showing {stores.length} of {total} stores
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default async function StoresPage({ searchParams }: StoresPageProps) {
   const params = await searchParams;
 
+  const userId = params.userId || "";
+  const isActive = params.isActive as "all" | "true" | "false" | undefined;
+  const search = params.search || "";
+  const page = parseInt(params.page || "1", 10);
+
+  // Check if this is a client-side navigation
+  const headersList = await headers();
+  const referer = headersList.get("referer") || "";
+  const host = headersList.get("host") || "";
+  const isClientNavigation =
+    referer.includes(host) && referer.includes("/admin");
+
+  let initialData = null;
+  let filterOptions = { users: [] as Array<{ id: string; email: string }> };
+
+  // Skip server fetch for client navigation - React Query will use cached data
+  if (!isClientNavigation) {
+    let isActiveFilter: boolean | undefined;
+    if (isActive === "true") {
+      isActiveFilter = true;
+    } else if (isActive === "false") {
+      isActiveFilter = false;
+    }
+
+    const [result, options] = await Promise.all([
+      getAdminStores({
+        userId: userId || undefined,
+        isActive: isActiveFilter,
+        search: search || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      }),
+      getFilterOptions(),
+    ]);
+
+    initialData = result.data || null;
+    filterOptions = options;
+  }
+
   return (
-    <Suspense fallback={<StoresPageSkeleton />}>
-      <StoresContent searchParams={params} />
-    </Suspense>
+    <StoresClient
+      initialData={initialData}
+      filters={{
+        userId,
+        isActive: isActive || "all",
+        search,
+        page,
+      }}
+      users={filterOptions.users}
+    />
   );
 }

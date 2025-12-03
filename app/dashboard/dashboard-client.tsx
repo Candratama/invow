@@ -13,37 +13,22 @@ import { Pagination } from "@/components/ui/pagination";
 import { InvoiceCard } from "@/components/features/dashboard/invoice-card";
 import { WelcomeBanner } from "@/components/features/onboarding/welcome-banner";
 import { useInvoiceStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
 import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
-import { calculateRevenueMetrics } from "@/lib/utils/revenue";
 import { deleteInvoiceAction } from "@/app/actions/invoices";
+import {
+  useDashboardData,
+  useInvalidateDashboard,
+  type DashboardData,
+} from "@/lib/hooks/use-dashboard-data";
 import type { InvoiceWithItems } from "@/lib/db/services/invoices.service";
-import type {
-  Invoice as DBInvoice,
-  InvoiceItem,
-} from "@/lib/db/database.types";
+import type { InvoiceItem } from "@/lib/db/database.types";
 import type { StoreSettings } from "@/lib/types";
 
-interface SubscriptionStatus {
-  tier: string;
-  invoiceLimit: number;
-  remainingInvoices: number;
-  currentMonthCount: number;
-  monthYear: string;
-  resetDate: string | null;
-}
-
 interface DashboardClientProps {
-  userEmail: string;
-  initialInvoices: InvoiceWithItems[];
-  initialAllInvoices: (DBInvoice | InvoiceWithItems)[];
-  initialSubscriptionStatus: SubscriptionStatus | null;
-  initialTotalPages: number;
-  initialStoreSettings: StoreSettings | null;
-  initialDefaultStore: { id: string } | null;
-  initialHasMoreHistory?: boolean;
-  initialHistoryLimitMessage?: string;
+  initialData: DashboardData | null;
 }
 
 function PreviewView({
@@ -66,7 +51,6 @@ function PreviewView({
     setIsGenerating(true);
 
     try {
-      // Check subscription limit and save invoice
       if (currentInvoice.id) {
         const result = await saveCompleted();
         if (!result.success) {
@@ -81,7 +65,6 @@ function PreviewView({
         storeSettings ?? null
       );
 
-      // Notify completion
       onComplete();
     } catch (error) {
       console.error("Error generating JPEG:", error);
@@ -128,52 +111,36 @@ function PreviewView({
   );
 }
 
-export default function DashboardClient({
-  userEmail,
-  initialInvoices,
-  initialAllInvoices,
-  initialSubscriptionStatus,
-  initialTotalPages,
-  initialStoreSettings,
-  initialDefaultStore,
-  initialHasMoreHistory = false,
-  initialHistoryLimitMessage,
-}: DashboardClientProps) {
+export default function DashboardClient({ initialData }: DashboardClientProps) {
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [currentPage, setCurrentPage] = useState(1);
   const [isPending, startTransition] = useTransition();
-  const [invoices, setInvoices] = useState(initialInvoices);
-  const [allInvoices, setAllInvoices] = useState(initialAllInvoices);
+
+  const { user } = useAuth();
+  const userEmail = user?.email || "";
 
   const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
+  const invalidateDashboard = useInvalidateDashboard();
 
-  // Calculate revenue metrics from ALL invoices (not paginated)
-  const allCompletedInvoices =
-    allInvoices?.map((inv) => ({
-      id: inv.id,
-      invoiceNumber: inv.invoice_number,
-      invoiceDate: parseLocalDate(inv.invoice_date),
-      dueDate: parseLocalDate(inv.invoice_date),
-      customer: {
-        name: inv.customer_name,
-        email: inv.customer_email || "",
-        status:
-          (inv.customer_status as "Distributor" | "Reseller" | "Customer") ||
-          "Customer",
-        address: inv.customer_address || "",
-      },
-      items: [], // Not needed for revenue calculation
-      subtotal: inv.subtotal,
-      shippingCost: inv.shipping_cost,
-      total: inv.total,
-      note: inv.note || undefined,
-      status: "completed" as const,
-      createdAt: new Date(inv.created_at),
-      updatedAt: new Date(inv.updated_at),
-      syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
-    })) || [];
+  // Use React Query with initial data from server
+  const { data, isLoading } = useDashboardData(initialData || undefined);
 
-  const revenueMetrics = calculateRevenueMetrics(allCompletedInvoices);
+  // Extract data from query result
+  const invoices = (data?.invoices || []) as InvoiceWithItems[];
+  const revenueMetrics = data?.revenueMetrics || {
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    invoiceCount: 0,
+    monthlyInvoiceCount: 0,
+    averageOrderValue: 0,
+    monthlyAverageOrderValue: 0,
+  };
+  const subscriptionStatus = data?.subscriptionStatus || null;
+  const storeSettings = data?.storeSettings as StoreSettings | null;
+  const defaultStore = data?.defaultStore || null;
+  const totalPages = data?.totalPages || 1;
+  const hasMoreHistory = data?.hasMoreHistory || false;
+  const historyLimitMessage = data?.historyLimitMessage;
 
   // Transform paginated invoices for display
   const completedInvoices =
@@ -226,9 +193,8 @@ export default function DashboardClient({
       startTransition(async () => {
         const result = await deleteInvoiceAction(invoiceId);
         if (result.success) {
-          // Remove from local state
-          setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
-          setAllInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
+          // Invalidate cache to refetch data
+          invalidateDashboard();
           toast.success("Invoice deleted successfully");
         } else {
           toast.error(result.error || "Failed to delete invoice");
@@ -238,6 +204,8 @@ export default function DashboardClient({
   };
 
   const handleInvoiceComplete = () => {
+    // Invalidate cache after creating/updating invoice
+    invalidateDashboard();
     setView("home");
   };
 
@@ -262,9 +230,9 @@ export default function DashboardClient({
         </header>
         <InvoiceForm
           onComplete={handleInvoiceComplete}
-          subscriptionStatus={initialSubscriptionStatus}
-          storeSettings={initialStoreSettings}
-          defaultStore={initialDefaultStore}
+          subscriptionStatus={subscriptionStatus}
+          storeSettings={storeSettings}
+          defaultStore={defaultStore}
         />
       </div>
     );
@@ -276,8 +244,8 @@ export default function DashboardClient({
         <PreviewView
           onBack={() => setView("form")}
           onComplete={handleInvoiceComplete}
-          storeSettings={initialStoreSettings}
-          tier={initialSubscriptionStatus?.tier}
+          storeSettings={storeSettings}
+          tier={subscriptionStatus?.tier}
         />
       </div>
     );
@@ -285,10 +253,8 @@ export default function DashboardClient({
 
   return (
     <>
-      {/* Payment Success/Failure Handler */}
       <PaymentSuccessHandler />
 
-      {/* Main Content */}
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
         <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
           <div className="text-left mb-8 lg:mb-12 lg:text-center">
@@ -305,22 +271,19 @@ export default function DashboardClient({
             </p>
           </div>
 
-          {/* Welcome Banner for New Users */}
           <WelcomeBanner
             userName={userEmail}
-            hasBusinessInfo={!!initialDefaultStore}
+            hasBusinessInfo={!!defaultStore}
           />
 
-          {/* Revenue Cards */}
           <RevenueCards
             metrics={revenueMetrics}
-            subscriptionStatus={initialSubscriptionStatus || null}
-            isLoading={false}
+            subscriptionStatus={subscriptionStatus}
+            isLoading={isLoading}
           />
 
-          {/* Invoices List */}
           <>
-            {isPending ? (
+            {isPending || isLoading ? (
               <InvoicesListSkeleton />
             ) : completedInvoices.length > 0 ? (
               <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
@@ -338,20 +301,18 @@ export default function DashboardClient({
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {initialTotalPages > 1 && (
+                {totalPages > 1 && (
                   <Pagination
                     currentPage={currentPage}
-                    totalPages={initialTotalPages}
+                    totalPages={totalPages}
                     onPageChange={setCurrentPage}
                   />
                 )}
 
-                {/* History Limit Message for Free Users */}
-                {initialHasMoreHistory && initialHistoryLimitMessage && (
+                {hasMoreHistory && historyLimitMessage && (
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
                     <p className="text-sm text-amber-800">
-                      {initialHistoryLimitMessage}
+                      {historyLimitMessage}
                     </p>
                   </div>
                 )}
@@ -368,18 +329,16 @@ export default function DashboardClient({
         </div>
       </main>
 
-      {/* Floating Action Button - Mobile only, Desktop uses different approach */}
       <div className="lg:hidden">
-        <FABButton onClick={handleNewInvoice} disabled={!initialDefaultStore} />
+        <FABButton onClick={handleNewInvoice} disabled={!defaultStore} />
       </div>
 
-      {/* Desktop: Fixed bottom-right button with better positioning */}
       <div className="hidden lg:block fixed bottom-8 right-8 z-40">
         <button
           onClick={handleNewInvoice}
-          disabled={!initialDefaultStore}
+          disabled={!defaultStore}
           className={`bg-primary text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-primary/90 transition-all flex items-center gap-2 font-medium ${
-            !initialDefaultStore
+            !defaultStore
               ? "opacity-50 cursor-not-allowed hover:bg-primary"
               : ""
           }`}

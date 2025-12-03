@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, WindSong } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -67,19 +68,21 @@ export default function RootLayout({
         className={`${inter.className} ${windsong.variable}`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <div className="min-h-screen bg-background">{children}</div>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              classNames: {
-                success: "text-primary",
-                error: "text-red-600",
-                icon: "text-primary",
-              },
-            }}
-          />
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <div className="min-h-screen bg-background">{children}</div>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                classNames: {
+                  success: "text-primary",
+                  error: "text-red-600",
+                  icon: "text-primary",
+                },
+              }}
+            />
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

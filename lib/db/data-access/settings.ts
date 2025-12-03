@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache'
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { StoresService } from '@/lib/db/services/stores.service'
@@ -26,9 +25,6 @@ export const SETTINGS_CACHE_TAGS = {
   subscription: 'settings-subscription',
   preferences: 'settings-preferences',
 } as const
-
-// Cache revalidation time in seconds
-const CACHE_REVALIDATE = 60
 
 export interface SettingsPageStore {
   id: string
