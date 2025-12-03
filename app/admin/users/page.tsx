@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { getUsers } from "@/app/actions/admin";
 import { UsersClient } from "./users-client";
 
@@ -20,16 +21,27 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const search = params.search || "";
   const page = parseInt(params.page || "1", 10);
 
-  // Fetch initial data on server
-  const result = await getUsers({
-    tier: tier === "all" ? undefined : tier,
-    status: status === "all" ? undefined : status,
-    search: search || undefined,
-    page,
-    pageSize: PAGE_SIZE,
-  });
+  // Check if this is a client-side navigation
+  const headersList = await headers();
+  const referer = headersList.get("referer") || "";
+  const host = headersList.get("host") || "";
+  const isClientNavigation =
+    referer.includes(host) && referer.includes("/admin");
 
-  const initialData = result.data || null;
+  let initialData = null;
+
+  // Skip server fetch for client navigation - React Query will use cached data
+  if (!isClientNavigation) {
+    const result = await getUsers({
+      tier: tier === "all" ? undefined : tier,
+      status: status === "all" ? undefined : status,
+      search: search || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    });
+
+    initialData = result.data || null;
+  }
 
   return (
     <UsersClient

@@ -1,9 +1,6 @@
-"use client";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import UpgradeButton from "@/components/features/subscription/upgrade-button";
 
 interface PricingTier {
   name: string;
@@ -25,9 +22,8 @@ export default function PricingCard({ tier }: PricingCardProps) {
     ? "relative rounded-2xl bg-white border-2 border-primary p-8 shadow-lg hover:shadow-xl transition-shadow"
     : "relative rounded-2xl bg-white border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow";
 
-  // Determine if this is a paid tier (Premium)
-  const isPaidTier = tier.name === "Premium";
-  const tierType = tier.name.toLowerCase() as "premium";
+  // For landing page, all CTAs go to signup/dashboard
+  const ctaHref = tier.name === "Premium" ? "/dashboard" : "/dashboard/signup";
 
   return (
     <div className={cardClasses}>
@@ -55,33 +51,18 @@ export default function PricingCard({ tier }: PricingCardProps) {
         </div>
       </div>
       <div className="mb-8">
-        {isPaidTier ? (
-          <UpgradeButton
-            tier={tierType}
+        <Link href={ctaHref} className="block w-full">
+          <Button
             variant={tier.ctaVariant === "outline" ? "outline" : "default"}
             className={`w-full ${
               tier.ctaVariant === "outline"
                 ? "border-primary text-primary hover:bg-primary hover:text-white"
                 : "bg-primary hover:bg-primary/90"
             }`}
-            requireAuth={true}
           >
             {tier.ctaText}
-          </UpgradeButton>
-        ) : (
-          <Link href="/dashboard/signup" className="block w-full">
-            <Button
-              variant={tier.ctaVariant === "outline" ? "outline" : "default"}
-              className={`w-full ${
-                tier.ctaVariant === "outline"
-                  ? "border-primary text-primary hover:bg-primary hover:text-white"
-                  : "bg-primary hover:bg-primary/90"
-              }`}
-            >
-              {tier.ctaText}
-            </Button>
-          </Link>
-        )}
+          </Button>
+        </Link>
       </div>
       <ul className="space-y-4 mb-8">
         {tier.features.map((feature, index) => (

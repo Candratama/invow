@@ -2,21 +2,22 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
-import { DotPattern } from "@/components/ui/dot-pattern";
-import { cn } from "@/lib/utils";
 
 export default function HeroSection() {
   return (
     <div className="min-h-screen w-full bg-white relative">
-      <DotPattern
-        width={20}
-        height={20}
-        cx={1}
-        cy={1}
-        cr={1}
-        className={cn(
-          "[mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
-        )}
+      {/* Simple CSS dot pattern - much faster than animated SVG */}
+      <div
+        className="absolute inset-0 opacity-[0.15]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, #9333ea 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+          maskImage:
+            "radial-gradient(600px circle at center, white, transparent)",
+          WebkitMaskImage:
+            "radial-gradient(600px circle at center, white, transparent)",
+        }}
       />
       <section className="relative overflow-hidden min-h-screen flex items-center -mt-16 py-12 sm:py-16 lg:py-24 xl:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -15,7 +15,7 @@ interface StoresPageProps {
 }
 
 /**
- * Get users for filter dropdown
+ * Get users for filter dropdown with caching
  */
 async function getFilterOptions() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,6 +38,26 @@ async function getFilterOptions() {
   return { users };
 }
 
+// Cache filter options for 5 minutes
+let filterOptionsCache: { users: Array<{ id: string; email: string }> } | null =
+  null;
+let filterOptionsCacheTime = 0;
+const FILTER_OPTIONS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getCachedFilterOptions() {
+  const now = Date.now();
+  if (
+    filterOptionsCache &&
+    now - filterOptionsCacheTime < FILTER_OPTIONS_CACHE_TTL
+  ) {
+    return filterOptionsCache;
+  }
+
+  filterOptionsCache = await getFilterOptions();
+  filterOptionsCacheTime = now;
+  return filterOptionsCache;
+}
+
 export default async function StoresPage({ searchParams }: StoresPageProps) {
   const params = await searchParams;
 
@@ -56,6 +76,9 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
   let initialData = null;
   let filterOptions = { users: [] as Array<{ id: string; email: string }> };
 
+  // Always get filter options (cached), but skip data fetch for client navigation
+  filterOptions = await getCachedFilterOptions();
+
   // Skip server fetch for client navigation - React Query will use cached data
   if (!isClientNavigation) {
     let isActiveFilter: boolean | undefined;
@@ -65,19 +88,15 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
       isActiveFilter = false;
     }
 
-    const [result, options] = await Promise.all([
-      getAdminStores({
-        userId: userId || undefined,
-        isActive: isActiveFilter,
-        search: search || undefined,
-        page,
-        pageSize: PAGE_SIZE,
-      }),
-      getFilterOptions(),
-    ]);
+    const result = await getAdminStores({
+      userId: userId || undefined,
+      isActive: isActiveFilter,
+      search: search || undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    });
 
     initialData = result.data || null;
-    filterOptions = options;
   }
 
   return (

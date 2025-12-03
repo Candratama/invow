@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, lazy } from "react";
 import { Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { InvoiceForm } from "@/components/features/invoice/invoice-form";
-import { InvoicePreview } from "@/components/features/invoice/invoice-preview";
 import { FABButton } from "@/components/ui/fab-button";
 import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
@@ -26,6 +24,18 @@ import {
 import type { InvoiceWithItems } from "@/lib/db/services/invoices.service";
 import type { InvoiceItem } from "@/lib/db/database.types";
 import type { StoreSettings } from "@/lib/types";
+
+// Lazy load heavy components
+const InvoiceForm = lazy(() =>
+  import("@/components/features/invoice/invoice-form").then((mod) => ({
+    default: mod.InvoiceForm,
+  }))
+);
+const InvoicePreview = lazy(() =>
+  import("@/components/features/invoice/invoice-preview").then((mod) => ({
+    default: mod.InvoicePreview,
+  }))
+);
 
 interface DashboardClientProps {
   initialData: DashboardData | null;
