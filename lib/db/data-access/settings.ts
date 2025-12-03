@@ -67,6 +67,7 @@ export interface SettingsPageData {
   contacts: StoreContact[]
   subscription: SettingsPageSubscription | null
   preferences: SettingsPagePreferences | null
+  isPremium: boolean
 }
 
 /**
@@ -131,7 +132,8 @@ async function fetchSettingsData(userId: string): Promise<SettingsPageData> {
     store,
     contacts,
     subscription: subscriptionResult.data,
-    preferences
+    preferences,
+    isPremium
   }
 }
 
@@ -166,7 +168,8 @@ export const getSettingsPageDataForUser = async (): Promise<SettingsPageData> =>
       store: null,
       contacts: [],
       subscription: null,
-      preferences: null
+      preferences: null,
+      isPremium: false
     }
   }
 

@@ -55,6 +55,7 @@ interface SettingsClientProps {
   initialContacts: StoreContact[];
   initialSubscription: SettingsPageSubscription | null;
   initialPreferences: SettingsPagePreferences | null;
+  initialIsPremium: boolean;
 }
 
 export function SettingsClient({
@@ -62,6 +63,7 @@ export function SettingsClient({
   initialContacts,
   initialSubscription,
   initialPreferences,
+  initialIsPremium,
 }: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -283,6 +285,7 @@ export function SettingsClient({
                   onDirtyChange={setIsDirty}
                   initialStore={initialStore}
                   initialContacts={initialContacts}
+                  initialIsPremium={initialIsPremium}
                 />
               </div>
             )}

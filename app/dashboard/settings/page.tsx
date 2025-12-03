@@ -5,7 +5,7 @@ import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 
 export default async function SettingsPage() {
   // Fetch all settings data on the server with unstable_cache
-  const { store, contacts, subscription, preferences } =
+  const { store, contacts, subscription, preferences, isPremium } =
     await getSettingsPageDataForUser();
 
   return (
@@ -15,6 +15,7 @@ export default async function SettingsPage() {
         initialContacts={contacts}
         initialSubscription={subscription}
         initialPreferences={preferences}
+        initialIsPremium={isPremium}
       />
     </Suspense>
   );

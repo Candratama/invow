@@ -24,7 +24,7 @@ import {
   setPrimaryContactAction,
   getStoreAndContactsAction,
 } from "@/app/actions/store";
-import { isPremiumAction } from "@/app/actions/subscription";
+
 import { useAuth } from "@/lib/auth/auth-context";
 import { FeatureGate } from "@/components/ui/feature-gate";
 
@@ -77,6 +77,7 @@ interface BusinessInfoTabProps {
     accent_color?: string | null;
   } | null;
   initialContacts?: StoreContact[];
+  initialIsPremium?: boolean;
 }
 
 export function BusinessInfoTab({
@@ -84,13 +85,14 @@ export function BusinessInfoTab({
   onDirtyChange,
   initialStore,
   initialContacts = [],
+  initialIsPremium = false,
 }: BusinessInfoTabProps) {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(!initialStore);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_store, setStore] = useState(initialStore);
-  const [isPremium, setIsPremium] = useState(false);
+  const isPremium = initialIsPremium;
 
   // State for business info
   const [logo, setLogo] = useState<string>(initialStore?.logo || "");
@@ -162,17 +164,6 @@ export function BusinessInfoTab({
       });
     }
   }, [form, initialStore]);
-
-  // Fetch premium status on mount
-  useEffect(() => {
-    const fetchPremiumStatus = async () => {
-      const result = await isPremiumAction();
-      if (result.data !== undefined) {
-        setIsPremium(result.data);
-      }
-    };
-    fetchPremiumStatus();
-  }, []);
 
   // Track form dirty state
   useEffect(() => {
