@@ -8,6 +8,7 @@ interface PricingSectionProps {
     description: string | null;
     features: string[];
     isPopular: boolean;
+    isActive: boolean;
   }>;
 }
 
@@ -35,17 +36,18 @@ export default function PricingSection({ initialPlans }: PricingSectionProps) {
                 period: "bulan",
                 description: plan.description || "",
                 features: plan.features,
-                ctaText:
-                  plan.tier === "free"
-                    ? "Cobain Dulu"
-                    : plan.tier === "pro"
-                    ? "Lagi Disiapkan"
-                    : "Beli Langsung",
-                ctaVariant:
-                  plan.tier === "pro"
-                    ? ("outline" as const)
-                    : ("default" as const),
+                ctaText: !plan.isActive
+                  ? "Coming Soon"
+                  : plan.tier === "free"
+                  ? "Cobain Dulu"
+                  : "Beli Langsung",
+                ctaVariant: !plan.isActive
+                  ? ("outline" as const)
+                  : plan.tier === "free"
+                  ? ("default" as const)
+                  : ("default" as const),
                 isPopular: plan.isPopular,
+                isActive: plan.isActive,
               }}
             />
           ))}

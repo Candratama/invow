@@ -71,7 +71,7 @@ export default function BenefitsSection() {
                   Invoice kece dalam 30 detik
                 </p>
                 <p className="text-sm text-gray-600 mt-3">
-                  Gak perlu laptop njir. Cukup hp lo doang, beres!
+                  Gak perlu laptop. Cukup hp lo doang, beres!
                 </p>
               </div>
             </div>

@@ -11,6 +11,7 @@ interface PricingTier {
   ctaText: string;
   ctaVariant?: "outline" | "default";
   isPopular?: boolean;
+  isActive?: boolean;
 }
 
 interface PricingCardProps {
@@ -18,8 +19,12 @@ interface PricingCardProps {
 }
 
 export default function PricingCard({ tier }: PricingCardProps) {
+  const isInactive = tier.isActive === false;
+
   const cardClasses = tier.isPopular
     ? "relative rounded-2xl bg-white border-2 border-primary p-8 shadow-lg hover:shadow-xl transition-shadow"
+    : isInactive
+    ? "relative rounded-2xl bg-gray-50 border border-gray-300 p-8 shadow-sm opacity-75"
     : "relative rounded-2xl bg-white border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow";
 
   // For landing page, all CTAs go to signup/dashboard
@@ -31,6 +36,13 @@ export default function PricingCard({ tier }: PricingCardProps) {
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <span className="inline-flex items-center rounded-full bg-primary px-4 py-1 text-sm font-medium text-white">
             Most Popular
+          </span>
+        </div>
+      )}
+      {isInactive && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <span className="inline-flex items-center rounded-full bg-gray-500 px-4 py-1 text-sm font-medium text-white">
+            Coming Soon
           </span>
         </div>
       )}
@@ -51,18 +63,28 @@ export default function PricingCard({ tier }: PricingCardProps) {
         </div>
       </div>
       <div className="mb-8">
-        <Link href={ctaHref} className="block w-full">
+        {isInactive ? (
           <Button
-            variant={tier.ctaVariant === "outline" ? "outline" : "default"}
-            className={`w-full ${
-              tier.ctaVariant === "outline"
-                ? "border-primary text-primary hover:bg-primary hover:text-white"
-                : "bg-primary hover:bg-primary/90"
-            }`}
+            variant="outline"
+            disabled
+            className="w-full border-gray-400 text-gray-500 cursor-not-allowed"
           >
             {tier.ctaText}
           </Button>
-        </Link>
+        ) : (
+          <Link href={ctaHref} className="block w-full">
+            <Button
+              variant={tier.ctaVariant === "outline" ? "outline" : "default"}
+              className={`w-full ${
+                tier.ctaVariant === "outline"
+                  ? "border-primary text-primary hover:bg-primary hover:text-white"
+                  : "bg-primary hover:bg-primary/90"
+              }`}
+            >
+              {tier.ctaText}
+            </Button>
+          </Link>
+        )}
       </div>
       <ul className="space-y-4 mb-8">
         {tier.features.map((feature, index) => (

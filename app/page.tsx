@@ -28,7 +28,8 @@ function PricingSkeleton() {
 }
 
 async function PricingContent() {
-  const result = await getSubscriptionPlansAction(false);
+  // Show ALL plans on homepage (including inactive ones)
+  const result = await getSubscriptionPlansAction(true);
   const plans = result.success ? result.data || [] : [];
 
   return <PricingSection initialPlans={plans} />;

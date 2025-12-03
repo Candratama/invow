@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 // Cache tags for subscription plans
 export const SUBSCRIPTION_PLANS_CACHE_TAGS = {
@@ -95,6 +96,7 @@ function transformPlan(row: Record<string, unknown>): SubscriptionPlan {
 
 /**
  * Get all subscription plans
+ * If includeInactive is true, uses service role to bypass RLS
  */
 export async function getSubscriptionPlans(
   includeInactive = false
@@ -103,7 +105,23 @@ export async function getSubscriptionPlans(
   error: Error | null;
 }> {
   try {
-    const supabase = await createClient();
+    let supabase;
+    
+    // Use service role to bypass RLS when including inactive plans
+    if (includeInactive) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!supabaseUrl || !serviceRoleKey) {
+        return { data: null, error: new Error("Missing Supabase credentials") };
+      }
+      
+      supabase = createAdminClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+    } else {
+      supabase = await createClient();
+    }
 
     let query = supabase
       .from("subscription_plans")
