@@ -165,13 +165,14 @@ export function BusinessInfoTab({
     }
   }, [form, initialStore]);
 
-  // Track form dirty state
+  // Track form dirty state (including logo changes)
+  const logoChanged = logo !== (initialStore?.logo || "");
   useEffect(() => {
     if (onDirtyChange) {
-      const isDirty = form.formState.isDirty;
+      const isDirty = form.formState.isDirty || logoChanged;
       onDirtyChange(isDirty);
     }
-  }, [form.formState.isDirty, onDirtyChange]);
+  }, [form.formState.isDirty, logoChanged, onDirtyChange]);
 
   // Logo upload handler
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -751,7 +752,9 @@ export function BusinessInfoTab({
                         type="color"
                         value={form.watch("brandColor")}
                         onChange={(e) =>
-                          form.setValue("brandColor", e.target.value)
+                          form.setValue("brandColor", e.target.value, {
+                            shouldDirty: true,
+                          })
                         }
                         className="w-16 sm:w-20 h-11 sm:h-12 p-1 cursor-pointer"
                       />

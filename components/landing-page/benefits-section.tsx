@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle, Smartphone } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ArrowRight01Icon,
+  CheckmarkCircle01Icon,
+  SmartPhone01Icon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
 const benefits = [
@@ -20,13 +25,18 @@ export default function BenefitsSection() {
               Kenapa UMKM Indonesia suka Invow?
             </h2>
             <p className="mt-6 text-lg text-gray-600">
-              Udah cape main kertas-kertasan mulu? Yuk fokus jualan aja!
-              Urusan invoicing, serahin ke kita.
+              Udah cape main kertas-kertasan mulu? Yuk fokus jualan aja! Urusan
+              invoicing, serahin ke kita.
             </p>
             <div className="mt-10 space-y-5">
               {benefits.map((benefit) => (
                 <div key={benefit} className="flex items-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={24}
+                    className="text-primary flex-shrink-0 mt-0.5"
+                    strokeWidth={1.5}
+                  />
                   <span className="text-gray-700">{benefit}</span>
                 </div>
               ))}
@@ -38,7 +48,12 @@ export default function BenefitsSection() {
                   className="bg-primary hover:bg-primary/90 shadow-sm"
                 >
                   Cobain Sekarang!
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="ml-2"
+                    size={20}
+                    strokeWidth={1.5}
+                  />
                 </Button>
               </Link>
             </div>
@@ -46,7 +61,12 @@ export default function BenefitsSection() {
           <div className="relative">
             <div className="aspect-[4/3] rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
               <div className="text-center p-12">
-                <Smartphone className="h-24 w-24 text-primary mx-auto mb-6" />
+                <HugeiconsIcon
+                  icon={SmartPhone01Icon}
+                  size={96}
+                  className="text-primary mx-auto mb-6"
+                  strokeWidth={1.5}
+                />
                 <p className="text-lg font-semibold text-gray-900">
                   Invoice kece dalam 30 detik
                 </p>

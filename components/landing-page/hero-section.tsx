@@ -1,24 +1,22 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
+import { DotPattern } from "@/components/ui/dot-pattern";
+import { cn } from "@/lib/utils";
 
 export default function HeroSection() {
   return (
     <div className="min-h-screen w-full bg-white relative">
-      {/*  Diagonal Cross Grid Top Background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%),
-            linear-gradient(-45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%)
-          `,
-          backgroundSize: "40px 40px",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)",
-          maskImage:
-            "radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)",
-        }}
+      <DotPattern
+        width={20}
+        height={20}
+        cx={1}
+        cy={1}
+        cr={1}
+        className={cn(
+          "[mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+        )}
       />
       <section className="relative overflow-hidden min-h-screen flex items-center -mt-16 py-12 sm:py-16 lg:py-24 xl:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,8 +26,9 @@ export default function HeroSection() {
               <span className="block text-primary mt-2">Gak Perlu Ribet!</span>
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600 max-w-2xl mx-auto px-4">
-              Udah gak zaman pakai kwitangan tangan yang acak-acakan atau template Word yang gitu-gitu aja?
-              Dengan Invow, invoice keren bisa lo buat cuma 30 detik doang di hp. Mau coba dulu? Gak perlu daftar kok!
+              Udah gak zaman pakai invoice manual atau template yang gitu-gitu
+              aja? Dengan Invow, invoice keren bisa lo buat cuma 30 detik doang
+              di hp. Mau coba dulu? Gak perlu daftar kok!
             </p>
             <div className="mt-8 sm:mt-12 flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-6 px-4">
               <Link href="/dashboard" className="w-full sm:w-auto">
@@ -38,7 +37,12 @@ export default function HeroSection() {
                   className="bg-primary hover:bg-primary/90 text-base sm:text-lg w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 shadow-sm"
                 >
                   Bikin Invoice Pertama Yuk!
-                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="ml-2"
+                    size={20}
+                    strokeWidth={1.5}
+                  />
                 </Button>
               </Link>
               <Link

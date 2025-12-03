@@ -1,51 +1,57 @@
 import {
-  Smartphone,
-  Zap,
-  FileText,
-  Shield,
-  CheckCircle,
-  CreditCard,
-} from "lucide-react";
+  SmartPhone01Icon,
+  ZapIcon,
+  File01Icon,
+  Shield01Icon,
+  CheckmarkCircle01Icon,
+  CreditCardIcon,
+} from "@hugeicons/core-free-icons";
 import FeatureCard from "./feature-card";
 
-const features = [
-  {
-    icon: Smartphone,
-    title: "Buat invoice dimanaja asik",
-    description:
-      "Gak perlu ribet bawa laptop. Mau di pasar, di toko, atau di mana aja, asal ada hp lo, beres!",
-  },
-  {
-    icon: Zap,
-    title: "Cuma 30 detik doang!",
-    description:
-      "Ketik barang, masukin harga, done! Gak ada form yang njelimet atau setting sana-sini. Yuk fokus jualan aja!",
-  },
-  {
-    icon: FileText,
-    title: "Auto naik level!",
-    description:
-      "Invoice lo bakal keliatan impress. Customer bakal mikir lo punya tim IT atau designer. Gesrek!",
-  },
-  {
-    icon: Shield,
-    title: "Invoice gak bakal ilang",
-    description:
-      "Tersimpan auto di cloud. Mau cek dari hp, tablet, atau laptop, bisa semua. Gak bakal lost gitu deh.",
-  },
-  {
-    icon: CheckCircle,
-    title: "Mudah banget, gak perlu kursus",
-    description:
-      "Serius, kalau lo bisa chat WA, berarti lo bisa pake Invow. Gak perlu jadi expert dulu.",
-  },
-  {
-    icon: CreditCard,
-    title: "Rupiah? Easy!",
-    description:
-      "Format otomatis pake IDR. Titik duanya Lengkap. Lo tinggal ketik angka doang, sisanya serahin ke kita.",
-  },
-];
+type IconType = readonly (readonly [
+  string,
+  { readonly [key: string]: string | number }
+])[];
+
+const features: Array<{ icon: IconType; title: string; description: string }> =
+  [
+    {
+      icon: SmartPhone01Icon,
+      title: "Buat invoice dimanaja asik",
+      description:
+        "Gak perlu ribet bawa laptop. Mau di pasar, di toko, atau di mana aja, asal ada hp lo, beres!",
+    },
+    {
+      icon: ZapIcon,
+      title: "Cuma 30 detik doang!",
+      description:
+        "Ketik barang, masukin harga, done! Gak ada form yang njelimet atau setting sana-sini. Yuk fokus jualan aja!",
+    },
+    {
+      icon: File01Icon,
+      title: "Auto naik level!",
+      description:
+        "Invoice lo bakal keliatan impress. Customer bakal mikir lo punya tim IT atau designer. Gesrek!",
+    },
+    {
+      icon: Shield01Icon,
+      title: "Invoice gak bakal ilang",
+      description:
+        "Tersimpan auto di cloud. Mau cek dari hp, tablet, atau laptop, bisa semua. Gak bakal lost gitu deh.",
+    },
+    {
+      icon: CheckmarkCircle01Icon,
+      title: "Mudah banget, gak perlu kursus",
+      description:
+        "Serius, kalau lo bisa chat WA, berarti lo bisa pake Invow. Gak perlu jadi expert dulu.",
+    },
+    {
+      icon: CreditCardIcon,
+      title: "Rupiah? Easy!",
+      description:
+        "Format otomatis pake IDR. Titik duanya Lengkap. Lo tinggal ketik angka doang, sisanya serahin ke kita.",
+    },
+  ];
 
 export default function FeaturesSection() {
   return (

@@ -1,55 +1,23 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import PricingCard from "./pricing-card";
-
-const pricingTiers = [
-  {
-    name: "Gratis",
-    price: "Rp 0",
-    period: "bulan",
-    description: "Coba dulu, gratis!",
-    features: ["30 invoice sebulan", "Kustomisasi basic", "Cek pendapatan"],
-    ctaText: "Cobain Dulu",
-    ctaVariant: "default" as const,
-    isPopular: false,
-  },
-  {
-    name: "Premium",
-    price: "Rp 15K",
-    period: "bulan",
-    description: "Harga terbaik, cuma Rp75/invoice",
-    features: [
-      "200 invoice sebulan",
-      "Kustomisasi lanjutan",
-      "Tanda tangan digital",
-      "Cek pendapatan",
-      "Manajemen customer",
-    ],
-    ctaText: "Beli Langsung",
-    ctaVariant: "default" as const,
-    isPopular: true,
-  },
-  {
-    name: "Pro",
-    price: "Rp 50K",
-    period: "bulan",
-    description: "Untuk yang udah kebesaran",
-    features: [
-      "Invoice unlimited",
-      "Analytics advanced",
-      "Bulk actions",
-      "CS prioritas",
-      "Template custom",
-    ],
-    ctaText: "Lagi Disiapkan",
-    ctaVariant: "outline" as const,
-    isPopular: false,
-  },
-];
+import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PricingSection() {
+  const { data: plans, isLoading } = useQuery({
+    queryKey: ["public", "pricing-plans"],
+    queryFn: async () => {
+      const result = await getSubscriptionPlansAction(false); // Only active plans
+      if (!result.success) throw new Error(result.error);
+      return result.data || [];
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   return (
-    <section className="py-24 bg-white ">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -61,11 +29,39 @@ export default function PricingSection() {
           </p>
         </div>
 
-        <div className="flex justify-center gap-8">
-          {pricingTiers.map((tier) => (
-            <PricingCard key={tier.name} tier={tier} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-sm md:max-w-none mx-auto">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-[400px] w-full rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-sm md:max-w-none mx-auto">
+            {(plans || []).map((plan) => (
+              <PricingCard
+                key={plan.tier}
+                tier={{
+                  name: plan.name,
+                  price: plan.priceFormatted,
+                  period: "bulan",
+                  description: plan.description || "",
+                  features: plan.features,
+                  ctaText:
+                    plan.tier === "free"
+                      ? "Cobain Dulu"
+                      : plan.tier === "pro"
+                      ? "Lagi Disiapkan"
+                      : "Beli Langsung",
+                  ctaVariant:
+                    plan.tier === "pro"
+                      ? ("outline" as const)
+                      : ("default" as const),
+                  isPopular: plan.isPopular,
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="mt-12 text-center">
           <p className="text-sm text-gray-600">

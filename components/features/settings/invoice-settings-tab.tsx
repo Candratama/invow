@@ -216,7 +216,9 @@ export function InvoiceSettingsTab({
                     // Trigger upgrade modal for locked templates (Requirements: 3.3)
                     setIsUpgradeModalOpen(true);
                   } else {
-                    form.setValue("selectedTemplate", template.id);
+                    form.setValue("selectedTemplate", template.id, {
+                      shouldDirty: true,
+                    });
                   }
                 };
 
@@ -333,7 +335,7 @@ export function InvoiceSettingsTab({
                   id="taxEnabled"
                   checked={taxEnabled}
                   onCheckedChange={(checked) =>
-                    form.setValue("taxEnabled", checked)
+                    form.setValue("taxEnabled", checked, { shouldDirty: true })
                   }
                   className="flex-shrink-0"
                 />
@@ -398,7 +400,9 @@ export function InvoiceSettingsTab({
                   option &&
                   (option.tierRequired === "free" || tier === "premium")
                 ) {
-                  form.setValue("exportQuality", quality);
+                  form.setValue("exportQuality", quality, {
+                    shouldDirty: true,
+                  });
                 }
               }}
               className="space-y-2"

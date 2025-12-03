@@ -5,7 +5,10 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 const windsong = WindSong({
   weight: ["400", "500"],
   subsets: ["latin"],
@@ -65,8 +68,9 @@ export default function RootLayout({
         <link rel="manifest" href="/icons/site.webmanifest" />
       </head>
       <body
-        className={`${inter.className} ${windsong.variable}`}
+        className={`${inter.variable} ${windsong.variable}`}
         suppressHydrationWarning
+        style={{ fontFamily: "var(--font-inter)" }}
       >
         <QueryProvider>
           <AuthProvider>

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
 export default function CTASection() {
@@ -10,7 +11,8 @@ export default function CTASection() {
           Udah masuk akal kan? Yuk cobain sekarang!
         </h2>
         <p className="mt-6 text-xl text-white/90">
-          Cuma butuh 30 detik doang buat invoice pertama. Gak perlu daftar juga bisa coba.
+          Cuma butuh 30 detik doang buat invoice pertama. Gak perlu daftar juga
+          bisa coba.
         </p>
         <div className="mt-12">
           <Link href="/dashboard">
@@ -20,7 +22,12 @@ export default function CTASection() {
               className="bg-white text-primary hover:bg-gray-50 text-lg px-8 py-6 shadow-sm"
             >
               Cobain Gratis Dulu!
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                className="ml-2"
+                size={20}
+                strokeWidth={1.5}
+              />
             </Button>
           </Link>
           <p className="mt-4 text-sm text-white/80">

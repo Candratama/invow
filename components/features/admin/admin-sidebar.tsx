@@ -10,6 +10,7 @@ import {
   FileText,
   Store,
   BarChart3,
+  Tags,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,6 +60,11 @@ const navItems = [
     title: "Analytics",
     href: "/admin/analytics",
     icon: BarChart3,
+  },
+  {
+    title: "Pricing",
+    href: "/admin/pricing",
+    icon: Tags,
   },
 ];
 

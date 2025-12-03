@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/ui/logo";
@@ -32,7 +33,12 @@ export default function Navigation() {
           <Link href="/dashboard">
             <Button className="bg-primary hover:bg-primary/90 text-sm lg:text-base font-medium">
               Yuk Mulai!
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                className="ml-2"
+                size={16}
+                strokeWidth={1.5}
+              />
             </Button>
           </Link>
         </div>

@@ -102,6 +102,42 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     };
   }, []);
 
+  // Warn user before leaving page with unsaved changes (browser refresh/close)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
+
+  // Handle browser back button with unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+
+    // Push a dummy state to detect back button
+    window.history.pushState({ settingsPage: true }, "");
+
+    const handlePopState = () => {
+      if (isDirty) {
+        // Show our custom dialog instead of navigating
+        setShowWarning(true);
+        // Push state again to prevent navigation
+        window.history.pushState({ settingsPage: true }, "");
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isDirty]);
+
   // Prefetch next tab data on hover
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -203,7 +239,12 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
   }, [activeTab, pendingTab, router]);
 
   const handleClose = () => {
-    router.push("/dashboard");
+    if (isDirty) {
+      // Show warning if there are unsaved changes
+      setShowWarning(true);
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   if (loading) {
