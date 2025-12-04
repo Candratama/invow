@@ -117,7 +117,13 @@ const TEMPLATES: Template[] = [
   },
 ];
 
-export function TemplatesClient() {
+interface TemplatesClientProps {
+  initialData: null;
+}
+
+export function TemplatesClient({
+  initialData: _initialData,
+}: TemplatesClientProps) {
   const [templates, setTemplates] = useState<Template[]>(TEMPLATES);
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);

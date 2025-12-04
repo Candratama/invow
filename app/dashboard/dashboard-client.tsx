@@ -27,6 +27,7 @@ function EmptyStateUI() {
 import { FABButton } from "@/components/ui/fab-button";
 import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
+import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Pagination } from "@/components/ui/pagination";
 import { InvoiceCard } from "@/components/features/dashboard/invoice-card";
@@ -166,11 +167,12 @@ function PreviewView({
 }
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
+  // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [currentPage, setCurrentPage] = useState(1);
   const [isPending, startTransition] = useTransition();
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userEmail = user?.email || "";
 
   const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
@@ -185,7 +187,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     initialData || undefined
   );
 
-  // Extract data from query results
+  // Extract data from query results (safe even if undefined)
   const invoices = (invoiceData?.invoices || []) as InvoiceWithItems[];
   const totalPages = invoiceData?.totalPages || 1;
   const hasMoreHistory = invoiceData?.hasMoreHistory || false;
@@ -240,10 +242,13 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     setView("form");
   }, [initializeNewInvoice]);
 
-  const handleOpenCompleted = async (invoiceId: string) => {
-    await loadCompleted(invoiceId);
-    setView("form");
-  };
+  const handleOpenCompleted = useCallback(
+    async (invoiceId: string) => {
+      await loadCompleted(invoiceId);
+      setView("form");
+    },
+    [loadCompleted]
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -263,6 +268,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [view, defaultStore, handleNewInvoice]);
+
+  // Show skeleton while auth is loading or initial data fetch - AFTER all hooks
+  if (authLoading || (isLoadingRevenue && !revenueData)) {
+    return <DashboardSkeleton />;
+  }
 
   const handleDeleteCompleted = async (
     e: React.MouseEvent,

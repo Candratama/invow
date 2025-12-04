@@ -16,6 +16,7 @@ import {
   toggleStoreActive,
   resetStoreInvoiceCounter,
 } from "@/app/actions/admin-stores";
+import { useInvalidateAdmin } from "@/lib/hooks/use-admin-data";
 import { toast } from "sonner";
 import { Power, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 
@@ -37,6 +38,7 @@ export function StoreActions({
   onActionComplete,
 }: StoreActionsProps) {
   const router = useRouter();
+  const invalidate = useInvalidateAdmin();
   const [isToggleOpen, setIsToggleOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +54,10 @@ export function StoreActions({
           } successfully`
         );
         setIsToggleOpen(false);
+
+        // Invalidate React Query cache
+        invalidate.invalidateStores();
+
         onActionComplete?.();
         router.refresh();
       } else {
@@ -71,6 +77,10 @@ export function StoreActions({
       if (result.success) {
         toast.success(`Invoice counter for ${storeName} reset successfully`);
         setIsResetOpen(false);
+
+        // Invalidate React Query cache
+        invalidate.invalidateStores();
+
         onActionComplete?.();
         router.refresh();
       } else {

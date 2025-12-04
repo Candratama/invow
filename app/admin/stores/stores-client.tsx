@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { StoreFilters } from "@/components/features/admin/stores/store-filters";
 import { StoresTableWrapper } from "@/components/features/admin/stores/stores-table-wrapper";
 import { useAdminStores } from "@/lib/hooks/use-admin-data";
@@ -13,12 +15,6 @@ interface StoresClientProps {
     stores: unknown[];
     total: number;
   } | null;
-  filters: {
-    userId: string;
-    isActive: string;
-    search: string;
-    page: number;
-  };
   users: Array<{ id: string; email: string }>;
 }
 
@@ -47,34 +43,66 @@ function StoresPageSkeleton() {
 
 export function StoresClient({
   initialData,
-  filters,
-  users,
+  users: initialUsers,
 }: StoresClientProps) {
+  const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+  const [users, setUsers] = useState(initialUsers);
+
+  const userId = searchParams.get("userId") || "";
+  const isActiveParam = searchParams.get("isActive") || "all";
+  const search = searchParams.get("search") || "";
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
+  // Fetch users list for filter if not provided
+  useEffect(() => {
+    if (users.length === 0) {
+      // Fetch users via server action
+      import("@/app/actions/admin").then(({ getUsers }) => {
+        getUsers({ page: 1, pageSize: 1000 }).then((result) => {
+          if (result.success && result.data) {
+            const usersList = result.data.users.map(
+              (u: { id: string; email: string }) => ({
+                id: u.id,
+                email: u.email,
+              })
+            );
+            setUsers(usersList);
+          }
+        });
+      });
+    }
+  }, [users.length]);
+
   // Convert isActive string to boolean or "all"
   let isActiveFilter: boolean | "all" = "all";
-  if (filters.isActive === "true") {
+  if (isActiveParam === "true") {
     isActiveFilter = true;
-  } else if (filters.isActive === "false") {
+  } else if (isActiveParam === "false") {
     isActiveFilter = false;
   }
 
   const { data, isLoading, error } = useAdminStores(
     {
-      userId: filters.userId,
+      userId,
       isActive: isActiveFilter,
-      search: filters.search,
-      page: filters.page,
+      search,
+      page,
       pageSize: PAGE_SIZE,
     },
     initialData || undefined
   );
 
-  const stores = (data?.stores || []) as StoreListItem[];
-  const total = data?.total || 0;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  if (isLoading && !initialData) {
+  if (!mounted || (isLoading && !data)) {
     return <StoresPageSkeleton />;
   }
+
+  const stores = (data?.stores || []) as StoreListItem[];
+  const total = data?.total || 0;
 
   return (
     <div className="space-y-6">
@@ -87,9 +115,9 @@ export function StoresClient({
 
       <StoreFilters
         initialFilters={{
-          userId: filters.userId,
-          isActive: (filters.isActive || "all") as "all" | "true" | "false",
-          search: filters.search,
+          userId,
+          isActive: isActiveParam as "all" | "true" | "false",
+          search,
         }}
         users={users}
       />
@@ -105,7 +133,7 @@ export function StoresClient({
       <StoresTableWrapper
         stores={stores}
         total={total}
-        currentPage={filters.page}
+        currentPage={page}
         pageSize={PAGE_SIZE}
       />
 

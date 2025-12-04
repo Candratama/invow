@@ -5,12 +5,12 @@ export default function UsersLoading() {
     <div className="space-y-6">
       <div>
         <Skeleton className="h-8 w-32" />
-        <Skeleton className="mt-2 h-4 w-56" />
+        <Skeleton className="mt-2 h-4 w-48" />
       </div>
       <div className="flex gap-4">
         <Skeleton className="h-10 w-[140px]" />
         <Skeleton className="h-10 w-[140px]" />
-        <Skeleton className="h-10 w-[280px]" />
+        <Skeleton className="h-10 w-[200px]" />
       </div>
       <div className="rounded-lg border bg-card">
         <div className="p-4 space-y-4">
