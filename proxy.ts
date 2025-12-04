@@ -1,29 +1,85 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { createClient } from "@/lib/supabase/server";
 
 /**
- * Lightweight proxy - only refreshes session cookies
+ * Proxy with auth protection
  * 
  * Purpose:
- * - Refresh Supabase session cookies to keep auth state valid
- * - No auth checks here to minimize Supabase calls
+ * - Refresh Supabase session cookies
+ * - Protect authenticated routes (/dashboard, /admin)
  * 
- * Auth is handled by:
- * 1. Server actions - validate auth before returning data
- * 2. Client components - redirect unauthenticated users for UX
- * 
- * This approach:
- * - Reduces Supabase API calls (no getUser() check on every request)
- * - Enables instant page navigation (static pages)
- * - Maintains security (server actions validate auth)
- * 
- * Trade-off:
- * - User can see page shell before client redirect
- * - But no data is exposed (server actions check auth)
+ * Auth Strategy:
+ * 1. Public routes: No auth check
+ * 2. Dashboard routes: Require authentication
+ * 3. Admin routes: Require authentication + admin role
  */
 export async function proxy(request: NextRequest) {
-  // Only refresh session cookies - no auth checks
+  const { pathname } = request.nextUrl;
+
+  // Refresh session cookies
   const response = await updateSession(request);
+
+  // Public routes - no auth needed
+  const publicRoutes = [
+    "/",
+    "/dashboard/login",
+    "/dashboard/signup",
+    "/dashboard/forgot-password",
+    "/auth/callback",
+    "/templates",
+  ];
+
+  const isPublicRoute =
+    publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/")) ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/");
+
+  if (isPublicRoute) {
+    return response;
+  }
+
+  // Protected routes - check auth
+  const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  if (isDashboardRoute || isAdminRoute) {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      // Not authenticated - redirect to login
+      if (error || !user) {
+        const redirectUrl = new URL("/dashboard/login", request.url);
+        redirectUrl.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      // Admin route - check admin role
+      if (isAdminRoute) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile?.is_admin) {
+          // Not admin - redirect to dashboard
+          return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Auth check error:", error);
+      // On error, redirect to login for safety
+      return NextResponse.redirect(new URL("/dashboard/login", request.url));
+    }
+  }
+
   return response;
 }
 
