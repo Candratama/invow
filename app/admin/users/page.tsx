@@ -1,6 +1,7 @@
-import { headers } from "next/headers";
+import { Suspense } from "react";
 import { getUsers } from "@/app/actions/admin";
 import { UsersClient } from "./users-client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGE_SIZE = 10;
 
@@ -13,7 +14,30 @@ interface UsersPageProps {
   }>;
 }
 
-export default async function UsersPage({ searchParams }: UsersPageProps) {
+function UsersPageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="mt-2 h-4 w-48" />
+      </div>
+      <div className="flex gap-4">
+        <Skeleton className="h-10 w-[140px]" />
+        <Skeleton className="h-10 w-[140px]" />
+        <Skeleton className="h-10 w-[200px]" />
+      </div>
+      <div className="rounded-lg border bg-card">
+        <div className="p-4 space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function UsersContent({ searchParams }: UsersPageProps) {
   const params = await searchParams;
 
   const tier = params.tier as "all" | "free" | "premium" | undefined;
@@ -21,27 +45,16 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const search = params.search || "";
   const page = parseInt(params.page || "1", 10);
 
-  // Check if this is a client-side navigation
-  const headersList = await headers();
-  const referer = headersList.get("referer") || "";
-  const host = headersList.get("host") || "";
-  const isClientNavigation =
-    referer.includes(host) && referer.includes("/admin");
+  // Always fetch on server - React Query will cache for subsequent navigations
+  const result = await getUsers({
+    tier: tier === "all" ? undefined : tier,
+    status: status === "all" ? undefined : status,
+    search: search || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
 
-  let initialData = null;
-
-  // Skip server fetch for client navigation - React Query will use cached data
-  if (!isClientNavigation) {
-    const result = await getUsers({
-      tier: tier === "all" ? undefined : tier,
-      status: status === "all" ? undefined : status,
-      search: search || undefined,
-      page,
-      pageSize: PAGE_SIZE,
-    });
-
-    initialData = result.data || null;
-  }
+  const initialData = result.data || null;
 
   return (
     <UsersClient
@@ -53,5 +66,13 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         page,
       }}
     />
+  );
+}
+
+export default function UsersPage({ searchParams }: UsersPageProps) {
+  return (
+    <Suspense fallback={<UsersPageSkeleton />}>
+      <UsersContent searchParams={searchParams} />
+    </Suspense>
   );
 }

@@ -1,27 +1,26 @@
 import { Suspense } from "react";
-import { headers } from "next/headers";
 import { getSettingsDataAction } from "@/app/actions/settings";
 import { SettingsClient } from "./settings-client";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 
-export default async function SettingsPage() {
-  // Check if this is a client-side navigation
-  const headersList = await headers();
-  const referer = headersList.get("referer") || "";
-  const host = headersList.get("host") || "";
-  const isClientNavigation =
-    referer.includes(host) && referer.includes("/dashboard");
-
-  // Skip server fetch for client navigation - React Query will use cached data
+async function SettingsContent() {
+  // Fetch on server - handle prerender gracefully
   let initialData = null;
-  if (!isClientNavigation) {
+  try {
     const result = await getSettingsDataAction();
     initialData = result.success && result.data ? result.data : null;
+  } catch {
+    // During prerender, cookies() will throw - this is expected
+    initialData = null;
   }
 
+  return <SettingsClient initialData={initialData} />;
+}
+
+export default function SettingsPage() {
   return (
     <Suspense fallback={<SettingsSkeleton />}>
-      <SettingsClient initialData={initialData} />
+      <SettingsContent />
     </Suspense>
   );
 }

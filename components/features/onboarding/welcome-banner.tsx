@@ -19,29 +19,18 @@ export function WelcomeBanner({
 
   // Check localStorage and business info after mount
   useEffect(() => {
-    // If user already has business info, they're an existing user - never show banner
+    // If user already has business info, never show banner
     if (hasBusinessInfo) {
       return;
     }
 
     const dismissed = localStorage.getItem("welcomeBannerDismissed") === "true";
-    const hasSeenBanner = localStorage.getItem("welcomeBannerSeen") === "true";
-    const isExistingUser = localStorage.getItem("isExistingUser") === "true";
 
-    // Show banner only if:
-    // 1. User is NOT an existing user (first time user) AND
-    // 2. User hasn't dismissed it AND
-    // 3. User hasn't seen it before AND
-    // 4. User doesn't have business info
-    if (!isExistingUser && !dismissed && !hasSeenBanner && !hasBusinessInfo) {
+    // Show banner if:
+    // 1. User hasn't dismissed it AND
+    // 2. User doesn't have business info
+    if (!dismissed && !hasBusinessInfo) {
       setShouldShow(true);
-      // Mark as seen so it won't show again on reload
-      localStorage.setItem("welcomeBannerSeen", "true");
-    }
-
-    // Mark user as existing for future sessions
-    if (!isExistingUser) {
-      localStorage.setItem("isExistingUser", "true");
     }
   }, [hasBusinessInfo]);
 

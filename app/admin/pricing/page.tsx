@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { headers } from "next/headers";
 import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
 import { PricingClient } from "./pricing-client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,17 +20,9 @@ function PricingPageSkeleton() {
 }
 
 async function PricingContent() {
-  const headersList = await headers();
-  const referer = headersList.get("referer") || "";
-  const host = headersList.get("host") || "";
-  const isClientNavigation =
-    referer.includes(host) && referer.includes("/admin");
-
-  let initialData = null;
-  if (!isClientNavigation) {
-    const result = await getSubscriptionPlansAction(true);
-    initialData = result.success && result.data ? result.data : null;
-  }
+  // Always fetch on server - React Query will cache for subsequent navigations
+  const result = await getSubscriptionPlansAction(true);
+  const initialData = result.success && result.data ? result.data : null;
 
   return <PricingClient initialData={initialData} />;
 }

@@ -1,7 +1,8 @@
-import { headers } from "next/headers";
+import { Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { getAdminInvoices } from "@/app/actions/admin-invoices";
 import { InvoicesClient } from "./invoices-client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGE_SIZE = 10;
 
@@ -17,6 +18,30 @@ interface InvoicesPageProps {
     search?: string;
     page?: string;
   }>;
+}
+
+function InvoicesPageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="mt-2 h-4 w-48" />
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <Skeleton className="h-10 w-[140px]" />
+        <Skeleton className="h-10 w-[140px]" />
+        <Skeleton className="h-10 w-[140px]" />
+        <Skeleton className="h-10 w-[200px]" />
+      </div>
+      <div className="rounded-lg border bg-card">
+        <div className="p-4 space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -74,9 +99,7 @@ async function getCachedFilterOptions() {
   return filterOptionsCache;
 }
 
-export default async function InvoicesPage({
-  searchParams,
-}: InvoicesPageProps) {
+async function InvoicesContent({ searchParams }: InvoicesPageProps) {
   const params = await searchParams;
 
   const userId = params.userId || "";
@@ -94,25 +117,10 @@ export default async function InvoicesPage({
   const search = params.search || "";
   const page = parseInt(params.page || "1", 10);
 
-  // Check if this is a client-side navigation
-  const headersList = await headers();
-  const referer = headersList.get("referer") || "";
-  const host = headersList.get("host") || "";
-  const isClientNavigation =
-    referer.includes(host) && referer.includes("/admin");
-
-  let initialData = null;
-  let filterOptions = {
-    users: [] as Array<{ id: string; email: string }>,
-    stores: [] as Array<{ id: string; name: string }>,
-  };
-
-  // Always get filter options (cached), but skip data fetch for client navigation
-  filterOptions = await getCachedFilterOptions();
-
-  // Skip server fetch for client navigation - React Query will use cached data
-  if (!isClientNavigation) {
-    const result = await getAdminInvoices({
+  // Always fetch on server - React Query will cache for subsequent navigations
+  const [filterOptions, result] = await Promise.all([
+    getCachedFilterOptions(),
+    getAdminInvoices({
       userId: userId || undefined,
       storeId: storeId || undefined,
       status: status === "all" ? undefined : status,
@@ -123,10 +131,10 @@ export default async function InvoicesPage({
       search: search || undefined,
       page,
       pageSize: PAGE_SIZE,
-    });
+    }),
+  ]);
 
-    initialData = result.data || null;
-  }
+  const initialData = result.data || null;
 
   return (
     <InvoicesClient
@@ -145,5 +153,13 @@ export default async function InvoicesPage({
       users={filterOptions.users}
       stores={filterOptions.stores}
     />
+  );
+}
+
+export default function InvoicesPage({ searchParams }: InvoicesPageProps) {
+  return (
+    <Suspense fallback={<InvoicesPageSkeleton />}>
+      <InvoicesContent searchParams={searchParams} />
+    </Suspense>
   );
 }

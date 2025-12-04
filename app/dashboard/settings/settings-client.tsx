@@ -58,7 +58,8 @@ interface SettingsClientProps {
 
 export function SettingsClient({ initialData }: SettingsClientProps) {
   // Use React Query with initial data from server
-  const { data } = useSettingsData(initialData || undefined);
+  // Pass initialData only if it exists to avoid overwriting cache
+  const { data, isLoading } = useSettingsData(initialData ?? undefined);
 
   // Extract data from query result
   const initialStore = (data?.store as SettingsPageStore) || null;
