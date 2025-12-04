@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -11,6 +12,9 @@ import { createClient } from "@/lib/supabase/server";
  * Lookup payment record by Mayar invoice ID
  */
 export async function GET(request: Request) {
+  // Ensure this route is dynamically rendered
+  await connection();
+  
   try {
     // 1. Authentication check
     const supabase = await createClient();

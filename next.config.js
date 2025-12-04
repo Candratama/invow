@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    config.resolve.alias.canvas = false;
-    return config;
-  },
+  // Enable cache components for 'use cache' directive (moved from experimental in Next.js 16)
+  cacheComponents: true,
+
+  // Turbopack configuration (empty config to acknowledge Turbopack is default in Next.js 16)
+  turbopack: {},
 
   // Image optimization
   images: {
@@ -11,7 +12,7 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
 
-  // Optimize package imports
+  // Experimental features for Next.js 16
   experimental: {
     optimizePackageImports: ['lucide-react', '@hugeicons/react'],
   },
@@ -79,4 +80,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

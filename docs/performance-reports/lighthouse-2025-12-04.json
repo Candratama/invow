@@ -1,0 +1,22 @@
+{
+  "url": "http://localhost:3000",
+  "timestamp": "2025-12-04T08:33:45.643Z",
+  "metrics": {
+    "performanceScore": 41,
+    "lcp": 26492.631999999998,
+    "fid": 5636,
+    "cls": 0,
+    "fcp": 2136.632,
+    "ttfb": 214,
+    "tbt": 6952,
+    "si": 4156.841997997571
+  },
+  "passed": false,
+  "details": {
+    "performancePass": false,
+    "lcpPass": false,
+    "fidPass": false,
+    "clsPass": true,
+    "ttfbPass": false
+  }
+}

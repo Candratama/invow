@@ -9,6 +9,8 @@ import {
   type SubscriptionPlan,
   type SubscriptionPlanInput,
 } from '@/lib/db/data-access/subscription-plans'
+import { invalidatePricingCache } from '@/lib/cache/invalidation'
+import { CacheTags } from '@/lib/cache/tags'
 
 async function verifyAdminAccess(): Promise<string | null> {
   const supabase = await createClient()
@@ -75,7 +77,10 @@ export async function updateSubscriptionPlanAction(
       return { success: false, error: error.message }
     }
 
-    revalidateTag(SUBSCRIPTION_PLANS_CACHE_TAGS.plans)
+    // Invalidate both the old cache tag and the new pricing cache
+    revalidateTag(SUBSCRIPTION_PLANS_CACHE_TAGS.plans, 'max')
+    await invalidatePricingCache()
+    
     return { success: true }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }

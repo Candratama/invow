@@ -1,22 +1,35 @@
-import { Logo } from "@/components/ui/logo";
+"use cache";
+
+import { DashboardHeader } from "@/components/dashboard/header";
 import { UserMenu } from "@/components/features/dashboard/user-menu";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+/**
+ * Dashboard layout implementing the donut pattern.
+ *
+ * The "donut" (cached shell):
+ * - DashboardHeader: Static header with logo (cached)
+ * - Background and container styling (cached)
+ *
+ * The "hole" (dynamic content):
+ * - UserMenu: Client component for user-specific interactions
+ * - children: Dynamic page content
+ *
+ * This pattern allows the static shell to be pre-rendered and cached
+ * while dynamic content streams in, improving perceived performance.
+ */
+export default async function DashboardLayout({
+  children,
+}: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Shared Dashboard Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Logo />
-          <UserMenu />
-        </div>
-      </header>
+      {/* Cached Dashboard Header with dynamic UserMenu slot */}
+      <DashboardHeader userMenuSlot={<UserMenu />} />
 
-      {/* Page Content */}
+      {/* Dynamic Page Content - the "hole" in the donut */}
       {children}
     </div>
   );

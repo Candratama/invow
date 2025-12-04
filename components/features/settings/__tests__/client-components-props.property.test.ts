@@ -173,7 +173,7 @@ describe('Property 3: Client Components receive data via props', () => {
     );
   });
 
-  it('should verify SettingsClient interface accepts all initial data props', () => {
+  it('should verify SettingsClient interface accepts initialData prop with all settings data', () => {
     fc.assert(
       fc.property(
         fc.constantFrom('app/dashboard/settings/settings-client.tsx'),
@@ -181,16 +181,22 @@ describe('Property 3: Client Components receive data via props', () => {
           const fullPath = path.join(process.cwd(), filePath);
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
 
-          // Property: SettingsClientProps interface should have all required props
-          const hasInitialStore = fileContent.includes('initialStore:');
-          const hasInitialContacts = fileContent.includes('initialContacts:');
-          const hasInitialSubscription = fileContent.includes('initialSubscription:');
-          const hasInitialPreferences = fileContent.includes('initialPreferences:');
+          // Property: SettingsClientProps interface should have initialData prop
+          // The initialData contains all settings data (store, contacts, subscription, preferences)
+          const hasInitialData = fileContent.includes('initialData:') || 
+                                  fileContent.includes('initialData?:');
+          
+          // Property: Component should extract individual data from initialData
+          const extractsStore = fileContent.includes('data?.store');
+          const extractsContacts = fileContent.includes('data?.contacts');
+          const extractsSubscription = fileContent.includes('data?.subscription');
+          const extractsPreferences = fileContent.includes('data?.preferences');
 
-          expect(hasInitialStore).toBe(true);
-          expect(hasInitialContacts).toBe(true);
-          expect(hasInitialSubscription).toBe(true);
-          expect(hasInitialPreferences).toBe(true);
+          expect(hasInitialData).toBe(true);
+          expect(extractsStore).toBe(true);
+          expect(extractsContacts).toBe(true);
+          expect(extractsSubscription).toBe(true);
+          expect(extractsPreferences).toBe(true);
         }
       ),
       { numRuns: 100 }

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { invalidateTemplatesCache } from "@/lib/cache/invalidation";
 
 export interface TemplateAccessRule {
   id: string;
@@ -70,8 +71,12 @@ export async function updateTemplateAccessRuleAction(
       return { success: false, error: error.message };
     }
 
+    // Invalidate template cache for cached template pages
+    await invalidateTemplatesCache();
+    
     revalidatePath("/admin/templates");
     revalidatePath("/dashboard/settings");
+    revalidatePath("/templates");
 
     return { success: true };
   } catch (error) {

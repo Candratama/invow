@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { StoresService, StoreContactsService } from '@/lib/db/services'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { SETTINGS_CACHE_TAGS } from '@/lib/db/data-access/settings'
 import type { StoreContact } from '@/lib/db/database.types'
 
@@ -84,7 +84,7 @@ export async function updateStoreAction(data: {
     }
 
     // Invalidate settings cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.store)
+    updateTag(SETTINGS_CACHE_TAGS.store)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     return { success: true, data: createResult.data }
@@ -115,7 +115,7 @@ export async function updateStoreAction(data: {
   }
 
   // Invalidate settings cache and revalidate paths
-  revalidateTag(SETTINGS_CACHE_TAGS.store)
+  updateTag(SETTINGS_CACHE_TAGS.store)
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard')
   return { success: true, data: result.data }
@@ -152,7 +152,7 @@ export async function createContactAction(contactData: {
   }
 
   // Invalidate contacts cache and revalidate settings path
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  updateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
   return { success: true, data: result.data }
 }
@@ -177,7 +177,7 @@ export async function updateContactAction(id: string, contactData: {
   }
 
   // Invalidate contacts cache and revalidate settings path
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  updateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
   return { success: true, data: result.data }
 }
@@ -198,7 +198,7 @@ export async function deleteContactAction(id: string) {
   }
 
   // Invalidate contacts cache and revalidate settings path
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  updateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
   return { success: true }
 }
@@ -219,7 +219,7 @@ export async function setPrimaryContactAction(storeId: string, contactId: string
   }
 
   // Invalidate contacts cache and revalidate settings path
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  updateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
   return { success: true }
 }

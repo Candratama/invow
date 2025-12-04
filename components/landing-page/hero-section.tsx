@@ -1,9 +1,11 @@
+"use cache";
+
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
-export default function HeroSection() {
+export default async function HeroSection() {
   return (
     <div className="min-h-screen w-full bg-white relative">
       {/* Simple CSS dot pattern - much faster than animated SVG */}

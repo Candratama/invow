@@ -6,52 +6,77 @@ import PricingSection from "@/components/landing-page/pricing-section";
 import BenefitsSection from "@/components/landing-page/benefits-section";
 import CTASection from "@/components/landing-page/cta-section";
 import Footer from "@/components/landing-page/footer";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
+import {
+  CacheErrorBoundary,
+  CacheFallbackPlaceholder,
+} from "@/components/cache-error-boundary";
 
-function PricingSkeleton() {
-  return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <Skeleton className="h-10 w-64 mx-auto mb-6" />
-          <Skeleton className="h-6 w-96 mx-auto" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-sm md:max-w-none mx-auto">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-[400px] w-full rounded-lg" />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-async function PricingContent() {
-  // Show ALL plans on homepage (including inactive ones)
-  const result = await getSubscriptionPlansAction(true);
-  const plans = result.success ? result.data || [] : [];
-
-  return <PricingSection initialPlans={plans} />;
-}
-
+/**
+ * Landing page with cached components wrapped in error boundaries.
+ *
+ * Each cached component is isolated with its own CacheErrorBoundary to ensure:
+ * - Errors in one section don't propagate to siblings (Requirement 8.4)
+ * - Graceful fallback UI is displayed on errors (Requirement 8.1)
+ */
 export default function LandingPage() {
   return (
     <div
       className="min-h-screen bg-gradient-to-b from-white to-gray-50"
       style={{ fontFamily: "Satoshi, system-ui, sans-serif" }}
     >
-      <Navigation />
+      <CacheErrorBoundary
+        componentName="Navigation"
+        fallback={<div className="h-16 bg-white" />}
+      >
+        <Navigation />
+      </CacheErrorBoundary>
+
       <main>
-        <HeroSection />
-        <FeaturesSection />
-        <Suspense fallback={<PricingSkeleton />}>
-          <PricingContent />
-        </Suspense>
-        <BenefitsSection />
-        <CTASection />
+        <CacheErrorBoundary
+          componentName="HeroSection"
+          fallback={<CacheFallbackPlaceholder height="min-h-screen" />}
+        >
+          <HeroSection />
+        </CacheErrorBoundary>
+
+        <CacheErrorBoundary
+          componentName="FeaturesSection"
+          fallback={<CacheFallbackPlaceholder height="py-24" />}
+        >
+          <FeaturesSection />
+        </CacheErrorBoundary>
+
+        {/* PricingSection is a cached async server component with cacheLife('hours') */}
+        <CacheErrorBoundary
+          componentName="PricingSection"
+          fallback={<CacheFallbackPlaceholder height="py-24" />}
+        >
+          <PricingSection />
+        </CacheErrorBoundary>
+
+        <CacheErrorBoundary
+          componentName="BenefitsSection"
+          fallback={<CacheFallbackPlaceholder height="py-24" />}
+        >
+          <BenefitsSection />
+        </CacheErrorBoundary>
+
+        <CacheErrorBoundary
+          componentName="CTASection"
+          fallback={<CacheFallbackPlaceholder height="py-24" />}
+        >
+          <CTASection />
+        </CacheErrorBoundary>
       </main>
-      <Footer />
+
+      <CacheErrorBoundary
+        componentName="Footer"
+        fallback={<div className="bg-gray-900 h-32" />}
+      >
+        <Suspense fallback={<div className="bg-gray-900 h-32" />}>
+          <Footer />
+        </Suspense>
+      </CacheErrorBoundary>
     </div>
   );
 }

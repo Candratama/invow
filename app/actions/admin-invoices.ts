@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { updateTag } from 'next/cache'
 import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/db/services/admin.service'
@@ -163,8 +163,8 @@ export async function deleteAdminInvoice(invoiceId: string): Promise<{
     }
 
     // Revalidate cache
-    revalidateTag(ADMIN_INVOICE_CACHE_TAGS.invoices)
-    revalidateTag(`invoice-${invoiceId}`)
+    updateTag(ADMIN_INVOICE_CACHE_TAGS.invoices)
+    updateTag(`invoice-${invoiceId}`)
 
     return { success: true }
   } catch (error) {
@@ -202,8 +202,8 @@ export async function updateAdminInvoiceStatus(
     }
 
     // Revalidate cache
-    revalidateTag(ADMIN_INVOICE_CACHE_TAGS.invoices)
-    revalidateTag(`invoice-${invoiceId}`)
+    updateTag(ADMIN_INVOICE_CACHE_TAGS.invoices)
+    updateTag(`invoice-${invoiceId}`)
 
     return { success: true }
   } catch (error) {

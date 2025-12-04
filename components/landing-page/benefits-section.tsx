@@ -1,3 +1,5 @@
+"use cache";
+
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -15,7 +17,7 @@ const benefits = [
   "Gak perlu kartu kredit buat mulai. Asik kan?",
 ];
 
-export default function BenefitsSection() {
+export default async function BenefitsSection() {
   return (
     <section className="py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

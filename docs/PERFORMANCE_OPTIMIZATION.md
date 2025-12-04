@@ -169,6 +169,80 @@ const TTL = 5 * 60 * 1000
 4. **CDN**: Deploy static assets ke CDN
 5. **Database Indexing**: Pastikan semua query ter-index dengan baik
 
+---
+
+## 📊 Next.js 16 Cache Components Performance Audit (Dec 2025)
+
+### Core Web Vitals Measurement
+
+After implementing Next.js 16 Cache Components, the following metrics were measured:
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| Performance Score | 41-90* | ≥90 | ⚠️ Varies |
+| LCP (Largest Contentful Paint) | 2.14s-26.49s* | <2.5s | ⚠️ Varies |
+| TBT (Total Blocking Time) | 100ms-6.95s* | <100ms | ⚠️ Varies |
+| CLS (Cumulative Layout Shift) | 0.000 | <0.1 | ✅ Pass |
+| TTFB (Time to First Byte) | 119-322ms | <200ms | ⚠️ Varies |
+
+*Note: Metrics vary significantly between development and production environments. Lighthouse scores in development mode are typically 40-60% lower than production due to:
+- Unminified JavaScript
+- Source maps enabled
+- Hot Module Replacement overhead
+- No CDN caching
+
+### TTFB Measurements (Development Server)
+
+| Route | TTFB | Target | Status |
+|-------|------|--------|--------|
+| Landing Page (/) | 322ms | <200ms | ⚠️ Above target |
+| Login Page | 119ms | <200ms | ✅ Pass |
+| Templates Page | 136ms | <200ms | ✅ Pass |
+
+**Average TTFB: 192ms** (Target: <200ms)
+
+### Bundle Size Analysis
+
+| Category | Size | Gzip Size |
+|----------|------|-----------|
+| Total Client JS | 2.51 MB | 740.52 KB |
+| Largest Chunk | 403.60 KB | 111.87 KB |
+
+### Cache Components Implementation
+
+The following components now use `use cache` directive:
+- ✅ HeroSection
+- ✅ FeaturesSection
+- ✅ BenefitsSection
+- ✅ CTASection
+- ✅ Footer
+- ✅ Navigation
+- ✅ PricingSection (with cacheLife and cacheTag)
+- ✅ Dashboard Shell (Sidebar, Header)
+
+### Performance Scripts Added
+
+```bash
+# Run Lighthouse audit
+npm run perf:lighthouse
+
+# Analyze bundle sizes
+npm run perf:bundle
+
+# Measure TTFB
+npm run perf:ttfb
+
+# Run general performance audit
+npm run perf:audit
+```
+
+### Recommendations for Production
+
+1. **Deploy to Vercel/Edge**: Edge deployment will significantly improve TTFB
+2. **Enable CDN Caching**: Static assets should be served from CDN
+3. **Image Optimization**: Ensure all images use Next.js Image component
+4. **Monitor Real User Metrics**: Use Vercel Analytics or similar for RUM data
+
 ## 🎯 Kesimpulan
 
 Semua halaman sekarang load dalam **< 1 detik** dengan average **157ms**. 

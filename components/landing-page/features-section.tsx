@@ -1,3 +1,5 @@
+"use cache";
+
 import {
   SmartPhone01Icon,
   ZapIcon,
@@ -53,7 +55,7 @@ const features: Array<{ icon: IconType; title: string; description: string }> =
     },
   ];
 
-export default function FeaturesSection() {
+export default async function FeaturesSection() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

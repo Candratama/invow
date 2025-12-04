@@ -1,6 +1,6 @@
 'use server'
 
-import { unstable_cache, revalidateTag } from 'next/cache'
+import { unstable_cache, updateTag } from 'next/cache'
 import {
   getStores as getStoresService,
   getStoreDetail as getStoreDetailService,
@@ -139,8 +139,8 @@ export async function toggleStoreActive(
     }
 
     // Revalidate cache
-    revalidateTag(ADMIN_STORE_CACHE_TAGS.stores)
-    revalidateTag(ADMIN_STORE_CACHE_TAGS.storeDetail(storeId))
+    updateTag(ADMIN_STORE_CACHE_TAGS.stores)
+    updateTag(ADMIN_STORE_CACHE_TAGS.storeDetail(storeId))
 
     return { success: true }
   } catch (error) {
@@ -170,8 +170,8 @@ export async function resetStoreInvoiceCounter(storeId: string): Promise<{
     }
 
     // Revalidate cache
-    revalidateTag(ADMIN_STORE_CACHE_TAGS.stores)
-    revalidateTag(ADMIN_STORE_CACHE_TAGS.storeDetail(storeId))
+    updateTag(ADMIN_STORE_CACHE_TAGS.stores)
+    updateTag(ADMIN_STORE_CACHE_TAGS.storeDetail(storeId))
 
     return { success: true }
   } catch (error) {
