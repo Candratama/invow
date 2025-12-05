@@ -122,29 +122,18 @@ export function SimpleInvoiceTemplate({
                 style={{
                   fontSize: "24pt",
                   fontWeight: "700",
-                  marginBottom: "4px",
                   color: brandColor,
+                  lineHeight: "1",
                 }}
               >
                 {storeSettings?.name || "Your Store"}
               </div>
+
               {storeSettings?.storeDescription && (
                 <div
                   style={{
                     fontSize: "10pt",
                     color: "#666666",
-                    marginBottom: "0px",
-                  }}
-                >
-                  ID: {storeSettings.storeNumber}
-                </div>
-              )}
-              {storeSettings?.storeDescription && (
-                <div
-                  style={{
-                    fontSize: "10pt",
-                    color: "#666666",
-                    marginBottom: "4px",
                   }}
                 >
                   {storeSettings.storeDescription}
@@ -160,6 +149,17 @@ export function SimpleInvoiceTemplate({
                 {storeSettings?.whatsapp && (
                   <div>
                     {storeSettings.whatsapp} | {storeSettings.email}
+                  </div>
+                )}
+                {storeSettings?.storeDescription && (
+                  <div
+                    style={{
+                      fontSize: "10pt",
+                      color: "#666666",
+                      marginBottom: "0px",
+                    }}
+                  >
+                    ID: {storeSettings.storeNumber}
                   </div>
                 )}
               </div>

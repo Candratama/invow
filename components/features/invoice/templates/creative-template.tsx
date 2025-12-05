@@ -187,20 +187,19 @@ export function CreativeInvoiceTemplate({
                       fontSize: "20pt",
                       fontWeight: "700",
                       color: brandColor,
-                      marginBottom: "4px",
+                      lineHeight: "1.2",
                     }}
                   >
                     {storeSettings?.name || "Your Store"}
                   </div>
-                  {storeSettings?.storeNumber && (
-                    <div style={{ marginTop: "4px" }}>
-                      ID: {storeSettings.storeNumber}
-                    </div>
-                  )}
+
                   {storeSettings?.storeDescription && (
                     <div style={{ fontSize: "10pt", color: "#6b7280" }}>
                       {storeSettings.storeDescription}
                     </div>
+                  )}
+                  {storeSettings?.storeNumber && (
+                    <div style={{}}>ID: {storeSettings.storeNumber}</div>
                   )}
                 </div>
               </div>
@@ -211,6 +210,7 @@ export function CreativeInvoiceTemplate({
                   padding: "16px 20px",
                   borderRadius: "12px",
                   textAlign: "right",
+                  lineHeight: "1.2",
                 }}
               >
                 <div

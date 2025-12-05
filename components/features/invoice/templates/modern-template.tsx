@@ -147,22 +147,19 @@ export function ModernInvoiceTemplate({
                   style={{
                     fontSize: "28pt",
                     fontWeight: "700",
-                    // marginBottom: "8px",
+                    marginBottom: "-8px",
                     letterSpacing: "-0.5px",
                     alignItems: "end",
                   }}
                 >
                   {storeSettings?.name || "Your Store"}
                 </div>
-                {storeSettings?.storeNumber && (
-                  <div>ID: {storeSettings.storeNumber}</div>
-                )}
+
                 {storeSettings?.storeDescription && (
                   <div
                     style={{
                       fontSize: "11pt",
                       opacity: 0.9,
-                      marginBottom: "12px",
                     }}
                   >
                     {storeSettings.storeDescription}
@@ -173,7 +170,7 @@ export function ModernInvoiceTemplate({
                   style={{
                     fontSize: "9pt",
                     opacity: 0.85,
-                    lineHeight: "1.6",
+                    lineHeight: "1.2",
                   }}
                 >
                   {storeSettings?.address && (
@@ -185,6 +182,9 @@ export function ModernInvoiceTemplate({
                     <div>
                       {storeSettings.whatsapp} | {storeSettings.email}
                     </div>
+                  )}
+                  {storeSettings?.storeNumber && (
+                    <div>ID: {storeSettings.storeNumber}</div>
                   )}
                 </div>
               </div>
@@ -203,7 +203,6 @@ export function ModernInvoiceTemplate({
                 style={{
                   fontSize: "24pt",
                   fontWeight: "600",
-                  marginBottom: "12px",
                   paddingRight: "28px",
                   opacity: 0.9,
                 }}
@@ -213,7 +212,7 @@ export function ModernInvoiceTemplate({
               <div
                 style={{
                   fontSize: "10pt",
-                  lineHeight: "1.8",
+                  lineHeight: "1.2",
                   paddingRight: "28px",
                 }}
               >

@@ -5,6 +5,7 @@ import { getInvoicesPaginatedWithTierLimit } from "@/lib/db/data-access/invoices
 import { getSubscriptionStatus } from "@/lib/db/data-access/subscription";
 import { getStoreSettings } from "@/lib/db/data-access/store";
 import { getRevenueMetrics } from "@/lib/db/data-access/revenue";
+import { UserPreferencesService } from "@/lib/db/services/user-preferences.service";
 
 export async function getDashboardDataAction(page: number = 1) {
   try {
@@ -17,12 +18,15 @@ export async function getDashboardDataAction(page: number = 1) {
       return { success: false, error: "Not authenticated" };
     }
 
-    const [invoicesResult, revenueResult, subscriptionResult, storeResult] =
+    const preferencesService = new UserPreferencesService(supabase);
+
+    const [invoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult] =
       await Promise.all([
         getInvoicesPaginatedWithTierLimit(page, 10, "synced"),
         getRevenueMetrics(user.id),
         getSubscriptionStatus(user.id),
         getStoreSettings(user.id),
+        preferencesService.getUserPreferences(),
       ]);
 
     const invoices = invoicesResult.data?.invoices || [];
@@ -65,6 +69,19 @@ export async function getDashboardDataAction(page: number = 1) {
       : null;
     const defaultStore = storeResult.data ? { id: storeResult.data.id } : null;
 
+    // Extract user preferences for invoice settings
+    const userPreferences = preferencesResult.data
+      ? {
+          selectedTemplate: preferencesResult.data.selected_template || "simple",
+          taxEnabled: preferencesResult.data.tax_enabled || false,
+          taxPercentage: preferencesResult.data.tax_percentage || 0,
+        }
+      : {
+          selectedTemplate: "simple",
+          taxEnabled: false,
+          taxPercentage: 0,
+        };
+
     return {
       success: true,
       data: {
@@ -76,6 +93,7 @@ export async function getDashboardDataAction(page: number = 1) {
         totalPages,
         hasMoreHistory,
         historyLimitMessage,
+        userPreferences,
       },
     };
   } catch (error) {

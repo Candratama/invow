@@ -132,22 +132,20 @@ export function ElegantInvoiceTemplate({
               fontSize: "35pt",
               fontWeight: "400",
               color: brandColor,
-              marginBottom: "8px",
+              // marginBottom: "8px",
               letterSpacing: "2px",
             }}
           >
             {storeSettings?.name || "Your Store"}
           </div>
-          {storeSettings?.storeNumber && (
-            <div>ID: {storeSettings.storeNumber}</div>
-          )}
+
           {storeSettings?.storeDescription && (
             <div
               style={{
                 fontSize: "14pt",
                 color: "#666666",
                 fontStyle: "italic",
-                marginBottom: "16px",
+                // marginBottom: "16px",
               }}
             >
               {storeSettings.storeDescription}
@@ -157,7 +155,7 @@ export function ElegantInvoiceTemplate({
             style={{
               fontSize: "12pt",
               color: "#888888",
-              lineHeight: "1.8",
+              lineHeight: "1.4",
             }}
           >
             {storeSettings?.address && (
@@ -169,6 +167,10 @@ export function ElegantInvoiceTemplate({
                 <span> • </span>
               )}
               {storeSettings?.email && <span>{storeSettings.email}</span>}
+
+              {storeSettings?.storeNumber && (
+                <div>ID: {storeSettings.storeNumber}</div>
+              )}
             </div>
           </div>
         </div>
@@ -186,7 +188,7 @@ export function ElegantInvoiceTemplate({
               fontWeight: "400",
               color: brandColor,
               letterSpacing: "3px",
-              marginBottom: "12px",
+              // marginBottom: "12px",
             }}
           >
             INVOICE

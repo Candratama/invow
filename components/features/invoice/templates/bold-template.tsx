@@ -129,20 +129,21 @@ export function BoldInvoiceTemplate({
                   style={{
                     fontSize: "28pt",
                     fontWeight: "900",
-                    marginBottom: "4px",
+                    lineHeight: "1.2",
                   }}
                 >
                   {storeSettings?.name || "YOUR STORE"}
                 </div>
-                {storeSettings?.storeNumber && (
-                  <div>
-                    <span style={{ fontWeight: "700" }}>Store ID:</span>{" "}
-                    {storeSettings.storeNumber}
-                  </div>
-                )}
+
                 {storeSettings?.storeDescription && (
                   <div style={{ fontSize: "11pt", opacity: 0.9 }}>
                     {storeSettings.storeDescription}
+                  </div>
+                )}
+                {storeSettings?.storeNumber && (
+                  <div>
+                    <span style={{ fontWeight: "700" }}>ID:</span>{" "}
+                    {storeSettings.storeNumber}
                   </div>
                 )}
               </div>
@@ -372,7 +373,6 @@ export function BoldInvoiceTemplate({
                 <div
                   style={{
                     fontSize: "10pt",
-                    lineHeight: "1.6",
                     whiteSpace: "pre-wrap",
                   }}
                 >

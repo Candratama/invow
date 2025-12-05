@@ -84,7 +84,7 @@ export function CorporateInvoiceTemplate({
           fontFamily: "Arial, Helvetica, sans-serif",
           backgroundColor: "#ffffff",
           color: "#1f2937",
-          lineHeight: "1.5",
+          lineHeight: "1.2",
           ...(preview
             ? {
                 boxShadow:
@@ -129,19 +129,20 @@ export function CorporateInvoiceTemplate({
                     fontSize: "18pt",
                     fontWeight: "700",
                     color: brandColor,
-                    marginBottom: "4px",
                     alignItems: "center",
+                    lineHeight: "1.2",
                   }}
                 >
                   {storeSettings?.name || "Your Company Name"}
                 </div>
-                {storeSettings?.storeNumber && (
-                  <div>Reg. No: {storeSettings.storeNumber}</div>
-                )}
+
                 {storeSettings?.storeDescription && (
                   <div style={{ fontSize: "9pt", color: "#6b7280" }}>
                     {storeSettings.storeDescription}
                   </div>
+                )}
+                {storeSettings?.storeNumber && (
+                  <div>ID: {storeSettings.storeNumber}</div>
                 )}
               </div>
             </div>

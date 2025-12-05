@@ -129,7 +129,7 @@ export function ClassicInvoiceTemplate({
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
-                gap: "4px",
+                lineHeight: "1.2",
               }}
             >
               <div
@@ -137,7 +137,6 @@ export function ClassicInvoiceTemplate({
                   fontSize: "19pt",
                   fontWeight: "bold",
                   color: "#111827",
-                  marginBottom: "2px",
                 }}
               >
                 {storeSettings?.name || "Your Store Name"}
@@ -159,7 +158,7 @@ export function ClassicInvoiceTemplate({
                     color: "#111827",
                   }}
                 >
-                  <span style={{ fontWeight: 600 }}>No ID:</span>{" "}
+                  <span style={{ fontWeight: 600 }}>ID:</span>{" "}
                   <span
                     style={{
                       color: "#6b7280",
@@ -194,7 +193,7 @@ export function ClassicInvoiceTemplate({
               style={{
                 fontSize: "10pt",
                 color: "#6b7280",
-                lineHeight: "1.5",
+                lineHeight: "1.2",
               }}
             >
               <div>

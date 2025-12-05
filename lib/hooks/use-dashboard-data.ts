@@ -36,6 +36,11 @@ export interface DashboardData {
   totalPages: number;
   hasMoreHistory: boolean;
   historyLimitMessage?: string;
+  userPreferences?: {
+    selectedTemplate: string;
+    taxEnabled: boolean;
+    taxPercentage: number;
+  };
 }
 
 /**
@@ -80,6 +85,7 @@ export function useRevenueData(initialData?: DashboardData) {
     subscriptionStatus: DashboardData["subscriptionStatus"];
     storeSettings: unknown;
     defaultStore: { id: string } | null;
+    userPreferences: DashboardData["userPreferences"];
   }>(dashboardKeys.revenue());
   
   // Only use initialData on first mount when no cache exists
@@ -92,6 +98,7 @@ export function useRevenueData(initialData?: DashboardData) {
           subscriptionStatus: initialData.subscriptionStatus,
           storeSettings: initialData.storeSettings,
           defaultStore: initialData.defaultStore,
+          userPreferences: initialData.userPreferences,
         }
       : undefined
   );
@@ -101,6 +108,7 @@ export function useRevenueData(initialData?: DashboardData) {
     subscriptionStatus: DashboardData["subscriptionStatus"];
     storeSettings: unknown;
     defaultStore: { id: string } | null;
+    userPreferences: DashboardData["userPreferences"];
   }>({
     queryKey: dashboardKeys.revenue(),
     queryFn: async () => {
@@ -116,6 +124,7 @@ export function useRevenueData(initialData?: DashboardData) {
         subscriptionStatus: result.data?.subscriptionStatus || null,
         storeSettings: result.data?.storeSettings || null,
         defaultStore: result.data?.defaultStore || null,
+        userPreferences: result.data?.userPreferences,
       };
     },
     initialData: initialDataRef.current,

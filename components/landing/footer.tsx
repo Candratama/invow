@@ -50,7 +50,7 @@ export function Footer() {
                   {navLinks.map((link, index) => (
                     <Link
                       key={index}
-                      className="hover:text-gold-400 duration-300 hover:font-semibold"
+                      className="hover:text-gold-600 duration-300 hover:font-semibold"
                       href={link.href}
                     >
                       {link.label}
@@ -82,7 +82,7 @@ export function Footer() {
           </div>
 
           {/* Bottom logo */}
-          <div className="absolute hover:border-gold-400 duration-400 drop-shadow-[0_0px_20px_rgba(255,179,0,0.3)] bottom-24 md:bottom-20 backdrop-blur-sm rounded-3xl bg-stone-800/60 left-1/2 border-2 border-stone-700 flex items-center justify-center p-3 -translate-x-1/2 z-10">
+          <div className="absolute hover:border-gold-600 duration-400 drop-shadow-[0_0px_20px_rgba(211,175,55,0.3)] bottom-24 md:bottom-20 backdrop-blur-sm rounded-3xl bg-stone-800/60 left-1/2 border-2 border-stone-700 flex items-center justify-center p-3 -translate-x-1/2 z-10">
             <div className="w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
               <Image
                 src="/icons/web-app-manifest-512x512.svg"

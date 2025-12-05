@@ -204,6 +204,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const subscriptionStatus = revenueData?.subscriptionStatus || null;
   const storeSettings = revenueData?.storeSettings as StoreSettings | null;
   const defaultStore = revenueData?.defaultStore || null;
+  const userPreferences = revenueData?.userPreferences || {
+    selectedTemplate: "simple",
+    taxEnabled: false,
+    taxPercentage: 0,
+  };
 
   // Transform paginated invoices for display
   const completedInvoices =
@@ -326,6 +331,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           subscriptionStatus={subscriptionStatus}
           storeSettings={storeSettings}
           defaultStore={defaultStore}
+          initialTaxEnabled={userPreferences.taxEnabled}
+          initialTaxPercentage={userPreferences.taxPercentage}
+          initialSelectedTemplate={userPreferences.selectedTemplate}
         />
       </div>
     );
