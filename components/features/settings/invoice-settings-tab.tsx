@@ -27,6 +27,7 @@ import {
 import { getTemplateAccessRulesAction } from "@/app/actions/template-access";
 import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 import Image from "next/image";
+import { useInvalidateDashboard } from "@/lib/hooks/use-dashboard-data";
 
 // Export quality configuration with tier-based access
 // Maps to TIER_FEATURES.exportQualities: ['standard'] for free, ['standard', 'high', 'print-ready'] for premium
@@ -107,6 +108,7 @@ export function InvoiceSettingsTab({
     useState(false);
   const [accessRules, setAccessRules] = useState<TemplateAccessRule[]>([]);
   const [isLoadingRules, setIsLoadingRules] = useState(true);
+  const invalidateDashboard = useInvalidateDashboard();
 
   // Fetch template access rules from database
   useEffect(() => {
@@ -222,6 +224,9 @@ export function InvoiceSettingsTab({
         if (onDirtyChange) {
           onDirtyChange(false);
         }
+
+        // Invalidate dashboard cache so new preferences are used immediately
+        invalidateDashboard();
 
         toast.success("Invoice settings saved successfully!");
       } catch (error) {

@@ -59,3 +59,5 @@ tmp/
 mcp.json
 *-credentials.json
 *-secrets.json
+
+debug-templates
