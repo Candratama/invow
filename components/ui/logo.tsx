@@ -14,7 +14,7 @@ export function Logo({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <Image
-        src="/icons/web-app-manifest-512x512.svg"
+        src="/icons/web-app-manifest-512x512.png"
         alt="Invow Logo"
         width={size}
         height={size}

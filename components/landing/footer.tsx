@@ -28,7 +28,7 @@ export function Footer() {
                 >
                   <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center">
                     <Image
-                      src="/icons/web-app-manifest-512x512.svg"
+                      src="/icons/web-app-manifest-512x512.png"
                       alt="Invow Logo"
                       width={24}
                       height={24}
@@ -85,7 +85,7 @@ export function Footer() {
           <div className="absolute hover:border-gold-600 duration-400 drop-shadow-[0_0px_20px_rgba(211,175,55,0.3)] bottom-24 md:bottom-20 backdrop-blur-sm rounded-3xl bg-stone-800/60 left-1/2 border-2 border-stone-700 flex items-center justify-center p-3 -translate-x-1/2 z-10">
             <div className="w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
               <Image
-                src="/icons/web-app-manifest-512x512.svg"
+                src="/icons/web-app-manifest-512x512.png"
                 alt="Invow Logo"
                 width={48}
                 height={48}

@@ -32,7 +32,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-gold-500/30 border border-gold-200">
             <Image
-              src="/icons/web-app-manifest-512x512.svg"
+              src="/icons/web-app-manifest-512x512.png"
               alt="Invow Logo"
               width={24}
               height={24}
