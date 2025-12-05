@@ -71,7 +71,7 @@ export async function updateStoreAction(data: {
       tagline: data.tagline || null,
       store_number: data.storeNumber || null,
       payment_method: data.paymentMethod || null,
-      brand_color: data.brandColor || '#d4af37',
+      brand_color: data.brandColor || '#FFB300',
       is_active: true,
       invoice_prefix: 'INV',
       invoice_number_format: null,
