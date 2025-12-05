@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { SubscriptionTab } from "./subscription-tab";
+import { AccountTab } from "./account-tab";
 import { BusinessInfoTab } from "./business-info-tab";
 import { InvoiceSettingsTab } from "./invoice-settings-tab";
 import { ReportsTab } from "./reports-tab";
@@ -21,7 +21,7 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "subscription", label: "Subscription" },
+  { id: "subscription", label: "Account Setting" },
   { id: "business", label: "Business Info" },
   { id: "invoice", label: "Invoice Settings" },
   { id: "reports", label: "Reports" },
@@ -130,9 +130,7 @@ export function SettingsDialog({
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === "subscription" && (
-              <SubscriptionTab onClose={onClose} />
-            )}
+            {activeTab === "subscription" && <AccountTab onClose={onClose} />}
             {activeTab === "business" && (
               <BusinessInfoTab onClose={onClose} onDirtyChange={setIsDirty} />
             )}

@@ -90,7 +90,7 @@ function LoginForm() {
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
-                minLength={8}
+                minLength={6}
               />
             </div>
 

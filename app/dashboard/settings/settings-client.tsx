@@ -23,9 +23,9 @@ import type {
 import { useSettingsData } from "@/lib/hooks/use-settings-data";
 
 // Lazy load tabs for better performance
-const SubscriptionTab = lazy(() =>
-  import("@/components/features/settings/subscription-tab").then((mod) => ({
-    default: mod.SubscriptionTab,
+const AccountTab = lazy(() =>
+  import("@/components/features/settings/account-tab").then((mod) => ({
+    default: mod.AccountTab,
   }))
 );
 const BusinessInfoTab = lazy(() =>
@@ -49,7 +49,7 @@ interface Tab {
 const TABS: Tab[] = [
   { id: "business", label: "Business Info" },
   { id: "invoice", label: "Invoice Settings" },
-  { id: "subscription", label: "Subscription" },
+  { id: "subscription", label: "Account Setting" },
 ];
 
 interface SettingsClientProps {
@@ -284,7 +284,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
                   display: activeTab === "subscription" ? "block" : "none",
                 }}
               >
-                <SubscriptionTab
+                <AccountTab
                   onClose={handleClose}
                   initialSubscription={initialSubscription}
                 />

@@ -1,12 +1,17 @@
 "use client";
 
-import { Gift, Zap, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Gift, Zap, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
 import { getSubscriptionStatusAction } from "@/app/actions/subscription";
 import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
+import { updatePasswordAction } from "@/app/actions/auth";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import UpgradeButton from "@/components/features/subscription/upgrade-button";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface SubscriptionStatus {
   tier: string;
@@ -17,16 +22,20 @@ interface SubscriptionStatus {
   resetDate: Date;
 }
 
-interface SubscriptionTabProps {
+interface AccountTabProps {
   onClose: () => void;
   initialSubscription?: SubscriptionStatus | null;
 }
 
-export function SubscriptionTab({
-  onClose,
-  initialSubscription,
-}: SubscriptionTabProps) {
-  const { signOut } = useAuth();
+export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
+  const { user, signOut } = useAuth();
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Fetch subscription status with React Query
   const {
@@ -101,6 +110,40 @@ export function SubscriptionTab({
     });
   };
 
+  // Handle password change
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const result = await updatePasswordAction(newPassword);
+      if (result.success) {
+        toast.success("Password updated successfully!");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        toast.error(result.error || "Failed to update password");
+      }
+    } catch {
+      toast.error("Failed to update password. Please try again.");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   // Handle sign out
   const handleSignOut = async () => {
     if (confirm("Are you sure you want to sign out?")) {
@@ -144,6 +187,9 @@ export function SubscriptionTab({
         <div className="lg:max-w-3xl lg:mx-auto space-y-4 sm:space-y-6">
           {/* Subscription Status Section */}
           <div>
+            <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4">
+              Subscription
+            </h2>
             <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
               {/* Tier Header */}
               <div className="flex items-center gap-2 sm:gap-3">
@@ -280,6 +326,98 @@ export function SubscriptionTab({
               </div>
             </div>
           )}
+
+          {/* Account Section */}
+          <div>
+            <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4">
+              Account
+            </h2>
+            <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm space-y-4">
+              {/* Email Address */}
+              <div>
+                <Label htmlFor="userEmail" className="text-sm font-medium">
+                  Email Address
+                </Label>
+                <Input
+                  id="userEmail"
+                  type="email"
+                  value={user?.email || ""}
+                  disabled
+                  className="mt-2 bg-gray-50 cursor-not-allowed min-h-[44px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your account email cannot be changed here
+                </p>
+              </div>
+
+              {/* Change Password */}
+              <div className="pt-4 border-t">
+                <div className="flex items-center gap-2 mb-3">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Change Password</Label>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="New password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="min-h-[44px] pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showNewPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="min-h-[44px] pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={
+                      isChangingPassword || !newPassword || !confirmPassword
+                    }
+                    className="w-full min-h-[44px]"
+                  >
+                    {isChangingPassword ? "Updating..." : "Update Password"}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Password must be at least 6 characters
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Danger Zone Section */}
           <div>

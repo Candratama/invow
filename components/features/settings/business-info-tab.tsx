@@ -25,7 +25,6 @@ import {
   getStoreAndContactsAction,
 } from "@/app/actions/store";
 
-import { useAuth } from "@/lib/auth/auth-context";
 import { FeatureGate } from "@/components/ui/feature-gate";
 
 const optionalText = z.string().optional().or(z.literal(""));
@@ -87,7 +86,6 @@ export function BusinessInfoTab({
   initialContacts = [],
   initialIsPremium = false,
 }: BusinessInfoTabProps) {
-  const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(!initialStore);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -456,28 +454,6 @@ export function BusinessInfoTab({
             className="lg:max-w-3xl lg:mx-auto space-y-4 sm:space-y-6"
             id="business-info-form"
           >
-            {/* Account Section */}
-            <div>
-              <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4">
-                Account
-              </h2>
-              <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
-                <Label htmlFor="userEmail" className="text-sm font-medium">
-                  Email Address
-                </Label>
-                <Input
-                  id="userEmail"
-                  type="email"
-                  value={user?.email || ""}
-                  disabled
-                  className="mt-2 bg-gray-50 cursor-not-allowed min-h-[44px]"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Your account email cannot be changed here
-                </p>
-              </div>
-            </div>
-
             {/* Company Details Section */}
             <div>
               <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4">
