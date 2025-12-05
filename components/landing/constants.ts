@@ -52,7 +52,6 @@ export const FEATURES = [
 
 export const WHY_US_POINTS = [
   "Hemat 10+ jam seminggu! Waktu lo bisa buat fokus jualan atau quality time sama keluarga",
-  "Cash flow lancar! Invoice profesional bikin customer lebih cepet bayar, bisnis lo jadi lebih sehat",
   "Akses dimana aja, kapan aja. Lagi di rumah, di toko, atau traveling tetep bisa cek invoice",
   "Share langsung ke WA customer dalam bentuk gambar HD. Praktis dan terlihat profesional!",
   "Mulai gratis tanpa ribet. Gak perlu kartu kredit, gak ada biaya tersembunyi"
