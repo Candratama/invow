@@ -54,11 +54,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (err) {
+      console.error("Auth error:", err);
+      return {
+        error: new Error(
+          err instanceof Error
+            ? `Authentication failed: ${err.message}`
+            : "Authentication service unavailable. Please try again later."
+        ),
+      };
+    }
   };
 
   const signOut = async () => {
