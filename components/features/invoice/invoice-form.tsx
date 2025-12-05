@@ -121,12 +121,38 @@ export function InvoiceForm({
   const [_isSaving, setIsSaving] = useState(false);
 
   // Tax preferences state - used in calculateTotal calls
-  const taxEnabled = initialTaxEnabled;
-  const taxPercentage = initialTaxPercentage;
+  const [taxEnabled, setTaxEnabled] = useState(initialTaxEnabled);
+  const [taxPercentage, setTaxPercentage] = useState(initialTaxPercentage);
 
   // Selected template state - used for template rendering
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const selectedTemplate = initialSelectedTemplate as InvoiceTemplateId;
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplateId>(
+    initialSelectedTemplate as InvoiceTemplateId
+  );
+
+  // Fetch latest preferences on mount to ensure we have the most up-to-date values
+  // This handles the case where user changes settings and returns to dashboard
+  useEffect(() => {
+    const fetchLatestPreferences = async () => {
+      try {
+        const { getPreferencesAction } = await import(
+          "@/app/actions/preferences"
+        );
+        const result = await getPreferencesAction();
+        if (result.success && result.data) {
+          setTaxEnabled(result.data.tax_enabled);
+          setTaxPercentage(result.data.tax_percentage ?? 0);
+          setSelectedTemplate(
+            (result.data.selected_template as InvoiceTemplateId) || "simple"
+          );
+        }
+      } catch (error) {
+        console.warn("Failed to fetch latest preferences:", error);
+        // Keep using initial values if fetch fails
+      }
+    };
+
+    fetchLatestPreferences();
+  }, []);
 
   // Initialize invoice when component mounts
   useEffect(() => {

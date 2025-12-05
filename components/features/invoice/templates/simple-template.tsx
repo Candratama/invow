@@ -123,7 +123,8 @@ export function SimpleInvoiceTemplate({
                   fontSize: "24pt",
                   fontWeight: "700",
                   color: brandColor,
-                  lineHeight: "1",
+                  lineHeight: "1.2",
+                  marginBottom: "6px",
                 }}
               >
                 {storeSettings?.name || "Your Store"}
@@ -156,7 +157,6 @@ export function SimpleInvoiceTemplate({
                     style={{
                       fontSize: "10pt",
                       color: "#666666",
-                      marginBottom: "0px",
                     }}
                   >
                     ID: {storeSettings.storeNumber}
