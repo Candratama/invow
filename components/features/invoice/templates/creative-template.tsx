@@ -188,6 +188,7 @@ export function CreativeInvoiceTemplate({
                       fontWeight: "700",
                       color: brandColor,
                       lineHeight: "1.2",
+                      marginBottom: "6px",
                     }}
                   >
                     {storeSettings?.name || "Your Store"}

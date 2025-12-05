@@ -250,10 +250,8 @@ export function InvoiceSettingsTab({
             Template
           </h2>
           <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
-            <Label className="text-sm font-medium mb-3 block">
-              Select Invoice Template
-            </Label>
-            <p className="text-xs text-gray-500 mb-4">
+            <Label className="mb-3 block">Select Invoice Template</Label>
+            <p className="text-sm text-muted-foreground mb-4">
               {tier === "free"
                 ? "1 template available. Upgrade to Premium for 8 templates."
                 : "All 8 templates available with Premium."}
@@ -374,16 +372,14 @@ export function InvoiceSettingsTab({
           </h2>
           <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
             <div>
-              <Label htmlFor="paymentMethod" className="text-sm font-medium">
-                Default Payment Method
-              </Label>
+              <Label htmlFor="paymentMethod">Default Payment Method</Label>
               <Input
                 id="paymentMethod"
                 {...form.register("paymentMethod")}
                 placeholder="e.g., Bank Transfer, Cash, Credit Card"
-                className="mt-2 min-h-[44px]"
+                className="mt-1.5"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 This will be pre-filled when creating new invoices
               </p>
             </div>
@@ -391,10 +387,8 @@ export function InvoiceSettingsTab({
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1">
-                  <Label htmlFor="taxEnabled" className="text-sm font-medium">
-                    Enable Tax
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <Label htmlFor="taxEnabled">Enable Tax</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Apply tax to invoices by default
                   </p>
                 </div>
@@ -410,12 +404,7 @@ export function InvoiceSettingsTab({
 
               {taxEnabled && (
                 <div>
-                  <Label
-                    htmlFor="taxPercentage"
-                    className="text-sm font-medium"
-                  >
-                    Tax Percentage (%)
-                  </Label>
+                  <Label htmlFor="taxPercentage">Tax Percentage (%)</Label>
                   <Input
                     id="taxPercentage"
                     type="number"
@@ -426,10 +415,10 @@ export function InvoiceSettingsTab({
                       valueAsNumber: true,
                     })}
                     placeholder="0"
-                    className="mt-2 min-h-[44px]"
+                    className="mt-1.5"
                   />
                   {form.formState.errors.taxPercentage && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-sm text-destructive mt-1">
                       {form.formState.errors.taxPercentage.message}
                     </p>
                   )}
@@ -444,10 +433,8 @@ export function InvoiceSettingsTab({
             Export
           </h2>
           <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
-            <Label className="text-sm font-medium mb-2 sm:mb-3 block">
-              Export Quality
-            </Label>
-            <p className="text-xs text-gray-500 mb-3 sm:mb-4">
+            <Label className="mb-2 sm:mb-3 block">Export Quality</Label>
+            <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
               Choose the quality of exported invoice images
               {tier === "free" && (
                 <span className="block mt-1 text-amber-600">

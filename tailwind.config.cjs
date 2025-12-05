@@ -16,20 +16,20 @@ module.exports = {
   		}
   	},
   	fontSize: {
-  		// Golden Ratio Typography Scale (1.618)
-  		// Base: 16px (1rem), Ratio: φ = 1.618
-  		xs: ['0.618rem', { lineHeight: '1.618' }],      // ~10px
-  		sm: ['0.764rem', { lineHeight: '1.618' }],      // ~12px (xs * 1.236)
-  		base: ['1rem', { lineHeight: '1.618' }],        // 16px
-  		lg: ['1.236rem', { lineHeight: '1.618' }],      // ~20px (base * 1.236)
-  		xl: ['1.618rem', { lineHeight: '1.4' }],        // ~26px (base * φ)
-  		'2xl': ['2rem', { lineHeight: '1.3' }],         // 32px (xl * 1.236)
-  		'3xl': ['2.618rem', { lineHeight: '1.2' }],     // ~42px (base * φ²)
-  		'4xl': ['3.236rem', { lineHeight: '1.15' }],    // ~52px (3xl * 1.236)
-  		'5xl': ['4.236rem', { lineHeight: '1.1' }],     // ~68px (base * φ³)
-  		'6xl': ['5.236rem', { lineHeight: '1.05' }],    // ~84px
-  		'7xl': ['6.854rem', { lineHeight: '1' }],       // ~110px (base * φ⁴)
-  		'8xl': ['8.472rem', { lineHeight: '1' }],       // ~136px
+  		// Readable Typography Scale
+  		// Optimized for form readability and consistency
+  		xs: ['0.75rem', { lineHeight: '1.5' }],         // 12px - captions, hints
+  		sm: ['0.875rem', { lineHeight: '1.5' }],        // 14px - labels, secondary text
+  		base: ['1rem', { lineHeight: '1.5' }],          // 16px - body, form inputs
+  		lg: ['1.125rem', { lineHeight: '1.5' }],        // 18px - emphasized text
+  		xl: ['1.25rem', { lineHeight: '1.4' }],         // 20px - section headers
+  		'2xl': ['1.5rem', { lineHeight: '1.35' }],      // 24px - card titles
+  		'3xl': ['1.875rem', { lineHeight: '1.3' }],     // 30px - page headers
+  		'4xl': ['2.25rem', { lineHeight: '1.25' }],     // 36px - hero text
+  		'5xl': ['3rem', { lineHeight: '1.2' }],         // 48px - display
+  		'6xl': ['3.75rem', { lineHeight: '1.1' }],      // 60px - large display
+  		'7xl': ['4.5rem', { lineHeight: '1.1' }],       // 72px - extra large
+  		'8xl': ['6rem', { lineHeight: '1' }],           // 96px - jumbo
   	},
   	fontWeight: {
   		normal: '400',

@@ -129,8 +129,12 @@ export function InvoiceForm({
     initialSelectedTemplate as InvoiceTemplateId
   );
 
+  // Export quality - cached to avoid extra DB call during download
+  const [exportQuality, setExportQuality] = useState<50 | 100 | 150>(50);
+
   // Fetch latest preferences on mount to ensure we have the most up-to-date values
   // This handles the case where user changes settings and returns to dashboard
+  // Also caches export quality to avoid extra DB call during download
   useEffect(() => {
     const fetchLatestPreferences = async () => {
       try {
@@ -143,6 +147,9 @@ export function InvoiceForm({
           setTaxPercentage(result.data.tax_percentage ?? 0);
           setSelectedTemplate(
             (result.data.selected_template as InvoiceTemplateId) || "simple"
+          );
+          setExportQuality(
+            (result.data.export_quality_kb as 50 | 100 | 150) || 50
           );
         }
       } catch (error) {
@@ -463,9 +470,11 @@ export function InvoiceForm({
 
       setIsSaving(false);
 
+      // Pass cached export quality to avoid extra DB call
       await generateJPEGFromInvoice(
         currentInvoice as Invoice,
-        storeSettings ?? null
+        storeSettings ?? null,
+        exportQuality
       );
 
       if (onComplete) {
@@ -514,29 +523,27 @@ export function InvoiceForm({
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="invoiceNumber" className="text-sm font-medium">
-                Invoice Number
-              </Label>
+              <Label htmlFor="invoiceNumber">Invoice Number</Label>
               <Input
                 id="invoiceNumber"
                 {...form.register("invoiceNumber")}
                 readOnly
                 disabled
-                className="text-lg font-semibold bg-gray-50 cursor-not-allowed"
+                className="text-lg font-semibold bg-gray-50 cursor-not-allowed mt-1.5"
                 title="Invoice number is automatically generated based on date and your user ID"
               />
-              <p className="text-xs text-gray-500 mt-1">(Auto-generated)</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                (Auto-generated)
+              </p>
               {form.formState.errors.invoiceNumber && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {form.formState.errors.invoiceNumber.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="invoiceDate" className="text-sm font-medium">
-                Invoice Date
-              </Label>
+              <Label htmlFor="invoiceDate">Invoice Date</Label>
               <Input
                 id="invoiceDate"
                 type="date"
@@ -544,6 +551,7 @@ export function InvoiceForm({
                 onChange={(e) =>
                   handleFormChange("invoiceDate", e.target.value)
                 }
+                className="mt-1.5"
               />
             </div>
           </div>
@@ -551,14 +559,10 @@ export function InvoiceForm({
 
         {/* Customer Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
-          <h3 className="text-lg lg:text-xl font-semibold mb-4">
-            Customer Information
-          </h3>
+          <h3 className="text-xl font-semibold mb-4">Customer Information</h3>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="customerName" className="text-sm font-medium">
-                Customer Name *
-              </Label>
+              <Label htmlFor="customerName">Customer Name *</Label>
               <Input
                 id="customerName"
                 {...form.register("customerName")}
@@ -566,10 +570,10 @@ export function InvoiceForm({
                   handleFormChange("customerName", e.target.value)
                 }
                 placeholder="Enter customer name"
-                className="text-base placeholder:text-gray-400"
+                className="mt-1.5"
               />
               {form.formState.errors.customerName && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {form.formState.errors.customerName.message}
                 </p>
               )}
@@ -579,16 +583,14 @@ export function InvoiceForm({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Customer Status */}
               <div>
-                <Label htmlFor="customerStatus" className="text-sm font-medium">
-                  Customer Status
-                </Label>
+                <Label htmlFor="customerStatus">Customer Status</Label>
                 <select
                   id="customerStatus"
                   {...form.register("customerStatus")}
                   onChange={(e) =>
                     handleFormChange("customerStatus", e.target.value)
                   }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5"
                 >
                   <option value="Customer">Customer</option>
                   <option value="Reseller">Reseller</option>
@@ -602,9 +604,7 @@ export function InvoiceForm({
 
             {/* Customer Address */}
             <div>
-              <Label htmlFor="customerAddress" className="text-sm font-medium">
-                Address (Optional)
-              </Label>
+              <Label htmlFor="customerAddress">Address (Optional)</Label>
               <Textarea
                 id="customerAddress"
                 {...form.register("customerAddress")}
@@ -613,7 +613,7 @@ export function InvoiceForm({
                 }
                 placeholder="Enter customer address"
                 rows={3}
-                className="text-base placeholder:text-gray-400 lg:rows-4"
+                className="mt-1.5"
               />
             </div>
           </div>
@@ -622,7 +622,7 @@ export function InvoiceForm({
         {/* Items Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg lg:text-xl font-semibold">Items</h3>
+            <h3 className="text-xl font-semibold">Items</h3>
             <Button
               type="button"
               size="sm"
@@ -650,7 +650,7 @@ export function InvoiceForm({
               ))}
             </div>
           ) : (
-            <p className="text-center text-gray-500 py-8">
+            <p className="text-center text-muted-foreground py-8">
               No items added yet. Tap &quot;Add Item&quot; to get started.
             </p>
           )}
@@ -658,16 +658,14 @@ export function InvoiceForm({
 
         {/* Note Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
-          <Label htmlFor="note" className="text-sm font-medium">
-            Note (Optional)
-          </Label>
+          <Label htmlFor="note">Note (Optional)</Label>
           <Textarea
             id="note"
             value={currentInvoice.note || ""}
             onChange={(e) => handleFormChange("note", e.target.value)}
             placeholder="Add any additional notes or instructions..."
             rows={3}
-            className="text-base placeholder:text-gray-400 mt-2 lg:rows-4"
+            className="mt-1.5"
           />
         </div>
 
@@ -685,29 +683,29 @@ export function InvoiceForm({
             return (
               <div className="bg-white rounded-lg p-4 shadow-sm">
                 <div className="space-y-3">
-                  <div className="flex justify-between text-base lg:text-lg">
-                    <span className="text-gray-600">Subtotal</span>
+                  <div className="flex justify-between text-base">
+                    <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-semibold">
                       {formatCurrency(calculation.subtotal)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-base lg:text-lg">
-                    <span className="text-gray-600">Shipping</span>
+                  <div className="flex justify-between items-center text-base">
+                    <span className="text-muted-foreground">Shipping</span>
                     <CurrencyInput
                       value={currentInvoice.shippingCost || 0}
                       onChange={(value) => {
                         handleFormChange("shippingCost", value);
                         calculateTotals();
                       }}
-                      className="w-32 h-8 text-sm text-right"
+                      className="w-32 h-10 text-base text-right"
                       placeholder="0"
                     />
                   </div>
 
                   {taxEnabled && taxPercentage > 0 && (
-                    <div className="flex justify-between text-base lg:text-lg">
-                      <span className="text-gray-600">
+                    <div className="flex justify-between text-base">
+                      <span className="text-muted-foreground">
                         Tax ({taxPercentage}%)
                       </span>
                       <span className="font-semibold">
@@ -716,7 +714,7 @@ export function InvoiceForm({
                     </div>
                   )}
 
-                  <div className="border-t pt-3 flex justify-between text-xl lg:text-2xl font-bold">
+                  <div className="border-t pt-3 flex justify-between text-xl font-bold">
                     <span>Total</span>
                     <span className="text-primary">
                       {formatCurrency(calculation.total)}
@@ -980,18 +978,16 @@ export function InvoiceForm({
           className="py-4 space-y-4 lg:py-6"
         >
           <div>
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description *
-            </Label>
+            <Label htmlFor="description">Description *</Label>
             <Input
               id="description"
               {...itemForm.register("description")}
               placeholder="Item description"
-              className="text-base placeholder:text-gray-400"
+              className="mt-1.5"
               autoFocus
             />
             {itemForm.formState.errors.description && (
-              <p className="text-xs text-red-600 mt-1">
+              <p className="text-sm text-destructive mt-1">
                 {itemForm.formState.errors.description.message}
               </p>
             )}
@@ -999,28 +995,24 @@ export function InvoiceForm({
 
           <div className="grid grid-cols-2 gap-3 lg:gap-4">
             <div>
-              <Label htmlFor="quantity" className="text-sm font-medium">
-                Quantity *
-              </Label>
+              <Label htmlFor="quantity">Quantity *</Label>
               <Input
                 id="quantity"
                 type="number"
                 inputMode="numeric"
                 {...itemForm.register("quantity", { valueAsNumber: true })}
                 min="1"
-                className="text-base"
+                className="mt-1.5"
               />
               {itemForm.formState.errors.quantity && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {itemForm.formState.errors.quantity.message}
                 </p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="price" className="text-sm font-medium">
-                Price *
-              </Label>
+              <Label htmlFor="price">Price *</Label>
               <Controller
                 name="price"
                 control={itemForm.control}
@@ -1030,12 +1022,12 @@ export function InvoiceForm({
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="0"
-                    className="text-base placeholder:text-gray-400"
+                    className="mt-1.5"
                   />
                 )}
               />
               {itemForm.formState.errors.price && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-sm text-destructive mt-1">
                   {itemForm.formState.errors.price.message}
                 </p>
               )}
