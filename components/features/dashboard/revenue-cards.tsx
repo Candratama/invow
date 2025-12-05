@@ -59,7 +59,7 @@ export function RevenueCards({
 
   return (
     <div className="mb-8 lg:mb-12">
-      <div className="relative overflow-hidden rounded-xl p-6 text-primary-foreground shadow-lg transition-transform hover:scale-105 bg-primary max-w-md mx-auto">
+      <div className="relative overflow-hidden rounded-md p-6 text-primary-foreground shadow-lg transition-transform hover:scale-105 bg-primary max-w-md mx-auto">
         {/* Card background pattern */}
         <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full opacity-10 bg-primary-foreground" />
         <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-24 w-24 rounded-full opacity-10 bg-primary-foreground" />
@@ -122,14 +122,14 @@ export function RevenueCards({
                     {displayTotalRevenue}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <span className="text-xs text-primary-foreground/80">
                     Total Invoices
                   </span>
                   <span className="text-sm font-medium text-primary-foreground/80">
                     {metrics.invoiceCount}
                   </span>
-                </div>
+                </div> */}
               </>
             ) : (
               /* Free users: Show locked premium data teaser */

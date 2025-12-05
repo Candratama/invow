@@ -1,82 +1,52 @@
-import { Suspense } from "react";
-import Navigation from "@/components/landing-page/navigation";
-import HeroSection from "@/components/landing-page/hero-section";
-import FeaturesSection from "@/components/landing-page/features-section";
-import PricingSection from "@/components/landing-page/pricing-section";
-import BenefitsSection from "@/components/landing-page/benefits-section";
-import CTASection from "@/components/landing-page/cta-section";
-import Footer from "@/components/landing-page/footer";
 import {
-  CacheErrorBoundary,
-  CacheFallbackPlaceholder,
-} from "@/components/cache-error-boundary";
+  Navbar,
+  Hero,
+  DashboardPreview,
+  Features,
+  Pricing,
+  Footer,
+  ScrollToTop,
+} from "@/components/landing";
 
 /**
- * Landing page with cached components wrapped in error boundaries.
+ * Landing page dengan Golden Ratio Typography
  *
- * Each cached component is isolated with its own CacheErrorBoundary to ensure:
- * - Errors in one section don't propagate to siblings (Requirement 8.4)
- * - Graceful fallback UI is displayed on errors (Requirement 8.1)
+ * Font Scale (φ = 1.618):
+ * - xs: 0.618rem (~10px)
+ * - sm: 0.764rem (~12px)
+ * - base: 1rem (16px)
+ * - lg: 1.236rem (~20px)
+ * - xl: 1.618rem (~26px)
+ * - 2xl: 2rem (32px)
+ * - 3xl: 2.618rem (~42px)
+ * - 4xl: 3.236rem (~52px)
+ * - 5xl: 4.236rem (~68px)
+ * - 6xl: 5.236rem (~84px)
  */
 export default function LandingPage() {
   return (
-    <div
-      className="min-h-screen bg-gradient-to-b from-white to-gray-50"
-      style={{ fontFamily: "Satoshi, system-ui, sans-serif" }}
-    >
-      <CacheErrorBoundary
-        componentName="Navigation"
-        fallback={<div className="h-16 bg-white" />}
-      >
-        <Navigation />
-      </CacheErrorBoundary>
+    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-gold-200 selection:text-black">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gold-200/40 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
+        <div className="absolute top-[30%] right-[-10%] w-[500px] h-[500px] bg-orange-100/60 rounded-full blur-[100px] animate-blob [animation-delay:2s] mix-blend-multiply"></div>
+        <div className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-yellow-100/50 rounded-full blur-[120px] animate-blob [animation-delay:4s] mix-blend-multiply"></div>
+      </div>
 
-      <main>
-        <CacheErrorBoundary
-          componentName="HeroSection"
-          fallback={<CacheFallbackPlaceholder height="min-h-screen" />}
-        >
-          <HeroSection />
-        </CacheErrorBoundary>
+      <div className="relative z-10">
+        <Navbar />
 
-        <CacheErrorBoundary
-          componentName="FeaturesSection"
-          fallback={<CacheFallbackPlaceholder height="py-24" />}
-        >
-          <FeaturesSection />
-        </CacheErrorBoundary>
+        <main>
+          <Hero />
+          <DashboardPreview />
+          <Features />
+          <Pricing />
+        </main>
 
-        {/* PricingSection is a cached async server component with cacheLife('hours') */}
-        <CacheErrorBoundary
-          componentName="PricingSection"
-          fallback={<CacheFallbackPlaceholder height="py-24" />}
-        >
-          <PricingSection />
-        </CacheErrorBoundary>
+        <Footer />
+      </div>
 
-        <CacheErrorBoundary
-          componentName="BenefitsSection"
-          fallback={<CacheFallbackPlaceholder height="py-24" />}
-        >
-          <BenefitsSection />
-        </CacheErrorBoundary>
-
-        <CacheErrorBoundary
-          componentName="CTASection"
-          fallback={<CacheFallbackPlaceholder height="py-24" />}
-        >
-          <CTASection />
-        </CacheErrorBoundary>
-      </main>
-
-      <CacheErrorBoundary
-        componentName="Footer"
-        fallback={<div className="bg-gray-900 h-32" />}
-      >
-        <Suspense fallback={<div className="bg-gray-900 h-32" />}>
-          <Footer />
-        </Suspense>
-      </CacheErrorBoundary>
+      <ScrollToTop />
     </div>
   );
 }

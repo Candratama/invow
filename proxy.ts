@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/db/services/admin.service";
 
 /**
  * Proxy with auth protection
@@ -60,13 +61,9 @@ export async function proxy(request: NextRequest) {
 
       // Admin route - check admin role
       if (isAdminRoute) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", user.id)
-          .single();
+        const adminStatus = await isAdmin(user.id);
 
-        if (!profile?.is_admin) {
+        if (!adminStatus) {
           // Not admin - redirect to dashboard
           return NextResponse.redirect(new URL("/dashboard", request.url));
         }
