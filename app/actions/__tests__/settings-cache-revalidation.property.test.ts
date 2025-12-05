@@ -30,19 +30,19 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
   const preferencesFilePath = path.join(actionsDir, 'preferences.ts')
   const paymentsFilePath = path.join(actionsDir, 'payments.ts')
 
-  it('should verify store.ts imports revalidateTag from next/cache', () => {
+  it('should verify store.ts imports updateTag from next/cache', () => {
     fc.assert(
       fc.property(
         fc.constant(storeFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must import revalidateTag from next/cache
-          const hasRevalidateTagImport = 
-            fileContent.includes('revalidateTag') &&
+          // Property: Must import updateTag from next/cache (Next.js 16 renamed revalidateTag to updateTag)
+          const hasUpdateTagImport = 
+            (fileContent.includes('updateTag') || fileContent.includes('revalidateTag')) &&
             fileContent.includes("from 'next/cache'")
 
-          expect(hasRevalidateTagImport).toBe(true)
+          expect(hasUpdateTagImport).toBe(true)
         }
       ),
       { numRuns: 100 }
@@ -68,15 +68,16 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
     )
   })
 
-  it('should verify store.ts calls revalidateTag with store tag for store mutations', () => {
+  it('should verify store.ts calls updateTag with store tag for store mutations', () => {
     fc.assert(
       fc.property(
         fc.constant(storeFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must call revalidateTag with SETTINGS_CACHE_TAGS.store
+          // Property: Must call updateTag with SETTINGS_CACHE_TAGS.store (Next.js 16 API)
           const hasStoreTagRevalidation = 
+            fileContent.includes('updateTag(SETTINGS_CACHE_TAGS.store)') ||
             fileContent.includes('revalidateTag(SETTINGS_CACHE_TAGS.store)')
 
           expect(hasStoreTagRevalidation).toBe(true)
@@ -86,15 +87,16 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
     )
   })
 
-  it('should verify store.ts calls revalidateTag with contacts tag for contact mutations', () => {
+  it('should verify store.ts calls updateTag with contacts tag for contact mutations', () => {
     fc.assert(
       fc.property(
         fc.constant(storeFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must call revalidateTag with SETTINGS_CACHE_TAGS.contacts
+          // Property: Must call updateTag with SETTINGS_CACHE_TAGS.contacts (Next.js 16 API)
           const hasContactsTagRevalidation = 
+            fileContent.includes('updateTag(SETTINGS_CACHE_TAGS.contacts)') ||
             fileContent.includes('revalidateTag(SETTINGS_CACHE_TAGS.contacts)')
 
           expect(hasContactsTagRevalidation).toBe(true)
@@ -104,19 +106,19 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
     )
   })
 
-  it('should verify preferences.ts imports revalidateTag from next/cache', () => {
+  it('should verify preferences.ts imports updateTag from next/cache', () => {
     fc.assert(
       fc.property(
         fc.constant(preferencesFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must import revalidateTag from next/cache
-          const hasRevalidateTagImport = 
-            fileContent.includes('revalidateTag') &&
+          // Property: Must import updateTag from next/cache (Next.js 16 API)
+          const hasUpdateTagImport = 
+            (fileContent.includes('updateTag') || fileContent.includes('revalidateTag')) &&
             fileContent.includes("from 'next/cache'")
 
-          expect(hasRevalidateTagImport).toBe(true)
+          expect(hasUpdateTagImport).toBe(true)
         }
       ),
       { numRuns: 100 }
@@ -142,15 +144,16 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
     )
   })
 
-  it('should verify preferences.ts calls revalidateTag with preferences tag', () => {
+  it('should verify preferences.ts calls updateTag with preferences tag', () => {
     fc.assert(
       fc.property(
         fc.constant(preferencesFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must call revalidateTag with SETTINGS_CACHE_TAGS.preferences
+          // Property: Must call updateTag with SETTINGS_CACHE_TAGS.preferences (Next.js 16 API)
           const hasPreferencesTagRevalidation = 
+            fileContent.includes('updateTag(SETTINGS_CACHE_TAGS.preferences)') ||
             fileContent.includes('revalidateTag(SETTINGS_CACHE_TAGS.preferences)')
 
           expect(hasPreferencesTagRevalidation).toBe(true)
@@ -160,19 +163,19 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
     )
   })
 
-  it('should verify payments.ts imports revalidateTag from next/cache', () => {
+  it('should verify payments.ts imports updateTag from next/cache', () => {
     fc.assert(
       fc.property(
         fc.constant(paymentsFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must import revalidateTag from next/cache
-          const hasRevalidateTagImport = 
-            fileContent.includes('revalidateTag') &&
+          // Property: Must import updateTag from next/cache (Next.js 16 API)
+          const hasUpdateTagImport = 
+            (fileContent.includes('updateTag') || fileContent.includes('revalidateTag')) &&
             fileContent.includes("from 'next/cache'")
 
-          expect(hasRevalidateTagImport).toBe(true)
+          expect(hasUpdateTagImport).toBe(true)
         }
       ),
       { numRuns: 100 }
@@ -198,15 +201,16 @@ describe('Property 2: Mutations invalidate cache with revalidateTag', () => {
     )
   })
 
-  it('should verify payments.ts calls revalidateTag with subscription tag', () => {
+  it('should verify payments.ts calls updateTag with subscription tag', () => {
     fc.assert(
       fc.property(
         fc.constant(paymentsFilePath),
         (filePath) => {
           const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-          // Property: Must call revalidateTag with SETTINGS_CACHE_TAGS.subscription
+          // Property: Must call updateTag with SETTINGS_CACHE_TAGS.subscription (Next.js 16 API)
           const hasSubscriptionTagRevalidation = 
+            fileContent.includes('updateTag(SETTINGS_CACHE_TAGS.subscription)') ||
             fileContent.includes('revalidateTag(SETTINGS_CACHE_TAGS.subscription)')
 
           expect(hasSubscriptionTagRevalidation).toBe(true)

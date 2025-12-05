@@ -4,8 +4,8 @@
 
 import { Invoice, StoreSettings } from "@/lib/types";
 
-/** Default gold color for free users */
-export const DEFAULT_BRAND_COLOR = "#d4af37";
+/** Default primary color for free users */
+export const DEFAULT_BRAND_COLOR = "#FFB300";
 
 /**
  * Props for all invoice templates

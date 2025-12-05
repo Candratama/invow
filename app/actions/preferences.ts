@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { UserPreferencesService } from '@/lib/db/services/user-preferences.service'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { SETTINGS_CACHE_TAGS } from '@/lib/db/data-access/settings'
 import type { InvoiceTemplateId } from '@/components/features/invoice/templates'
 
@@ -59,7 +59,7 @@ export async function updatePreferencesAction(updates: {
     }
 
     // Invalidate preferences cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    updateTag(SETTINGS_CACHE_TAGS.preferences)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
@@ -90,7 +90,7 @@ export async function updateExportQualityAction(quality: 50 | 100 | 150) {
     }
 
     // Invalidate preferences cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    updateTag(SETTINGS_CACHE_TAGS.preferences)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
@@ -124,7 +124,7 @@ export async function updateTaxSettingsAction(
     }
 
     // Invalidate preferences cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    updateTag(SETTINGS_CACHE_TAGS.preferences)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     
@@ -155,7 +155,7 @@ export async function updateSelectedTemplateAction(template: InvoiceTemplateId) 
     }
 
     // Invalidate preferences cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.preferences)
+    updateTag(SETTINGS_CACHE_TAGS.preferences)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     

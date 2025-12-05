@@ -78,6 +78,7 @@ export class UserPreferencesService {
       if (error) {
         if (error.code === "PGRST116") {
           // No preferences found, return defaults
+          // Default template is "simple" for free users (Requirements: free tier default)
           const defaults: UserPreferences = {
             id: "",
             user_id: user.id,
@@ -89,7 +90,7 @@ export class UserPreferencesService {
             export_quality_kb: 50,
             tax_enabled: false,
             tax_percentage: null,
-            selected_template: "classic",
+            selected_template: "simple",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -300,7 +301,7 @@ export class UserPreferencesService {
 
   /**
    * Get selected invoice template for the authenticated user
-   * Returns 'classic' as default if no preference is set
+   * Returns 'simple' as default if no preference is set (free tier default)
    */
   async getSelectedTemplate(): Promise<{
     data: InvoiceTemplateId;
@@ -317,7 +318,7 @@ export class UserPreferencesService {
       };
     } catch (error) {
       return {
-        data: "classic",
+        data: "simple",
         error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { UserFilters } from "@/components/features/admin/filters/user-filters";
 import { UsersTable } from "@/components/features/admin/users-table";
 import { useAdminUsers } from "@/lib/hooks/use-admin-data";
@@ -12,12 +14,6 @@ interface UsersClientProps {
     users: unknown[];
     total: number;
   } | null;
-  filters: {
-    tier: string;
-    status: string;
-    search: string;
-    page: number;
-  };
 }
 
 function UsersPageSkeleton() {
@@ -43,17 +39,33 @@ function UsersPageSkeleton() {
   );
 }
 
-export function UsersClient({ initialData, filters }: UsersClientProps) {
+export function UsersClient({ initialData }: UsersClientProps) {
+  const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+
+  const tier = searchParams.get("tier") || "all";
+  const status = searchParams.get("status") || "all";
+  const search = searchParams.get("search") || "";
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
   const { data, isLoading, error } = useAdminUsers(
     {
-      tier: filters.tier,
-      status: filters.status,
-      search: filters.search,
-      page: filters.page,
+      tier,
+      status,
+      search,
+      page,
       pageSize: PAGE_SIZE,
     },
     initialData || undefined
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || (isLoading && !data)) {
+    return <UsersPageSkeleton />;
+  }
 
   const users = (data?.users || []) as Array<{
     id: string;
@@ -67,10 +79,6 @@ export function UsersClient({ initialData, filters }: UsersClientProps) {
   }>;
   const total = data?.total || 0;
 
-  if (isLoading && !initialData) {
-    return <UsersPageSkeleton />;
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -82,9 +90,9 @@ export function UsersClient({ initialData, filters }: UsersClientProps) {
 
       <UserFilters
         initialFilters={{
-          tier: (filters.tier || "all") as "all" | "free" | "premium",
-          status: (filters.status || "all") as "all" | "active" | "expired",
-          search: filters.search,
+          tier: tier as "all" | "free" | "premium",
+          status: status as "all" | "active" | "expired",
+          search,
         }}
       />
 
@@ -99,7 +107,7 @@ export function UsersClient({ initialData, filters }: UsersClientProps) {
       <UsersTable
         users={users}
         total={total}
-        currentPage={filters.page}
+        currentPage={page}
         pageSize={PAGE_SIZE}
       />
 

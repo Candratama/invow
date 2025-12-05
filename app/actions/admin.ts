@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { updateTag } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/db/services/admin.service'
 import {
@@ -256,9 +256,9 @@ export async function upgradeUserToPremium(userId: string): Promise<{
     }
 
     // Revalidate caches
-    revalidateTag(ADMIN_CACHE_TAGS.users)
-    revalidateTag(ADMIN_CACHE_TAGS.subscriptions)
-    revalidateTag(ADMIN_CACHE_TAGS.metrics)
+    updateTag(ADMIN_CACHE_TAGS.users)
+    updateTag(ADMIN_CACHE_TAGS.subscriptions)
+    updateTag(ADMIN_CACHE_TAGS.metrics)
 
     return { success: true }
   } catch (error) {
@@ -297,9 +297,9 @@ export async function downgradeUserToFree(userId: string): Promise<{
     }
 
     // Revalidate caches
-    revalidateTag(ADMIN_CACHE_TAGS.users)
-    revalidateTag(ADMIN_CACHE_TAGS.subscriptions)
-    revalidateTag(ADMIN_CACHE_TAGS.metrics)
+    updateTag(ADMIN_CACHE_TAGS.users)
+    updateTag(ADMIN_CACHE_TAGS.subscriptions)
+    updateTag(ADMIN_CACHE_TAGS.metrics)
 
     return { success: true }
   } catch (error) {
@@ -342,8 +342,8 @@ export async function extendSubscription(userId: string, days: number): Promise<
     }
 
     // Revalidate caches
-    revalidateTag(ADMIN_CACHE_TAGS.users)
-    revalidateTag(ADMIN_CACHE_TAGS.subscriptions)
+    updateTag(ADMIN_CACHE_TAGS.users)
+    updateTag(ADMIN_CACHE_TAGS.subscriptions)
 
     return { success: true }
   } catch (error) {
@@ -382,8 +382,8 @@ export async function resetInvoiceCounter(userId: string): Promise<{
     }
 
     // Revalidate caches
-    revalidateTag(ADMIN_CACHE_TAGS.users)
-    revalidateTag(ADMIN_CACHE_TAGS.subscriptions)
+    updateTag(ADMIN_CACHE_TAGS.users)
+    updateTag(ADMIN_CACHE_TAGS.subscriptions)
 
     return { success: true }
   } catch (error) {
@@ -422,7 +422,7 @@ export async function verifyTransaction(transactionId: string): Promise<{
     }
 
     // Revalidate caches
-    revalidateTag(ADMIN_CACHE_TAGS.transactions)
+    updateTag(ADMIN_CACHE_TAGS.transactions)
 
     return { success: true }
   } catch (error) {

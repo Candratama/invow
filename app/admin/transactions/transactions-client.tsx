@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { TransactionFilters } from "@/components/features/admin/filters/transaction-filters";
 import { TransactionsTableWrapper } from "@/components/features/admin/transactions-table-wrapper";
 import { useAdminTransactions } from "@/lib/hooks/use-admin-data";
@@ -13,12 +15,6 @@ interface TransactionsClientProps {
     transactions: unknown[];
     total: number;
   } | null;
-  filters: {
-    status: string;
-    dateFrom: string;
-    dateTo: string;
-    page: number;
-  };
 }
 
 function TransactionsPageSkeleton() {
@@ -44,27 +40,36 @@ function TransactionsPageSkeleton() {
   );
 }
 
-export function TransactionsClient({
-  initialData,
-  filters,
-}: TransactionsClientProps) {
+export function TransactionsClient({ initialData }: TransactionsClientProps) {
+  const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+
+  const status = searchParams.get("status") || "all";
+  const dateFrom = searchParams.get("dateFrom") || "";
+  const dateTo = searchParams.get("dateTo") || "";
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
   const { data, isLoading, error } = useAdminTransactions(
     {
-      status: filters.status,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      page: filters.page,
+      status,
+      dateFrom,
+      dateTo,
+      page,
       pageSize: PAGE_SIZE,
     },
     initialData || undefined
   );
 
-  const transactions = (data?.transactions || []) as TransactionListItem[];
-  const total = data?.total || 0;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  if (isLoading && !initialData) {
+  if (!mounted || (isLoading && !data)) {
     return <TransactionsPageSkeleton />;
   }
+
+  const transactions = (data?.transactions || []) as TransactionListItem[];
+  const total = data?.total || 0;
 
   return (
     <div className="space-y-6">
@@ -77,13 +82,9 @@ export function TransactionsClient({
 
       <TransactionFilters
         initialFilters={{
-          status: (filters.status || "all") as
-            | "all"
-            | "pending"
-            | "completed"
-            | "failed",
-          dateFrom: filters.dateFrom,
-          dateTo: filters.dateTo,
+          status: status as "all" | "pending" | "completed" | "failed",
+          dateFrom,
+          dateTo,
         }}
       />
 
@@ -100,7 +101,7 @@ export function TransactionsClient({
       <TransactionsTableWrapper
         transactions={transactions}
         total={total}
-        currentPage={filters.page}
+        currentPage={page}
         pageSize={PAGE_SIZE}
       />
 

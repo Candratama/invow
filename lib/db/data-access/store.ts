@@ -19,7 +19,7 @@ export const getStoreByUserId = cache(async () => {
 /**
  * Get store settings with tier-based feature gating
  * Logo is only included if user is premium (Requirements 4.4)
- * Signature is only included if user is premium (Requirements 5.4)
+ * Signature is always included for invoice display (business continuity - authorized person data)
  * The logo and signature data are retained in the database for re-subscription
  */
 export const getStoreSettings = cache(async (userId: string) => {
@@ -40,13 +40,15 @@ export const getStoreSettings = cache(async (userId: string) => {
   }
   
   // Apply tier-based feature gating
-  // Logo and signature are hidden for non-premium users but retained in database
+  // Logo is hidden for non-premium users but retained in database
+  // Signature is always included for invoice display (authorized person data)
   // This allows re-subscription to restore these features without data loss
   
-  // Filter signatures from contacts for non-premium users
+  // Keep signatures for invoice display - authorized person data should always be shown
   const filteredContacts = storeResult.data.store_contacts?.map(contact => ({
     ...contact,
-    signature: isPremium ? contact.signature : null
+    // Signature is always included for invoice display purposes
+    signature: contact.signature
   }))
   
   return {

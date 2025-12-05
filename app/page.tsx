@@ -1,57 +1,52 @@
-import { Suspense } from "react";
-import Navigation from "@/components/landing-page/navigation";
-import HeroSection from "@/components/landing-page/hero-section";
-import FeaturesSection from "@/components/landing-page/features-section";
-import PricingSection from "@/components/landing-page/pricing-section";
-import BenefitsSection from "@/components/landing-page/benefits-section";
-import CTASection from "@/components/landing-page/cta-section";
-import Footer from "@/components/landing-page/footer";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
+import {
+  Navbar,
+  Hero,
+  DashboardPreview,
+  Features,
+  Pricing,
+  Footer,
+  ScrollToTop,
+} from "@/components/landing";
 
-function PricingSkeleton() {
-  return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <Skeleton className="h-10 w-64 mx-auto mb-6" />
-          <Skeleton className="h-6 w-96 mx-auto" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-sm md:max-w-none mx-auto">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-[400px] w-full rounded-lg" />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-async function PricingContent() {
-  // Show ALL plans on homepage (including inactive ones)
-  const result = await getSubscriptionPlansAction(true);
-  const plans = result.success ? result.data || [] : [];
-
-  return <PricingSection initialPlans={plans} />;
-}
-
+/**
+ * Landing page dengan Golden Ratio Typography
+ *
+ * Font Scale (φ = 1.618):
+ * - xs: 0.618rem (~10px)
+ * - sm: 0.764rem (~12px)
+ * - base: 1rem (16px)
+ * - lg: 1.236rem (~20px)
+ * - xl: 1.618rem (~26px)
+ * - 2xl: 2rem (32px)
+ * - 3xl: 2.618rem (~42px)
+ * - 4xl: 3.236rem (~52px)
+ * - 5xl: 4.236rem (~68px)
+ * - 6xl: 5.236rem (~84px)
+ */
 export default function LandingPage() {
   return (
-    <div
-      className="min-h-screen bg-gradient-to-b from-white to-gray-50"
-      style={{ fontFamily: "Satoshi, system-ui, sans-serif" }}
-    >
-      <Navigation />
-      <main>
-        <HeroSection />
-        <FeaturesSection />
-        <Suspense fallback={<PricingSkeleton />}>
-          <PricingContent />
-        </Suspense>
-        <BenefitsSection />
-        <CTASection />
-      </main>
-      <Footer />
+    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-gold-200 selection:text-black">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gold-200/40 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
+        <div className="absolute top-[30%] right-[-10%] w-[500px] h-[500px] bg-orange-100/60 rounded-full blur-[100px] animate-blob [animation-delay:2s] mix-blend-multiply"></div>
+        <div className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-yellow-100/50 rounded-full blur-[120px] animate-blob [animation-delay:4s] mix-blend-multiply"></div>
+      </div>
+
+      <div className="relative z-10">
+        <Navbar />
+
+        <main>
+          <Hero />
+          <DashboardPreview />
+          <Features />
+          <Pricing />
+        </main>
+
+        <Footer />
+      </div>
+
+      <ScrollToTop />
     </div>
   );
 }

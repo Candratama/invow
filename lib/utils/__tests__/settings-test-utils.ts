@@ -272,7 +272,7 @@ export const createMockStore = (overrides?: Partial<Record<string, unknown>>) =>
   name: 'Test Store',
   address: '123 Test St',
   whatsapp: '+62812345678',
-  brand_color: '#3b82f6',
+  brand_color: '#FFB300',
   store_code: 'TST',
   invoice_prefix: 'INV',
   created_at: new Date().toISOString(),

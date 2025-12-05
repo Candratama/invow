@@ -37,9 +37,12 @@ export async function getDashboardDataAction(page: number = 1) {
       : null;
     const totalPages = invoicesResult.data?.totalPages || 1;
 
-    const primaryContact = storeResult.data?.store_contacts?.find(
-      (contact) => contact.is_primary
-    );
+    // Get primary contact, or use first contact if only one exists
+    const contacts = storeResult.data?.store_contacts || [];
+    const primaryContact =
+      contacts.find((contact) => contact.is_primary) ||
+      (contacts.length === 1 ? contacts[0] : undefined);
+
     const storeSettings = storeResult.data
       ? {
           name: storeResult.data.name,

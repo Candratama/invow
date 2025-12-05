@@ -1,18 +1,19 @@
+"use cache";
+
+import { cacheLife, cacheTag } from "next/cache";
 import PricingCard from "./pricing-card";
+import { getSubscriptionPlans } from "@/lib/data/pricing";
+import { CacheTags } from "@/lib/cache/tags";
 
-interface PricingSectionProps {
-  initialPlans: Array<{
-    tier: string;
-    name: string;
-    priceFormatted: string;
-    description: string | null;
-    features: string[];
-    isPopular: boolean;
-    isActive: boolean;
-  }>;
-}
+export default async function PricingSection() {
+  // Set cache lifetime to 1 hour and tag for invalidation
+  cacheLife("hours");
+  cacheTag(CacheTags.PRICING);
 
-export default function PricingSection({ initialPlans }: PricingSectionProps) {
+  // Colocated data fetching with React cache() for deduplication
+  // Fetch directly in the component - no prop drilling needed
+  const plans = await getSubscriptionPlans(true); // Include inactive plans for homepage
+
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,7 +28,7 @@ export default function PricingSection({ initialPlans }: PricingSectionProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-sm md:max-w-none mx-auto">
-          {initialPlans.map((plan) => (
+          {plans.map((plan) => (
             <PricingCard
               key={plan.tier}
               tier={{

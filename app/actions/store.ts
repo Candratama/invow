@@ -71,7 +71,7 @@ export async function updateStoreAction(data: {
       tagline: data.tagline || null,
       store_number: data.storeNumber || null,
       payment_method: data.paymentMethod || null,
-      brand_color: data.brandColor || '#d4af37',
+      brand_color: data.brandColor || '#FFB300',
       is_active: true,
       invoice_prefix: 'INV',
       invoice_number_format: null,
@@ -151,9 +151,10 @@ export async function createContactAction(contactData: {
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
+  // Invalidate contacts cache and revalidate paths
   revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true, data: result.data }
 }
 
@@ -176,9 +177,10 @@ export async function updateContactAction(id: string, contactData: {
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
+  // Invalidate contacts cache and revalidate paths
   revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true, data: result.data }
 }
 
@@ -197,9 +199,10 @@ export async function deleteContactAction(id: string) {
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
+  // Invalidate contacts cache and revalidate paths
   revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true }
 }
 
@@ -218,9 +221,10 @@ export async function setPrimaryContactAction(storeId: string, contactId: string
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
+  // Invalidate contacts cache and revalidate paths
   revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true }
 }
 
@@ -252,4 +256,20 @@ export async function getStoreAndContactsAction() {
       contacts 
     } 
   }
+}
+
+/**
+ * Invalidate store and contacts cache
+ * Use this after direct database updates to refresh cached data
+ */
+export async function invalidateStoreCache() {
+  // Invalidate both store and contacts cache
+  revalidateTag(SETTINGS_CACHE_TAGS.store)
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  
+  // Revalidate relevant paths
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/settings')
+  
+  return { success: true }
 }

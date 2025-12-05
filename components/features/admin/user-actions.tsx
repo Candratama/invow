@@ -19,13 +19,14 @@ import {
   extendSubscription,
   resetInvoiceCounter,
 } from "@/app/actions/admin";
+import { useInvalidateAdmin } from "@/lib/hooks/use-admin-data";
 import { toast } from "sonner";
 
 interface UserActionsProps {
   userId: string;
   currentTier: string;
   currentMonthCount: number;
-  onActionComplete: () => void;
+  onActionComplete?: () => void;
 }
 
 /**
@@ -44,6 +45,7 @@ export function UserActions({
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [extendDays, setExtendDays] = useState("30");
   const [isLoading, setIsLoading] = useState(false);
+  const invalidate = useInvalidateAdmin();
 
   const isPremium = currentTier === "premium";
 
@@ -54,7 +56,12 @@ export function UserActions({
       if (result.success) {
         toast.success("User upgraded to premium successfully");
         setIsUpgradeOpen(false);
-        onActionComplete();
+
+        // Invalidate React Query cache
+        invalidate.invalidateUsers();
+        invalidate.invalidateSubscriptions();
+
+        onActionComplete?.();
       } else {
         toast.error(result.error || "Failed to upgrade user");
       }
@@ -72,7 +79,12 @@ export function UserActions({
       if (result.success) {
         toast.success("User downgraded to free tier successfully");
         setIsDowngradeOpen(false);
-        onActionComplete();
+
+        // Invalidate React Query cache
+        invalidate.invalidateUsers();
+        invalidate.invalidateSubscriptions();
+
+        onActionComplete?.();
       } else {
         toast.error(result.error || "Failed to downgrade user");
       }
@@ -97,7 +109,12 @@ export function UserActions({
         toast.success(`Subscription extended by ${days} days`);
         setIsExtendOpen(false);
         setExtendDays("30");
-        onActionComplete();
+
+        // Invalidate React Query cache
+        invalidate.invalidateUsers();
+        invalidate.invalidateSubscriptions();
+
+        onActionComplete?.();
       } else {
         toast.error(result.error || "Failed to extend subscription");
       }
@@ -115,7 +132,11 @@ export function UserActions({
       if (result.success) {
         toast.success("Invoice counter reset to 0");
         setIsResetOpen(false);
-        onActionComplete();
+
+        // Invalidate React Query cache
+        invalidate.invalidateUsers();
+
+        onActionComplete?.();
       } else {
         toast.error(result.error || "Failed to reset invoice counter");
       }

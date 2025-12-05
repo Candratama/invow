@@ -58,6 +58,7 @@ vi.mock('@/lib/db/services/invoices.service', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(), // Next.js 16 renamed revalidateTag to updateTag
   unstable_cache: vi.fn((fn) => fn),
 }))
 
@@ -249,10 +250,10 @@ describe('Property 4: Server Actions Cache Invalidation', () => {
           const revalidatedPaths = vi.mocked(revalidatePath).mock.calls.map(call => call[0])
 
           // Verify common paths are revalidated
-          const hasAccountOrDashboard = revalidatedPaths.some(
-            path => path === '/account' || path === '/dashboard'
+          const hasSettingsOrDashboard = revalidatedPaths.some(
+            path => path === '/dashboard/settings' || path === '/dashboard'
           )
-          expect(hasAccountOrDashboard).toBe(true)
+          expect(hasSettingsOrDashboard).toBe(true)
         }
       ),
       { numRuns: 100 }

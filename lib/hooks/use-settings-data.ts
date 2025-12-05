@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import type { SettingsPageData } from "@/lib/db/data-access/settings";
 
 // Query keys untuk cache management
@@ -14,6 +15,14 @@ export const settingsKeys = {
  * Data di-fetch dari server dan di-cache di client
  */
 export function useSettingsData(initialData?: SettingsPageData) {
+  const queryClient = useQueryClient();
+  
+  // Check if we already have cached data - don't overwrite with initialData
+  const existingData = queryClient.getQueryData<SettingsPageData>(settingsKeys.data());
+  
+  // Only use initialData on first mount when no cache exists
+  const initialDataRef = useRef(existingData ? undefined : initialData);
+  
   return useQuery({
     queryKey: settingsKeys.data(),
     queryFn: async () => {
@@ -25,8 +34,10 @@ export function useSettingsData(initialData?: SettingsPageData) {
       }
       return result.data as SettingsPageData;
     },
-    initialData,
-    staleTime: 5 * 60 * 1000,
+    // Only use initialData if no cache exists
+    initialData: initialDataRef.current,
+    staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false, // Don't refetch on component mount if data exists
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });

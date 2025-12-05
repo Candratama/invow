@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 
 // Query keys untuk cache management
 export const dashboardKeys = {
@@ -71,6 +72,30 @@ export function useDashboardData(
  * Hook untuk fetch revenue data saja (tidak berubah saat pagination)
  */
 export function useRevenueData(initialData?: DashboardData) {
+  const queryClient = useQueryClient();
+  
+  // Check if we already have cached data - don't overwrite with initialData
+  const existingData = queryClient.getQueryData<{
+    revenueMetrics: DashboardData["revenueMetrics"];
+    subscriptionStatus: DashboardData["subscriptionStatus"];
+    storeSettings: unknown;
+    defaultStore: { id: string } | null;
+  }>(dashboardKeys.revenue());
+  
+  // Only use initialData on first mount when no cache exists
+  const initialDataRef = useRef(
+    existingData
+      ? undefined
+      : initialData
+      ? {
+          revenueMetrics: initialData.revenueMetrics,
+          subscriptionStatus: initialData.subscriptionStatus,
+          storeSettings: initialData.storeSettings,
+          defaultStore: initialData.defaultStore,
+        }
+      : undefined
+  );
+  
   return useQuery<{
     revenueMetrics: DashboardData["revenueMetrics"];
     subscriptionStatus: DashboardData["subscriptionStatus"];
@@ -93,14 +118,7 @@ export function useRevenueData(initialData?: DashboardData) {
         defaultStore: result.data?.defaultStore || null,
       };
     },
-    initialData: initialData
-      ? {
-          revenueMetrics: initialData.revenueMetrics,
-          subscriptionStatus: initialData.subscriptionStatus,
-          storeSettings: initialData.storeSettings,
-          defaultStore: initialData.defaultStore,
-        }
-      : undefined,
+    initialData: initialDataRef.current,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -111,6 +129,30 @@ export function useRevenueData(initialData?: DashboardData) {
  * Hook untuk fetch invoice list saja (berubah saat pagination)
  */
 export function useInvoiceList(page: number = 1, initialData?: DashboardData) {
+  const queryClient = useQueryClient();
+  
+  // Check if we already have cached data for this page
+  const existingData = queryClient.getQueryData<{
+    invoices: unknown[];
+    totalPages: number;
+    hasMoreHistory: boolean;
+    historyLimitMessage?: string;
+  }>(dashboardKeys.invoices(page));
+  
+  // Only use initialData on first mount when no cache exists (page 1 only)
+  const initialDataRef = useRef(
+    existingData
+      ? undefined
+      : page === 1 && initialData
+      ? {
+          invoices: initialData.invoices,
+          totalPages: initialData.totalPages,
+          hasMoreHistory: initialData.hasMoreHistory,
+          historyLimitMessage: initialData.historyLimitMessage,
+        }
+      : undefined
+  );
+  
   return useQuery<{
     invoices: unknown[];
     totalPages: number;
@@ -133,15 +175,7 @@ export function useInvoiceList(page: number = 1, initialData?: DashboardData) {
         historyLimitMessage: result.data?.historyLimitMessage,
       };
     },
-    initialData:
-      page === 1 && initialData
-        ? {
-            invoices: initialData.invoices,
-            totalPages: initialData.totalPages,
-            hasMoreHistory: initialData.hasMoreHistory,
-            historyLimitMessage: initialData.historyLimitMessage,
-          }
-        : undefined,
+    initialData: initialDataRef.current,
     staleTime: 2 * 60 * 1000, // 2 minutes for invoice list
     refetchOnMount: false,
     refetchOnWindowFocus: false,

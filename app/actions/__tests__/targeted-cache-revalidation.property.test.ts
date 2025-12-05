@@ -57,6 +57,7 @@ vi.mock('next/cache', () => ({
     revalidatePathCalls.push(path)
   }),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(), // Next.js 16 renamed revalidateTag to updateTag
   unstable_cache: vi.fn((fn) => fn),
 }))
 

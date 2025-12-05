@@ -3,9 +3,31 @@
 import { useState, useTransition, lazy, useEffect, useCallback } from "react";
 import { Plus, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+/**
+ * Static empty state UI - minimal client-side component.
+ * This is the "hole" content that displays when there are no invoices.
+ * The static content is kept minimal to reduce client JS bundle size.
+ */
+function EmptyStateUI() {
+  return (
+    <div className="max-w-sm mx-auto">
+      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Plus className="text-primary" size={32} />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        No invoices yet
+      </h3>
+      <p className="text-sm text-gray-500 mb-6">
+        Create your first invoice to start tracking your sales and revenue
+      </p>
+    </div>
+  );
+}
 import { FABButton } from "@/components/ui/fab-button";
 import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
+import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Pagination } from "@/components/ui/pagination";
 import { InvoiceCard } from "@/components/features/dashboard/invoice-card";
@@ -42,6 +64,27 @@ const InvoicePreview = lazy(() =>
 interface DashboardClientProps {
   initialData: DashboardData | null;
 }
+
+/**
+ * Dashboard Client Component - The "hole" in the donut pattern.
+ *
+ * This component contains all the interactive, user-specific functionality:
+ * - View state management (home/form/preview)
+ * - Invoice CRUD operations
+ * - Keyboard shortcuts
+ * - React Query data fetching
+ * - Lazy-loaded heavy components (InvoiceForm, InvoicePreview)
+ *
+ * The static shell (header, layout) is cached in the parent layout.tsx
+ * using the 'use cache' directive, while this component streams in
+ * with the dynamic content.
+ *
+ * Optimizations applied:
+ * - Lazy loading for InvoiceForm and InvoicePreview
+ * - Memoized callbacks with useCallback
+ * - Separate queries for revenue (static) and invoices (paginated)
+ * - Minimal static UI extracted to EmptyStateUI
+ */
 
 function PreviewView({
   onBack,
@@ -124,11 +167,12 @@ function PreviewView({
 }
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
+  // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
   const [view, setView] = useState<"home" | "form" | "preview">("home");
   const [currentPage, setCurrentPage] = useState(1);
   const [isPending, startTransition] = useTransition();
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userEmail = user?.email || "";
 
   const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
@@ -143,7 +187,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     initialData || undefined
   );
 
-  // Extract data from query results
+  // Extract data from query results (safe even if undefined)
   const invoices = (invoiceData?.invoices || []) as InvoiceWithItems[];
   const totalPages = invoiceData?.totalPages || 1;
   const hasMoreHistory = invoiceData?.hasMoreHistory || false;
@@ -198,10 +242,13 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     setView("form");
   }, [initializeNewInvoice]);
 
-  const handleOpenCompleted = async (invoiceId: string) => {
-    await loadCompleted(invoiceId);
-    setView("form");
-  };
+  const handleOpenCompleted = useCallback(
+    async (invoiceId: string) => {
+      await loadCompleted(invoiceId);
+      setView("form");
+    },
+    [loadCompleted]
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -221,6 +268,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [view, defaultStore, handleNewInvoice]);
+
+  // Show skeleton while auth is loading or initial data fetch - AFTER all hooks
+  if (authLoading || (isLoadingRevenue && !revenueData)) {
+    return <DashboardSkeleton />;
+  }
 
   const handleDeleteCompleted = async (
     e: React.MouseEvent,
@@ -372,24 +424,14 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               </div>
             ) : (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center lg:p-12">
-                <div className="max-w-sm mx-auto">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Plus className="text-primary" size={32} />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No invoices yet
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-6">
-                    Create your first invoice to start tracking your sales and
-                    revenue
-                  </p>
-                  {defaultStore && (
-                    <Button onClick={handleNewInvoice} className="gap-2">
-                      <Plus size={18} />
-                      Create First Invoice
-                    </Button>
-                  )}
-                </div>
+                {/* Static empty state content - could be server-rendered */}
+                <EmptyStateUI />
+                {defaultStore && (
+                  <Button onClick={handleNewInvoice} className="gap-2">
+                    <Plus size={18} />
+                    Create First Invoice
+                  </Button>
+                )}
               </div>
             )}
           </>

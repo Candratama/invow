@@ -1,9 +1,11 @@
+"use cache";
+
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
-export default function CTASection() {
+export default async function CTASection() {
   return (
     <section className="py-24 bg-primary">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

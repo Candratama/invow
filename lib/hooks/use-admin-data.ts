@@ -169,6 +169,119 @@ export function useAdminInvoices<T>(
   });
 }
 
+interface UseAdminSubscriptionsParams {
+  tier?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * Hook untuk fetch admin subscriptions dengan caching
+ */
+export function useAdminSubscriptions<T>(
+  params: UseAdminSubscriptionsParams,
+  initialData?: T
+) {
+  return useQuery({
+    queryKey: adminKeys.subscriptions(params),
+    queryFn: async () => {
+      const { getSubscriptions } = await import("@/app/actions/admin");
+      const result = await getSubscriptions({
+        tier: params.tier === "all" ? undefined : (params.tier as "free" | "premium"),
+        status: params.status === "all" ? undefined : (params.status as "active" | "expired" | "expiring_soon"),
+        page: params.page || 1,
+        pageSize: params.pageSize || 10,
+      });
+      if (result.error) throw new Error(result.error);
+      return result.data as T;
+    },
+    initialData,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+interface UseAdminAnalyticsParams {
+  tab: string;
+  from: string;
+  to: string;
+}
+
+/**
+ * Hook untuk fetch admin analytics dengan caching
+ */
+export function useAdminAnalytics<T>(
+  params: UseAdminAnalyticsParams,
+  initialData?: T
+) {
+  return useQuery({
+    queryKey: adminKeys.analytics(params),
+    queryFn: async () => {
+      const {
+        getAdminRevenueAnalytics,
+        getAdminUserAnalytics,
+        getAdminInvoiceAnalytics,
+      } = await import("@/app/actions/admin-analytics");
+      
+      const dateRange = { from: params.from, to: params.to };
+      
+      let result;
+      switch (params.tab) {
+        case "revenue":
+          result = await getAdminRevenueAnalytics(dateRange);
+          break;
+        case "users":
+          result = await getAdminUserAnalytics(dateRange);
+          break;
+        case "invoices":
+          result = await getAdminInvoiceAnalytics(dateRange);
+          break;
+        default:
+          result = await getAdminRevenueAnalytics(dateRange);
+      }
+      
+      if (result.error) throw new Error(result.error);
+      return result.data as T;
+    },
+    initialData,
+    staleTime: 5 * 60 * 1000, // 5 minutes for analytics
+  });
+}
+
+/**
+ * Hook untuk fetch pricing plans dengan caching
+ */
+export function useAdminPricing<T>(initialData?: T) {
+  return useQuery({
+    queryKey: [...adminKeys.all, "pricing"] as const,
+    queryFn: async () => {
+      const { getSubscriptionPlansAction } = await import("@/app/actions/admin-pricing");
+      const result = await getSubscriptionPlansAction();
+      if (!result.success) throw new Error(result.error);
+      return result.data as T;
+    },
+    initialData,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook untuk fetch templates dengan caching
+ */
+export function useAdminTemplates<T>(initialData?: T) {
+  return useQuery({
+    queryKey: [...adminKeys.all, "templates"] as const,
+    queryFn: async () => {
+      const { getTemplateAccessRulesAction } = await import("@/app/actions/template-access");
+      const result = await getTemplateAccessRulesAction();
+      if (!result.success) throw new Error(result.error);
+      return result.data as T;
+    },
+    initialData,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /**
  * Hook untuk invalidate semua admin cache
  */
@@ -187,6 +300,18 @@ export function useInvalidateAdmin() {
     },
     invalidateTransactions: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "transactions"] });
+    },
+    invalidateSubscriptions: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "subscriptions"] });
+    },
+    invalidateAnalytics: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "analytics"] });
+    },
+    invalidatePricing: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "pricing"] });
+    },
+    invalidateTemplates: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "templates"] });
     },
   };
 }

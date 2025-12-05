@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { InvoiceFilters } from "@/components/features/admin/invoices/invoice-filters";
 import { InvoicesTableWrapper } from "@/components/features/admin/invoices/invoices-table-wrapper";
 import { useAdminInvoices } from "@/lib/hooks/use-admin-data";
@@ -13,17 +15,6 @@ interface InvoicesClientProps {
     invoices: InvoiceListItem[];
     total: number;
   } | null;
-  filters: {
-    userId: string;
-    storeId: string;
-    status: string;
-    dateFrom: string;
-    dateTo: string;
-    amountMin: string;
-    amountMax: string;
-    search: string;
-    page: number;
-  };
   users: Array<{ id: string; email: string }>;
   stores: Array<{ id: string; name: string }>;
 }
@@ -56,32 +47,84 @@ function InvoicesPageSkeleton() {
 
 export function InvoicesClient({
   initialData,
-  filters,
-  users,
-  stores,
+  users: initialUsers,
+  stores: initialStores,
 }: InvoicesClientProps) {
+  const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+  const [users, setUsers] = useState(initialUsers);
+  const [stores, setStores] = useState(initialStores);
+
+  const userId = searchParams.get("userId") || "";
+  const storeId = searchParams.get("storeId") || "";
+  const status = searchParams.get("status") || "all";
+  const dateFrom = searchParams.get("dateFrom") || "";
+  const dateTo = searchParams.get("dateTo") || "";
+  const amountMin = searchParams.get("amountMin") || "";
+  const amountMax = searchParams.get("amountMax") || "";
+  const search = searchParams.get("search") || "";
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
+  // Fetch users and stores list for filters if not provided
+  useEffect(() => {
+    if (users.length === 0) {
+      import("@/app/actions/admin").then(({ getUsers }) => {
+        getUsers({ page: 1, pageSize: 1000 }).then((result) => {
+          if (result.success && result.data) {
+            const usersList = result.data.users.map(
+              (u: { id: string; email: string }) => ({
+                id: u.id,
+                email: u.email,
+              })
+            );
+            setUsers(usersList);
+          }
+        });
+      });
+    }
+    if (stores.length === 0) {
+      import("@/app/actions/admin-stores").then(({ getAdminStores }) => {
+        getAdminStores({ page: 1, pageSize: 1000 }).then((result) => {
+          if (result.success && result.data) {
+            const storesList = result.data.stores.map(
+              (s: { id: string; name: string }) => ({
+                id: s.id,
+                name: s.name,
+              })
+            );
+            setStores(storesList);
+          }
+        });
+      });
+    }
+  }, [users.length, stores.length]);
+
   const { data, isLoading, error } = useAdminInvoices(
     {
-      userId: filters.userId,
-      storeId: filters.storeId,
-      status: filters.status,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      amountMin: filters.amountMin ? parseFloat(filters.amountMin) : undefined,
-      amountMax: filters.amountMax ? parseFloat(filters.amountMax) : undefined,
-      search: filters.search,
-      page: filters.page,
+      userId,
+      storeId,
+      status,
+      dateFrom,
+      dateTo,
+      amountMin: amountMin ? parseFloat(amountMin) : undefined,
+      amountMax: amountMax ? parseFloat(amountMax) : undefined,
+      search,
+      page,
       pageSize: PAGE_SIZE,
     },
     initialData || undefined
   );
 
-  const invoices = (data?.invoices || []) as InvoiceListItem[];
-  const total = data?.total || 0;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  if (isLoading && !initialData) {
+  if (!mounted || (isLoading && !data)) {
     return <InvoicesPageSkeleton />;
   }
+
+  const invoices = (data?.invoices || []) as InvoiceListItem[];
+  const total = data?.total || 0;
 
   return (
     <div className="space-y-6">
@@ -94,18 +137,14 @@ export function InvoicesClient({
 
       <InvoiceFilters
         initialFilters={{
-          userId: filters.userId,
-          storeId: filters.storeId,
-          status: (filters.status || "all") as
-            | "all"
-            | "draft"
-            | "pending"
-            | "synced",
-          dateFrom: filters.dateFrom,
-          dateTo: filters.dateTo,
-          amountMin: filters.amountMin,
-          amountMax: filters.amountMax,
-          search: filters.search,
+          userId,
+          storeId,
+          status: status as "all" | "draft" | "pending" | "synced",
+          dateFrom,
+          dateTo,
+          amountMin,
+          amountMax,
+          search,
         }}
         users={users}
         stores={stores}
@@ -122,7 +161,7 @@ export function InvoicesClient({
       <InvoicesTableWrapper
         invoices={invoices}
         total={total}
-        currentPage={filters.page}
+        currentPage={page}
         pageSize={PAGE_SIZE}
       />
 

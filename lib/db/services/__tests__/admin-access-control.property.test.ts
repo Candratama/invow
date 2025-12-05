@@ -194,22 +194,23 @@ describe('Property 1: Admin access control', () => {
     )
   })
 
-  it('should verify middleware implements admin route protection', () => {
-    const middlewarePath = path.join(process.cwd(), 'middleware.ts')
-    const fileContent = fs.readFileSync(middlewarePath, 'utf-8')
+  it('should verify proxy implements admin route protection', () => {
+    // Next.js 16 renamed middleware.ts to proxy.ts
+    const proxyPath = path.join(process.cwd(), 'proxy.ts')
+    const fileContent = fs.readFileSync(proxyPath, 'utf-8')
 
-    // Property: Middleware should check for admin paths
+    // Property: Proxy should check for admin paths
     expect(fileContent).toContain('/admin')
     expect(fileContent).toContain('adminPaths')
 
-    // Property: Middleware should check is_admin in user metadata
+    // Property: Proxy should check is_admin in user metadata
     expect(fileContent).toContain('is_admin')
     expect(fileContent).toContain('user_metadata')
 
-    // Property: Middleware should redirect unauthenticated to login
+    // Property: Proxy should redirect unauthenticated to login
     expect(fileContent).toContain('/dashboard/login')
 
-    // Property: Middleware should redirect non-admin to dashboard
+    // Property: Proxy should redirect non-admin to dashboard
     expect(fileContent).toContain('/dashboard')
     expect(fileContent).toContain('unauthorized')
   })

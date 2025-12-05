@@ -123,7 +123,7 @@ export function BusinessInfoTab({
       storeDescription: initialStore?.store_description || "",
       tagline: initialStore?.tagline || "",
       storeNumber: initialStore?.store_number || "",
-      brandColor: initialStore?.brand_color || "#d4af37",
+      brandColor: initialStore?.brand_color || "#FFB300",
     },
   });
 
@@ -156,7 +156,7 @@ export function BusinessInfoTab({
               storeDescription: result.data.store.store_description || "",
               tagline: result.data.store.tagline || "",
               storeNumber: result.data.store.store_number || "",
-              brandColor: result.data.store.brand_color || "#d4af37",
+              brandColor: result.data.store.brand_color || "#FFB300",
             });
           }
         }
@@ -725,7 +725,7 @@ export function BusinessInfoTab({
                         <Input
                           id="brandColor-locked"
                           type="color"
-                          value="#d4af37"
+                          value="#FFB300"
                           disabled
                           className="w-16 sm:w-20 h-11 sm:h-12 p-1 cursor-not-allowed opacity-70"
                         />
@@ -762,7 +762,7 @@ export function BusinessInfoTab({
                       <Input
                         type="text"
                         {...form.register("brandColor")}
-                        placeholder="#d4af37"
+                        placeholder="#FFB300"
                         className="flex-1 min-h-[44px]"
                         maxLength={7}
                       />

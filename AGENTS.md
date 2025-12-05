@@ -1,5 +1,26 @@
 # AGENTS.md - Project Guidelines
 
+## ⚠️ IMPORTANT: Documentation Rules
+
+**DO NOT create summary/documentation MD files unless explicitly requested by user.**
+
+Examples of files to AVOID creating:
+- ❌ SUMMARY.md
+- ❌ CHANGES.md
+- ❌ IMPLEMENTATION_NOTES.md
+- ❌ CACHE_INVALIDATION_STATUS.md (unless user asks)
+- ❌ Any other documentation files
+
+**Only create MD files when:**
+- ✅ User explicitly asks: "create documentation", "make a summary file", etc.
+- ✅ It's part of the project structure (README.md, CONTRIBUTING.md)
+- ✅ User requests specific documentation
+
+**Instead:**
+- ✅ Provide summary in chat response
+- ✅ Update existing documentation if needed
+- ✅ Keep responses concise
+
 ## Recent Performance & UX Improvements (Dec 2024)
 
 ### ✅ Implemented Improvements
@@ -53,14 +74,15 @@
 # AGENTS.md - Project Guidelines
 
 ## General Rules
-- Never create useless md files like summary or documentation unless explicitly requested
+- **NEVER create MD files for summaries/documentation unless user explicitly requests it**
 - Always use related MCP tools to answer questions, do not speculate
 - Kill node service after running tests
 - Prioritize simple approaches over complex solutions
+- Provide concise summaries in chat, not in new files
 
 ## Tech Stack
-- Next.js 15 (App Router)
-- React 18
+- Next.js 16 (App Router + Cache Components)
+- React 19
 - TypeScript (strict mode)
 - Supabase (auth + database)
 - Tailwind CSS + shadcn/ui (new-york style)
@@ -76,66 +98,39 @@
 - Feature components are in `components/features/`
 - Use Lucide icons (already configured)
 
-## Data Fetching Pattern
-Ikuti pola untuk optimasi navigasi dan caching:
+## Data Fetching Pattern (Next.js 16 + React Query)
 
-### 1. Server Component dengan Suspense (page.tsx)
+Pattern ini mengoptimalkan navigasi dengan client-side caching via React Query.
+Page server component hanya render shell, data fetching dilakukan di client.
+
+### 1. Page Component (Static Shell)
 ```typescript
 // app/[feature]/page.tsx
-import { Suspense } from 'react'
-import { headers } from 'next/headers'
-import { getFeatureDataAction } from '@/app/actions/feature'
 import { FeatureClient } from './feature-client'
+
+// Page hanya render client component dengan initialData null
+// Data fetching dilakukan di client via React Query
+export default function FeaturePage() {
+  return <FeatureClient initialData={null} />
+}
+```
+
+### 2. Loading State (loading.tsx)
+```typescript
+// app/[feature]/loading.tsx
 import { FeatureSkeleton } from '@/components/skeletons/feature-skeleton'
 
-async function FeatureContent() {
-  // Deteksi client-side navigation untuk skip server fetch
-  const headersList = await headers()
-  const referer = headersList.get('referer') || ''
-  const host = headersList.get('host') || ''
-  const isClientNavigation = referer.includes(host) && referer.includes('/dashboard')
-
-  // Skip fetch jika client navigation - React Query akan gunakan cache
-  let initialData = null
-  if (!isClientNavigation) {
-    const result = await getFeatureDataAction()
-    initialData = result.success && result.data ? result.data : null
-  }
-
-  return <FeatureClient initialData={initialData} />
-}
-
-export default function FeaturePage() {
-  return (
-    <Suspense fallback={<FeatureSkeleton />}>
-      <FeatureContent />
-    </Suspense>
-  )
+export default function FeatureLoading() {
+  return <FeatureSkeleton />
 }
 ```
 
-### 2. Server Action untuk Data Fetching
-```typescript
-// app/actions/feature.ts
-'use server'
-import { createClient } from '@/lib/supabase/server'
-
-export async function getFeatureDataAction() {
-  try {
-    const supabase = await createClient()
-    // ... fetch logic
-    return { success: true, data }
-  } catch (error) {
-    return { success: false, error: 'Failed to fetch' }
-  }
-}
-```
-
-### 3. React Query Hook untuk Client-Side Caching
+### 3. React Query Hook dengan Cache Check
 ```typescript
 // lib/hooks/use-feature-data.ts
 'use client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 
 export const featureKeys = {
   all: ['feature'] as const,
@@ -143,6 +138,12 @@ export const featureKeys = {
 }
 
 export function useFeatureData<T>(initialData?: T) {
+  const queryClient = useQueryClient()
+  
+  // Check if cache exists - don't overwrite with initialData
+  const existingData = queryClient.getQueryData<T>(featureKeys.data())
+  const initialDataRef = useRef(existingData ? undefined : initialData)
+  
   return useQuery({
     queryKey: featureKeys.data(),
     queryFn: async () => {
@@ -151,8 +152,11 @@ export function useFeatureData<T>(initialData?: T) {
       if (!result.success) throw new Error(result.error)
       return result.data as T
     },
-    initialData,
+    initialData: initialDataRef.current,
     staleTime: 5 * 60 * 1000, // 5 menit
+    gcTime: 10 * 60 * 1000, // 10 menit
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -162,30 +166,81 @@ export function useInvalidateFeature() {
 }
 ```
 
-### 4. Client Component dengan React Query
+### 4. Client Component (PENTING: Hooks Order)
 ```typescript
 // app/[feature]/feature-client.tsx
 'use client'
+import { useState, useEffect, useCallback } from 'react'
 import { useFeatureData, useInvalidateFeature } from '@/lib/hooks/use-feature-data'
+import { useAuth } from '@/lib/auth/auth-context'
+import { FeatureSkeleton } from '@/components/skeletons/feature-skeleton'
 
 interface FeatureClientProps {
   initialData: FeatureData | null
 }
 
 export function FeatureClient({ initialData }: FeatureClientProps) {
-  const { data, isLoading } = useFeatureData(initialData || undefined)
+  // ⚠️ SEMUA HOOKS HARUS DIPANGGIL DULU sebelum conditional return
+  const { data, isLoading } = useFeatureData(initialData ?? undefined)
+  const { user, loading: authLoading } = useAuth()
   const invalidate = useInvalidateFeature()
+  
+  // State hooks
+  const [someState, setSomeState] = useState(false)
+  
+  // Effect hooks
+  useEffect(() => {
+    // side effects
+  }, [])
+  
+  // Callback hooks
+  const handleAction = useCallback(() => {
+    // action logic
+  }, [])
 
-  // Gunakan data dari React Query (dengan fallback ke initialData)
+  // ✅ Conditional return SETELAH semua hooks
+  if (authLoading || (isLoading && !data)) {
+    return <FeatureSkeleton />
+  }
+
+  if (!user) {
+    return null
+  }
+
+  // Extract data setelah loading check
   const featureData = data || initialData
 
-  // Panggil invalidate() setelah mutation
+  return (
+    // ... render UI
+  )
 }
 ```
 
-### 5. Mutation dengan Cache Invalidation
+### 5. Server Action untuk Data Fetching
 ```typescript
-// Di client component setelah mutation berhasil
+// app/actions/feature.ts
+'use server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function getFeatureDataAction() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    
+    // ... fetch logic
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch' }
+  }
+}
+```
+
+### 6. Mutation dengan Cache Invalidation
+```typescript
 const invalidate = useInvalidateFeature()
 
 const handleSave = async () => {
@@ -196,14 +251,58 @@ const handleSave = async () => {
 }
 ```
 
-### PENTING: Aturan Data Fetching
-- **Gunakan Suspense** di page.tsx untuk streaming dan menghindari blocking
-- **Deteksi client navigation** via `headers()` untuk skip server fetch
-- **React Query** untuk client-side caching (staleTime 5 menit)
-- **Server Actions** untuk fetch dan mutations (bukan API routes)
-- **Invalidate cache** setelah mutation dengan `useInvalidateFeature()`
-- **Auth check** di middleware, bukan di page.tsx
-- **User data** dari `useAuth()` hook di client, bukan server fetch
+### 7. Proxy untuk Session Management (proxy.ts)
+```typescript
+// proxy.ts (Next.js 16 - replaces middleware.ts)
+import { type NextRequest } from "next/server"
+import { updateSession } from "@/lib/supabase/middleware"
+
+export async function proxy(request: NextRequest) {
+  // Only refresh session cookies - no auth checks
+  const response = await updateSession(request)
+  return response
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
+```
+
+### ⚠️ ATURAN PENTING
+
+1. **Hooks Order**: Semua hooks (useState, useEffect, useCallback, useQuery, dll) 
+   HARUS dipanggil sebelum conditional return apapun. Ini adalah aturan React.
+
+2. **No Server Fetch di Page**: Jangan fetch data di server component untuk pages 
+   yang butuh auth. Biarkan client component handle via React Query.
+
+3. **Cache Check**: Gunakan `useRef` untuk menyimpan initialData hanya sekali,
+   cek `getQueryData` untuk menghindari overwrite cache yang sudah ada.
+
+4. **Loading State**: Tampilkan skeleton jika `authLoading` atau `(isLoading && !data)`.
+   Kondisi `!data` penting agar tidak flash skeleton saat ada cache.
+
+5. **Static Pages**: Dengan pattern ini, pages menjadi Static (○) di build output,
+   memungkinkan instant navigation tanpa server round-trip.
+
+6. **Proxy vs Middleware**: Next.js 16 menggunakan `proxy.ts` (bukan `middleware.ts`).
+   Proxy hanya refresh session, auth check dilakukan di server actions.
+
+### 🔒 Security Layers
+
+Pattern ini aman dengan 3 layer security:
+
+1. **Proxy (proxy.ts)** - Refresh Supabase session cookies
+2. **Server Actions** - Validate auth sebelum return data (`getUser()` check)
+3. **Client Components** - Redirect unauthenticated users untuk UX
+
+Trade-off:
+- ✅ Mengurangi Supabase calls (tidak ada auth check di setiap request)
+- ✅ Instant navigation dengan static pages
+- ✅ React Query caching mengurangi repeated fetches
+- ⚠️ User bisa lihat page shell sebelum redirect (tapi tidak ada data)
 
 ### Contoh Implementasi
 - Dashboard: `app/dashboard/page.tsx` + `lib/hooks/use-dashboard-data.ts`

@@ -98,7 +98,7 @@ export function InvoiceForm({
   defaultStore,
   initialTaxEnabled = false,
   initialTaxPercentage = 0,
-  initialSelectedTemplate = "classic",
+  initialSelectedTemplate = "simple",
 }: InvoiceFormProps) {
   const {
     currentInvoice,

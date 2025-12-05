@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { MayarPaymentService } from '@/lib/db/services/mayar-payment.service'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { SETTINGS_CACHE_TAGS } from '@/lib/db/data-access/settings'
 
 interface PaymentInvoiceResult {
@@ -66,7 +66,7 @@ export async function createPaymentInvoiceAction(
     }
 
     // 4. Invalidate subscription cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.subscription)
+    updateTag(SETTINGS_CACHE_TAGS.subscription)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
 

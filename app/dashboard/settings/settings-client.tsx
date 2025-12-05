@@ -57,41 +57,28 @@ interface SettingsClientProps {
 }
 
 export function SettingsClient({ initialData }: SettingsClientProps) {
-  // Use React Query with initial data from server
-  const { data } = useSettingsData(initialData || undefined);
-
-  // Extract data from query result
-  const initialStore = (data?.store as SettingsPageStore) || null;
-  const initialContacts = (data?.contacts as StoreContact[]) || [];
-  const initialSubscription =
-    (data?.subscription as SettingsPageSubscription) || null;
-  const initialPreferences =
-    (data?.preferences as SettingsPagePreferences) || null;
-  const initialIsPremium = data?.isPremium || false;
+  // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
+  const { data, isLoading } = useSettingsData(initialData ?? undefined);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Determine default tab from URL parameters
   const tabParam = searchParams.get("tab");
   const autoUpgrade = searchParams.get("autoUpgrade");
 
   const getDefaultTab = (): TabId => {
-    // If autoUpgrade is present, open subscription tab
     if (autoUpgrade) return "subscription";
-    // If tab parameter is valid, use it
     if (tabParam === "subscription" || tabParam === "invoice") return tabParam;
-    // Default to business info
     return "business";
   };
 
-  const defaultTab = getDefaultTab();
-  const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
+  const [activeTab, setActiveTab] = useState<TabId>(getDefaultTab);
   const [isDirty, setIsDirty] = useState(false);
   const [pendingTab, setPendingTab] = useState<TabId | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [mountedTabs, setMountedTabs] = useState<Set<TabId>>(
-    new Set([defaultTab])
+    () => new Set([getDefaultTab()])
   );
 
   // Prevent body scroll
@@ -102,79 +89,62 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     };
   }, []);
 
-  // Warn user before leaving page with unsaved changes (browser refresh/close)
+  // Warn user before leaving page with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
         e.preventDefault();
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
   // Handle browser back button with unsaved changes
   useEffect(() => {
     if (!isDirty) return;
-
-    // Push a dummy state to detect back button
     window.history.pushState({ settingsPage: true }, "");
-
     const handlePopState = () => {
       if (isDirty) {
-        // Show our custom dialog instead of navigating
         setShowWarning(true);
-        // Push state again to prevent navigation
         window.history.pushState({ settingsPage: true }, "");
       }
     };
-
     window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [isDirty]);
 
-  // Prefetch next tab data on hover
+  // Prefetch other tabs after initial load
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Prefetch other tabs after initial load
       setMountedTabs(new Set(["subscription", "business", "invoice"]));
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
+  // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push("/");
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
-  const handlePaymentSuccess = () => {
-    // Refresh the page to get updated subscription data from server
+  const handlePaymentSuccess = useCallback(() => {
     router.refresh();
-  };
+  }, [router]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (isDirty) {
-      // Show warning if there are unsaved changes
       setShowWarning(true);
     } else {
       router.push("/dashboard");
     }
-  };
+  }, [isDirty, router]);
 
-  // Handle tab switch with unsaved changes check
   const handleTabSwitch = useCallback(
     (newTab: TabId) => {
       if (newTab === activeTab) return;
-
-      // Mount the tab if not already mounted
       setMountedTabs((prev) => new Set([...prev, newTab]));
-
       if (isDirty) {
         setPendingTab(newTab);
         setShowWarning(true);
@@ -185,7 +155,6 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     [activeTab, isDirty]
   );
 
-  // Handle discard changes
   const handleDiscard = useCallback(() => {
     if (pendingTab) {
       setActiveTab(pendingTab);
@@ -193,22 +162,18 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
       setPendingTab(null);
       setShowWarning(false);
     } else {
-      // If no pending tab, user wants to navigate back
       setIsDirty(false);
       setShowWarning(false);
       router.push("/dashboard");
     }
   }, [pendingTab, router]);
 
-  // Handle cancel warning
   const handleCancelWarning = useCallback(() => {
     setPendingTab(null);
     setShowWarning(false);
   }, []);
 
-  // Handle save and switch
   const handleSaveAndSwitch = useCallback(() => {
-    // Trigger form submission in the active tab
     const formId =
       activeTab === "business"
         ? "business-info-form"
@@ -220,7 +185,6 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
       const form = document.getElementById(formId) as HTMLFormElement;
       if (form) {
         form.requestSubmit();
-        // After successful save, switch tabs or navigate back
         setTimeout(() => {
           if (pendingTab) {
             setActiveTab(pendingTab);
@@ -228,7 +192,6 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
             setPendingTab(null);
             setShowWarning(false);
           } else {
-            // User wants to navigate back
             setIsDirty(false);
             setShowWarning(false);
             router.push("/dashboard");
@@ -238,16 +201,16 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     }
   }, [activeTab, pendingTab, router]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isDirty) {
-      // Show warning if there are unsaved changes
       setShowWarning(true);
     } else {
       router.push("/dashboard");
     }
-  };
+  }, [isDirty, router]);
 
-  if (loading) {
+  // NOW we can do conditional returns - after all hooks
+  if (authLoading || (isLoading && !data)) {
     return <SettingsSkeleton />;
   }
 
@@ -255,13 +218,21 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     return null;
   }
 
+  // Extract data from query result
+  const initialStore = (data?.store as SettingsPageStore) || null;
+  const initialContacts = (data?.contacts as StoreContact[]) || [];
+  const initialSubscription =
+    (data?.subscription as SettingsPageSubscription) || null;
+  const initialPreferences =
+    (data?.preferences as SettingsPagePreferences) || null;
+  const initialIsPremium = data?.isPremium || false;
+
   return (
     <>
       <div className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden">
-        {/* Payment Success/Failure Handler */}
         <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
 
-        {/* Header - Fixed */}
+        {/* Header */}
         <div className="bg-white border-b z-30 shadow-sm flex-shrink-0">
           <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -282,7 +253,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
           </div>
         </div>
 
-        {/* Tab Navigation - Fixed */}
+        {/* Tab Navigation */}
         <div className="bg-white border-b z-20 shadow-sm flex-shrink-0">
           <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8 lg:pt-2">
             <div className="flex justify-start gap-1">
@@ -303,7 +274,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
           </div>
         </div>
 
-        {/* Tab Content - Scrollable */}
+        {/* Tab Content */}
         <div className="flex-1 overflow-hidden bg-white">
           <Suspense fallback={<SettingsSkeleton />}>
             {mountedTabs.has("subscription") && (
@@ -360,7 +331,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
               Unsaved Changes
             </DialogTitle>
           </DialogHeader>
-          <div className="py-3 sm:py-4 roun">
+          <div className="py-3 sm:py-4">
             <p className="text-sm text-gray-600">
               You have unsaved changes. What would you like to do?
             </p>

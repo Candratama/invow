@@ -1,4 +1,5 @@
 {
     "kiroAgent.notifications.agent.failure": true,
-    "kiroAgent.notifications.agent.success": true
+    "kiroAgent.notifications.agent.success": true,
+    "typescript.autoClosingTags": false
 }
