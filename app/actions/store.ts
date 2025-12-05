@@ -84,7 +84,7 @@ export async function updateStoreAction(data: {
     }
 
     // Invalidate settings cache and revalidate paths
-    revalidateTag(SETTINGS_CACHE_TAGS.store)
+    revalidateTag(SETTINGS_CACHE_TAGS.store, 'max')
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     return { success: true, data: createResult.data }
@@ -115,7 +115,7 @@ export async function updateStoreAction(data: {
   }
 
   // Invalidate settings cache and revalidate paths
-  revalidateTag(SETTINGS_CACHE_TAGS.store)
+  revalidateTag(SETTINGS_CACHE_TAGS.store, 'max')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard')
   return { success: true, data: result.data }
@@ -152,7 +152,7 @@ export async function createContactAction(contactData: {
   }
 
   // Invalidate contacts cache and revalidate paths
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts, 'max')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true, data: result.data }
@@ -178,7 +178,7 @@ export async function updateContactAction(id: string, contactData: {
   }
 
   // Invalidate contacts cache and revalidate paths
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts, 'max')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true, data: result.data }
@@ -200,7 +200,7 @@ export async function deleteContactAction(id: string) {
   }
 
   // Invalidate contacts cache and revalidate paths
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts, 'max')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true }
@@ -222,7 +222,7 @@ export async function setPrimaryContactAction(storeId: string, contactId: string
   }
 
   // Invalidate contacts cache and revalidate paths
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts, 'max')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true }
@@ -264,8 +264,8 @@ export async function getStoreAndContactsAction() {
  */
 export async function invalidateStoreCache() {
   // Invalidate both store and contacts cache
-  revalidateTag(SETTINGS_CACHE_TAGS.store)
-  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  revalidateTag(SETTINGS_CACHE_TAGS.store, 'max')
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts, 'max')
   
   // Revalidate relevant paths
   revalidatePath('/dashboard')

@@ -11,8 +11,8 @@ const SETTINGS_CACHE_TAGS = {
 export async function POST(_request: NextRequest) {
   try {
     // Invalidate both store and contacts cache
-    revalidateTag(SETTINGS_CACHE_TAGS.store)
-    revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+    revalidateTag(SETTINGS_CACHE_TAGS.store, 'max')
+    revalidateTag(SETTINGS_CACHE_TAGS.contacts, 'max')
     
     // Revalidate relevant paths
     revalidatePath('/dashboard')
