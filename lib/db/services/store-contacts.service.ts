@@ -120,6 +120,7 @@ export class StoreContactsService {
 
   /**
    * Create a new contact
+   * First contact for a store is automatically set as primary
    */
   async createContact(
     contact: Omit<StoreContactInsert, "id" | "created_at" | "updated_at">,
@@ -128,9 +129,21 @@ export class StoreContactsService {
     error: Error | null;
   }> {
     try {
+      // Check if this is the first contact for the store
+      const { count } = await this.supabase
+        .from("store_contacts")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", contact.store_id);
+
+      // First contact should be primary automatically
+      const isPrimary = count === 0 || count === null;
+
       const { data, error } = await this.supabase
         .from("store_contacts")
-        .insert(contact)
+        .insert({
+          ...contact,
+          is_primary: isPrimary,
+        })
         .select()
         .single();
 
@@ -207,6 +220,7 @@ export class StoreContactsService {
 
   /**
    * Delete a contact
+   * If deleted contact was primary, the oldest remaining contact becomes primary
    */
   async deleteContact(contactId: string): Promise<{
     success: boolean;
@@ -222,10 +236,10 @@ export class StoreContactsService {
         throw new Error("User not authenticated");
       }
 
-      // Verify contact belongs to user's store
+      // Verify contact belongs to user's store and get its details
       const { data: contact } = await this.supabase
         .from("store_contacts")
-        .select("store_id")
+        .select("store_id, is_primary")
         .eq("id", contactId)
         .single();
 
@@ -244,12 +258,32 @@ export class StoreContactsService {
         throw new Error("Unauthorized: Contact does not belong to authenticated user");
       }
 
+      const wasPrimary = contact.is_primary;
+      const storeId = contact.store_id;
+
       const { error } = await this.supabase
         .from("store_contacts")
         .delete()
         .eq("id", contactId);
 
       if (error) throw new Error(error.message);
+
+      // If deleted contact was primary, set the oldest remaining contact as primary
+      if (wasPrimary) {
+        const { data: remainingContacts } = await this.supabase
+          .from("store_contacts")
+          .select("id")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: true })
+          .limit(1);
+
+        if (remainingContacts && remainingContacts.length > 0) {
+          await this.supabase
+            .from("store_contacts")
+            .update({ is_primary: true })
+            .eq("id", remainingContacts[0].id);
+        }
+      }
 
       return { success: true, error: null };
     } catch (error) {

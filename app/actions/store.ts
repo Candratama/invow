@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { StoresService, StoreContactsService } from '@/lib/db/services'
-import { revalidatePath, updateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { SETTINGS_CACHE_TAGS } from '@/lib/db/data-access/settings'
 import type { StoreContact } from '@/lib/db/database.types'
 
@@ -84,7 +84,7 @@ export async function updateStoreAction(data: {
     }
 
     // Invalidate settings cache and revalidate paths
-    updateTag(SETTINGS_CACHE_TAGS.store)
+    revalidateTag(SETTINGS_CACHE_TAGS.store)
     revalidatePath('/dashboard/settings')
     revalidatePath('/dashboard')
     return { success: true, data: createResult.data }
@@ -115,7 +115,7 @@ export async function updateStoreAction(data: {
   }
 
   // Invalidate settings cache and revalidate paths
-  updateTag(SETTINGS_CACHE_TAGS.store)
+  revalidateTag(SETTINGS_CACHE_TAGS.store)
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard')
   return { success: true, data: result.data }
@@ -151,9 +151,10 @@ export async function createContactAction(contactData: {
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
-  updateTag(SETTINGS_CACHE_TAGS.contacts)
+  // Invalidate contacts cache and revalidate paths
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true, data: result.data }
 }
 
@@ -176,9 +177,10 @@ export async function updateContactAction(id: string, contactData: {
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
-  updateTag(SETTINGS_CACHE_TAGS.contacts)
+  // Invalidate contacts cache and revalidate paths
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true, data: result.data }
 }
 
@@ -197,9 +199,10 @@ export async function deleteContactAction(id: string) {
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
-  updateTag(SETTINGS_CACHE_TAGS.contacts)
+  // Invalidate contacts cache and revalidate paths
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true }
 }
 
@@ -218,9 +221,10 @@ export async function setPrimaryContactAction(storeId: string, contactId: string
     return { success: false, error: result.error.message }
   }
 
-  // Invalidate contacts cache and revalidate settings path
-  updateTag(SETTINGS_CACHE_TAGS.contacts)
+  // Invalidate contacts cache and revalidate paths
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard') // Also revalidate dashboard for invoice signature
   return { success: true }
 }
 
@@ -252,4 +256,20 @@ export async function getStoreAndContactsAction() {
       contacts 
     } 
   }
+}
+
+/**
+ * Invalidate store and contacts cache
+ * Use this after direct database updates to refresh cached data
+ */
+export async function invalidateStoreCache() {
+  // Invalidate both store and contacts cache
+  revalidateTag(SETTINGS_CACHE_TAGS.store)
+  revalidateTag(SETTINGS_CACHE_TAGS.contacts)
+  
+  // Revalidate relevant paths
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/settings')
+  
+  return { success: true }
 }

@@ -43,6 +43,8 @@ export default function UpgradeModal({
   const [error, setError] = useState<string | null>(null);
   const [premiumConfig, setPremiumConfig] = useState<{
     priceFormatted: string;
+    duration: number;
+    features: string[];
   } | null>(null);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -56,6 +58,8 @@ export default function UpgradeModal({
         if (premium) {
           setPremiumConfig({
             priceFormatted: premium.priceFormatted,
+            duration: premium.duration,
+            features: premium.features,
           });
         }
       }
@@ -133,17 +137,21 @@ export default function UpgradeModal({
             <span className="text-3xl font-bold">
               {premiumConfig?.priceFormatted || "Loading..."}
             </span>
-            <span className="text-muted-foreground">/30 days</span>
+            <span className="text-muted-foreground">
+              /{premiumConfig?.duration || 30} days
+            </span>
           </div>
 
           {/* Benefits list */}
           <ul className="space-y-2">
-            {PREMIUM_BENEFITS.map((benefit, index) => (
-              <li key={index} className="flex items-center gap-2 text-sm">
-                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span>{benefit}</span>
-              </li>
-            ))}
+            {(premiumConfig?.features || PREMIUM_BENEFITS).map(
+              (benefit, index) => (
+                <li key={index} className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span>{benefit}</span>
+                </li>
+              )
+            )}
           </ul>
 
           {/* Error message */}
