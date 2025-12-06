@@ -796,7 +796,9 @@ export class InvoicesService {
       const datePattern = `${day}${month}${year.slice(-2)}`;
       
       // Get max sequence from existing invoice numbers for this store and date
-      // Invoice format: INV-DDMMYY-XXXXXXXX-XXX (last 3 digits are sequence)
+      // Supports both formats:
+      // - Old: INV-DDMMYY-XXX
+      // - New: INV-DDMMYY-XXXXXXXX-XXX
       const { data: invoices, error } = await this.supabase
         .from("invoices")
         .select("invoice_number")
@@ -806,11 +808,12 @@ export class InvoicesService {
       if (error) throw new Error(error.message);
 
       // Extract max sequence number from invoice numbers
+      // Only count new format (INV-DDMMYY-XXXXXXXX-XXX) to avoid conflicts with old format
       let maxSequence = 0;
       if (invoices && invoices.length > 0) {
         for (const inv of invoices) {
-          // Extract last 3 digits (sequence) from invoice_number
-          const match = inv.invoice_number.match(/-(\d{3})$/);
+          // Only match new format: INV-DDMMYY-XXXXXXXX-XXX (8 char user code + 3 digit sequence)
+          const match = inv.invoice_number.match(/-[A-Z0-9]{8}-(\d{3})$/);
           if (match) {
             const seq = parseInt(match[1], 10);
             if (seq > maxSequence) {
@@ -822,6 +825,13 @@ export class InvoicesService {
 
       // Next sequence is max + 1
       const nextSequence = maxSequence + 1;
+
+      // Check if we've exceeded the 3-digit limit (999)
+      if (nextSequence > 999) {
+        throw new Error(
+          "Invoice limit reached for this date (999 invoices). Please use a different date."
+        );
+      }
 
       return { data: nextSequence, error: null };
     } catch (error) {

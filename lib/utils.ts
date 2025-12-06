@@ -51,8 +51,9 @@ export function generateInvoiceNumber(date?: Date, userId?: string, sequenceNumb
   // Get first 8 characters of user ID (uppercase)
   const userCode = userId ? userId.substring(0, 8).toUpperCase() : 'XXXXXXXX';
   
-  // Format sequence number as 3 digits
-  const sequence = String(sequenceNumber).padStart(3, '0');
+  // Format sequence number as 3 digits, cap at 999 (max 999 invoices per day)
+  const cappedSequence = Math.min(sequenceNumber, 999);
+  const sequence = String(cappedSequence).padStart(3, '0');
   
   return `INV-${day}${month}${year}-${userCode}-${sequence}`;
 }
