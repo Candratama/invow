@@ -791,17 +791,37 @@ export class InvoicesService {
         throw new Error("User not authenticated");
       }
 
-      // Count invoices for this store on this specific date
-      const { count, error } = await this.supabase
+      // Format date for invoice number pattern (DDMMYY)
+      const [year, month, day] = invoiceDate.split('-');
+      const datePattern = `${day}${month}${year.slice(-2)}`;
+      
+      // Get max sequence from existing invoice numbers for this store and date
+      // Invoice format: INV-DDMMYY-XXXXXXXX-XXX (last 3 digits are sequence)
+      const { data: invoices, error } = await this.supabase
         .from("invoices")
-        .select("*", { count: "exact", head: true })
+        .select("invoice_number")
         .eq("store_id", storeId)
-        .eq("invoice_date", invoiceDate);
+        .like("invoice_number", `INV-${datePattern}-%`);
 
       if (error) throw new Error(error.message);
 
-      // Next sequence is count + 1
-      const nextSequence = (count || 0) + 1;
+      // Extract max sequence number from invoice numbers
+      let maxSequence = 0;
+      if (invoices && invoices.length > 0) {
+        for (const inv of invoices) {
+          // Extract last 3 digits (sequence) from invoice_number
+          const match = inv.invoice_number.match(/-(\d{3})$/);
+          if (match) {
+            const seq = parseInt(match[1], 10);
+            if (seq > maxSequence) {
+              maxSequence = seq;
+            }
+          }
+        }
+      }
+
+      // Next sequence is max + 1
+      const nextSequence = maxSequence + 1;
 
       return { data: nextSequence, error: null };
     } catch (error) {
