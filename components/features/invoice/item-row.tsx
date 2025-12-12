@@ -43,10 +43,28 @@ export function ItemRow({ item, onEdit, onDelete }: ItemRowProps) {
 
   return (
     <div className="relative overflow-hidden bg-white border border-gray-200 rounded-lg mb-3">
-      {/* Delete button (revealed on swipe) */}
+      {/* Floating action buttons - top right */}
+      <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+        <button
+          onClick={() => onEdit(item)}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+          aria-label="Edit item"
+        >
+          <Edit2 size={18} className="text-gray-500" />
+        </button>
+        <button
+          onClick={() => onDelete(item.id)}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 transition-colors"
+          aria-label="Delete item"
+        >
+          <Trash2 size={18} className="text-red-500" />
+        </button>
+      </div>
+
+      {/* Delete button (revealed on swipe for mobile) */}
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-20 bg-red-500 flex items-center justify-center transition-transform",
+          "absolute right-0 top-0 bottom-0 w-20 bg-red-500 flex items-center justify-center transition-transform md:hidden",
           swiped ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -63,37 +81,22 @@ export function ItemRow({ item, onEdit, onDelete }: ItemRowProps) {
       <div
         className={cn(
           "relative bg-white p-4 transition-transform touch-pan-y",
-          swiped ? "-translate-x-20" : "translate-x-0"
+          swiped ? "-translate-x-20 md:translate-x-0" : "translate-x-0"
         )}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h4 className="text-base font-medium text-foreground truncate mb-1">
-              {item.description}
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              {item.quantity} × {formatCurrency(item.price)}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="text-base font-semibold text-foreground">
-                {formatCurrency(item.subtotal)}
-              </p>
-            </div>
-
-            <button
-              onClick={() => onEdit(item)}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0"
-              aria-label="Edit item"
-            >
-              <Edit2 size={18} className="text-gray-600" />
-            </button>
-          </div>
+        <div className="pr-16">
+          <h4 className="text-base font-medium text-foreground truncate mb-1">
+            {item.description}
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            {item.quantity} × {formatCurrency(item.price)}
+          </p>
+          <p className="text-base font-semibold text-foreground">
+            {formatCurrency(item.subtotal)}
+          </p>
         </div>
       </div>
     </div>
