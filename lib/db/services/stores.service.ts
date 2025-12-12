@@ -171,7 +171,7 @@ export class StoresService {
         .single();
 
       if (error) {
-        // If no store found, return null
+        // If no store found, return null (not an error)
         if (error.code === "PGRST116") {
           return { data: null, error: null };
         }
@@ -215,9 +215,7 @@ export class StoresService {
   /**
    * Create a new store
    */
-  async createStore(
-    store: StoreInsert,
-  ): Promise<{
+  async createStore(store: StoreInsert): Promise<{
     data: Store | null;
     error: Error | null;
   }> {
@@ -261,7 +259,6 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      // Get authenticated user
       const {
         data: { user },
       } = await this.supabase.auth.getUser();
@@ -318,7 +315,6 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      // Get authenticated user
       const {
         data: { user },
       } = await this.supabase.auth.getUser();

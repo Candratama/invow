@@ -319,17 +319,18 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                       onClick={handleBuyCredit}
                       disabled={isBuyingCredit}
                       variant="outline"
-                      className="w-full sm:w-auto min-h-[44px]"
+                      size="sm"
+                      className="w-auto sm:h-auto min-w-[10px] px-8"
                     >
                       {isBuyingCredit ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Processing...</span>
                         </>
                       ) : (
                         <>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Buy Credit
+                          <CreditCard className="h-3.5 w-3.5" />
+                          <span>Buy Credit</span>
                         </>
                       )}
                     </Button>
