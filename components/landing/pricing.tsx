@@ -1,16 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, ArrowRight, Star } from "lucide-react";
+import { Check, ArrowRight, Star, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getPricingPlansAction, type PricingPlan } from "@/app/actions/pricing";
 import { formatPrice, formatPeriod } from "@/lib/utils/pricing";
+import { useAuth } from "@/lib/auth/auth-context";
+import { createPaymentInvoiceAction } from "@/app/actions/payments";
+import { toast } from "sonner";
 
 export function Pricing() {
   const [plans, setPlans] = useState<PricingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchPlans() {
@@ -31,6 +38,41 @@ export function Pricing() {
 
     fetchPlans();
   }, []);
+
+  // Handle upgrade to premium - redirect to Mayar payment gateway
+  const handleUpgrade = async (tier: string) => {
+    setUpgradingTier(tier);
+
+    try {
+      // If user not logged in, redirect to signup with autoUpgrade param
+      if (!user) {
+        const returnUrl = `/dashboard/settings?autoUpgrade=${tier}`;
+        router.push(
+          `/dashboard/signup?returnUrl=${encodeURIComponent(returnUrl)}`
+        );
+        return;
+      }
+
+      // User is logged in, create payment invoice and redirect to Mayar
+      const result = await createPaymentInvoiceAction(tier as "premium");
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create payment invoice");
+      }
+
+      // Redirect to Mayar payment URL
+      if (result.data?.paymentUrl) {
+        window.location.href = result.data.paymentUrl;
+      } else {
+        throw new Error("Payment URL not received");
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      toast.error(errorMessage);
+      setUpgradingTier(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -173,7 +215,7 @@ export function Pricing() {
                 >
                   Segera Hadir
                 </button>
-              ) : (
+              ) : plan.tier === "free" ? (
                 <Link
                   href="/dashboard"
                   className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group ${
@@ -182,14 +224,37 @@ export function Pricing() {
                       : "bg-stone-900 text-white hover:bg-stone-800 hover:shadow-lg"
                   }`}
                 >
-                  {plan.tier === "free"
-                    ? "Mulai Gratis Sekarang"
-                    : `Upgrade ke ${plan.name}`}
+                  Mulai Gratis Sekarang
                   <ArrowRight
                     size={16}
                     className="transition-transform group-hover:translate-x-1"
                   />
                 </Link>
+              ) : (
+                <button
+                  onClick={() => handleUpgrade(plan.tier)}
+                  disabled={upgradingTier === plan.tier || authLoading}
+                  className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-wait ${
+                    plan.is_popular
+                      ? "bg-gold-500 text-white hover:bg-gold-600 shadow-lg shadow-gold-500/25"
+                      : "bg-stone-900 text-white hover:bg-stone-800 hover:shadow-lg"
+                  }`}
+                >
+                  {upgradingTier === plan.tier ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Upgrade ke {plan.name}
+                      <ArrowRight
+                        size={16}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </>
+                  )}
+                </button>
               )}
             </motion.div>
           ))}

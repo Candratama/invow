@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Gift, Zap, AlertCircle, Eye, EyeOff, Lock } from "lucide-react";
+import {
+  Gift,
+  Zap,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Lock,
+  CreditCard,
+  Loader2,
+} from "lucide-react";
 import { getSubscriptionStatusAction } from "@/app/actions/subscription";
 import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
 import { updatePasswordAction } from "@/app/actions/auth";
+import { createPaymentInvoiceAction } from "@/app/actions/payments";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +46,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isBuyingCredit, setIsBuyingCredit] = useState(false);
 
   // Fetch subscription status with React Query
   const {
@@ -148,6 +159,30 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
   const handleSignOut = async () => {
     if (confirm("Are you sure you want to sign out?")) {
       await signOut();
+    }
+  };
+
+  // Handle buy credit - redirect to Mayar payment gateway
+  const handleBuyCredit = async () => {
+    setIsBuyingCredit(true);
+    try {
+      const result = await createPaymentInvoiceAction("premium");
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create payment invoice");
+      }
+
+      // Redirect to Mayar payment URL
+      if (result.data?.paymentUrl) {
+        window.location.href = result.data.paymentUrl;
+      } else {
+        throw new Error("Payment URL not received");
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      toast.error(errorMessage);
+      setIsBuyingCredit(false);
     }
   };
 
@@ -267,6 +302,38 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                     {subscription.tier === "free" ? "Resets on" : "Expires on"}{" "}
                     {formatResetDate(new Date(subscription.resetDate))}
                   </p>
+                </div>
+              )}
+
+              {/* Buy Credit Button - Show for premium users */}
+              {subscription.tier === "premium" && (
+                <div className="pt-3 border-t">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Need more invoices?</p>
+                      <p className="text-xs text-muted-foreground">
+                        Extend your subscription and get additional credits
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleBuyCredit}
+                      disabled={isBuyingCredit}
+                      variant="outline"
+                      className="w-full sm:w-auto min-h-[44px]"
+                    >
+                      {isBuyingCredit ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Buy Credit
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
