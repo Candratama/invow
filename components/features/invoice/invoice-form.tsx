@@ -9,6 +9,7 @@ import { Plus, Download, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useInvoiceStore } from "@/lib/store";
 import { InvoiceItem, Invoice, StoreSettings } from "@/lib/types";
+import type { Customer, CustomerInsert } from "@/lib/db/database.types";
 import {
   formatCurrency,
   parseLocalDate,
@@ -29,10 +30,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ItemRow } from "@/components/features/invoice/item-row";
+import { CustomerSelector } from "@/components/features/customer/customer-selector";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import {
   ClassicInvoiceTemplate,
@@ -46,11 +47,13 @@ import {
   type InvoiceTemplateId,
 } from "@/components/features/invoice/templates";
 import { useAuth } from "@/lib/auth/auth-context";
+import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 import { calculateTotal } from "@/lib/utils/invoice-calculation";
 import {
   upsertInvoiceWithItemsAction,
   getNextInvoiceSequenceAction,
 } from "@/app/actions/invoices";
+import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, "Invoice number is required"),
@@ -58,8 +61,10 @@ const invoiceSchema = z.object({
   customerName: z
     .string()
     .min(3, "Customer name must be at least 3 characters"),
+  customerPhone: z.string().optional(),
   customerAddress: z.string().optional(),
   customerStatus: z.enum(["Distributor", "Reseller", "Customer"]),
+  customerEmail: z.string().email().optional().or(z.literal("")),
   shippingCost: z.number().min(0),
   note: z.string().optional(),
 });
@@ -131,6 +136,17 @@ export function InvoiceForm({
 
   // Export quality - cached to avoid extra DB call during download
   const [exportQuality, setExportQuality] = useState<50 | 100 | 150>(50);
+
+  // Selected customer from CustomerSelector
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+
+  // Premium status for customer selector gating
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
+
+  // Upgrade modal state for customer selector
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Fetch latest preferences on mount to ensure we have the most up-to-date values
   // This handles the case where user changes settings and returns to dashboard
@@ -246,8 +262,10 @@ export function InvoiceForm({
         ? formatDateForInput(new Date(currentInvoice.invoiceDate))
         : formatDateForInput(new Date()),
       customerName: currentInvoice?.customer?.name || "",
+      customerPhone: currentInvoice?.customer?.phone || "",
       customerAddress: currentInvoice?.customer?.address || "",
       customerStatus: currentInvoice?.customer?.status || "Customer",
+      customerEmail: currentInvoice?.customer?.email || "",
       shippingCost: currentInvoice?.shippingCost || 0,
     },
   });
@@ -261,8 +279,10 @@ export function InvoiceForm({
           ? formatDateForInput(new Date(currentInvoice.invoiceDate))
           : formatDateForInput(new Date()),
         customerName: currentInvoice.customer?.name || "",
+        customerPhone: currentInvoice.customer?.phone || "",
         customerAddress: currentInvoice.customer?.address || "",
         customerStatus: currentInvoice.customer?.status || "Customer",
+        customerEmail: currentInvoice.customer?.email || "",
         shippingCost: currentInvoice.shippingCost || 0,
         note: currentInvoice.note || "",
       });
@@ -285,9 +305,15 @@ export function InvoiceForm({
   ) => {
     if (
       field === "customerName" ||
+      field === "customerPhone" ||
       field === "customerAddress" ||
+      field === "customerEmail" ||
       field === "customerStatus"
     ) {
+      // Clear selected customer when user manually edits fields
+      if (selectedCustomer) {
+        setSelectedCustomer(null);
+      }
       updateCurrentInvoice({
         customer: {
           ...currentInvoice?.customer,
@@ -295,7 +321,14 @@ export function InvoiceForm({
             field === "customerName"
               ? String(value)
               : currentInvoice?.customer?.name || "",
-          email: "", // Email removed
+          phone:
+            field === "customerPhone"
+              ? String(value)
+              : currentInvoice?.customer?.phone || "",
+          email:
+            field === "customerEmail"
+              ? String(value)
+              : currentInvoice?.customer?.email || "",
           address:
             field === "customerAddress"
               ? String(value)
@@ -376,6 +409,53 @@ export function InvoiceForm({
     }
   };
 
+  // Handle customer selection from CustomerSelector
+  const handleCustomerSelect = (customer: Customer | null) => {
+    setSelectedCustomer(customer);
+    if (customer) {
+      // Populate form fields with customer data including status
+      form.setValue("customerName", customer.name);
+      form.setValue("customerPhone", customer.phone || "");
+      form.setValue("customerAddress", customer.address || "");
+      form.setValue("customerEmail", customer.email || "");
+      // Use customer's saved status if available, otherwise default to "Customer"
+      const customerStatus = customer.status || "Customer";
+      form.setValue("customerStatus", customerStatus);
+      // Update the invoice store
+      updateCurrentInvoice({
+        customer: {
+          ...currentInvoice?.customer,
+          name: customer.name,
+          phone: customer.phone || "",
+          email: customer.email || "",
+          address: customer.address || "",
+          status: customerStatus,
+        },
+      });
+    }
+  };
+
+  // Handle creating a new customer from the inline form
+  const handleCreateCustomer = async (
+    customerData: CustomerInsert
+  ): Promise<Customer | null> => {
+    try {
+      const { createCustomerAction } = await import("@/app/actions/customers");
+      const result = await createCustomerAction(customerData);
+      if (result.success && result.data) {
+        toast.success("Customer saved successfully");
+        return result.data;
+      } else {
+        toast.error(result.error || "Failed to save customer");
+        return null;
+      }
+    } catch (error) {
+      console.error("Failed to create customer:", error);
+      toast.error("Failed to save customer");
+      return null;
+    }
+  };
+
   const handleQuickDownload = async () => {
     if (
       !currentInvoice ||
@@ -383,6 +463,24 @@ export function InvoiceForm({
       currentInvoice.items.length === 0
     ) {
       toast.error("Please add at least one item to the invoice");
+      return;
+    }
+
+    // Validate mandatory customer fields
+    const customerName = currentInvoice.customer?.name?.trim() || "";
+    const customerPhone = currentInvoice.customer?.phone?.trim() || "";
+    const customerAddress = currentInvoice.customer?.address?.trim() || "";
+
+    const missingFields: string[] = [];
+    if (customerName.length < 2) missingFields.push("Customer Name");
+    if (!customerPhone || customerPhone.length < 8) missingFields.push("Phone");
+    if (!customerAddress || customerAddress.length < 5)
+      missingFields.push("Address");
+
+    if (missingFields.length > 0) {
+      toast.error(
+        `Please fill in required fields: ${missingFields.join(", ")}`
+      );
       return;
     }
 
@@ -417,12 +515,77 @@ export function InvoiceForm({
             taxPercentage
           );
 
+          // If no saved customer selected but customer name is provided, save as new customer
+          let customerId: string | null = selectedCustomer?.id || null;
+
+          if (!selectedCustomer && currentInvoice.customer?.name) {
+            const customerName = currentInvoice.customer.name.trim();
+
+            // Only save if name is at least 2 characters
+            if (customerName.length >= 2) {
+              try {
+                const { createCustomerAction } = await import(
+                  "@/app/actions/customers"
+                );
+
+                // Get user input or use defaults that pass validation
+                const customerPhone =
+                  currentInvoice.customer.phone?.trim() || "";
+                const customerAddress =
+                  currentInvoice.customer.address?.trim() || "";
+
+                // Phone: must be 8-15 digits, strip non-digit chars except leading +
+                const phoneDigits = customerPhone.replace(/[^0-9+]/g, "");
+                const phoneRegex = /^\+?[0-9]{8,15}$/;
+                const validPhone = phoneRegex.test(phoneDigits)
+                  ? phoneDigits
+                  : "00000000";
+                const validAddress =
+                  customerAddress.length >= 5
+                    ? customerAddress
+                    : "Alamat tidak tersedia";
+
+                const customerData: CustomerInsert = {
+                  store_id: defaultStore.id,
+                  name: customerName,
+                  phone: validPhone,
+                  address: validAddress,
+                  email: currentInvoice.customer.email || "",
+                  status: currentInvoice.customer.status || "Customer",
+                };
+                console.log("📝 Saving new customer:", customerData);
+                const customerResult = await createCustomerAction(customerData);
+                if (customerResult.success && customerResult.data) {
+                  customerId = customerResult.data.id;
+                  setSelectedCustomer(customerResult.data);
+                  console.log("✅ Customer saved:", customerResult.data);
+                  toast.success("Customer saved to your customer list");
+                } else {
+                  console.warn(
+                    "⚠️ Failed to save customer:",
+                    customerResult.error
+                  );
+                  toast.error(
+                    `Failed to save customer: ${customerResult.error}`
+                  );
+                }
+              } catch (error) {
+                console.warn(
+                  "Failed to save customer, continuing with invoice:",
+                  error
+                );
+              }
+            }
+          }
+
           const invoiceData = {
             id: currentInvoice.id,
             store_id: defaultStore.id,
+            customer_id: customerId,
             invoice_number: currentInvoice.invoiceNumber || "",
             invoice_date: invoiceDate,
             customer_name: currentInvoice.customer?.name || "",
+            customer_phone: currentInvoice.customer?.phone || "",
             customer_email: currentInvoice.customer?.email || "",
             customer_address: currentInvoice.customer?.address || "",
             customer_status: currentInvoice.customer?.status || "Customer",
@@ -560,7 +723,38 @@ export function InvoiceForm({
         {/* Customer Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <h3 className="text-xl font-semibold mb-4">Customer Information</h3>
+
           <div className="space-y-4">
+            {/* Customer Selector */}
+            {defaultStore && (
+              <div>
+                <Label>Select Customer</Label>
+                <CustomerSelector
+                  storeId={defaultStore.id}
+                  onSelect={handleCustomerSelect}
+                  onCreateNew={handleCreateCustomer}
+                  selectedCustomerId={selectedCustomer?.id}
+                  className="mt-1.5"
+                  disabled={!isPremium && !isPremiumLoading}
+                  isPremium={isPremium}
+                  onUpgradeClick={() => setShowUpgradeModal(true)}
+                />
+              </div>
+            )}
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">
+                  or enter manually
+                </span>
+              </div>
+            </div>
+
+            {/* Customer Name */}
             <div>
               <Label htmlFor="customerName">Customer Name *</Label>
               <Input
@@ -579,32 +773,41 @@ export function InvoiceForm({
               )}
             </div>
 
-            {/* 2-column layout for desktop */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Customer Status */}
-              <div>
-                <Label htmlFor="customerStatus">Customer Status</Label>
-                <select
-                  id="customerStatus"
-                  {...form.register("customerStatus")}
-                  onChange={(e) =>
-                    handleFormChange("customerStatus", e.target.value)
-                  }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5"
-                >
-                  <option value="Customer">Customer</option>
-                  <option value="Reseller">Reseller</option>
-                  <option value="Distributor">Distributor</option>
-                </select>
-              </div>
+            {/* Customer Phone */}
+            <div>
+              <Label htmlFor="customerPhone">Phone *</Label>
+              <Input
+                id="customerPhone"
+                type="tel"
+                {...form.register("customerPhone")}
+                onChange={(e) =>
+                  handleFormChange("customerPhone", e.target.value)
+                }
+                placeholder="e.g., 08123456789"
+                className="mt-1.5"
+              />
+            </div>
 
-              {/* Spacer for alignment */}
-              <div className="hidden lg:block"></div>
+            {/* Customer Status */}
+            <div>
+              <Label htmlFor="customerStatus">Customer Status *</Label>
+              <select
+                id="customerStatus"
+                {...form.register("customerStatus")}
+                onChange={(e) =>
+                  handleFormChange("customerStatus", e.target.value)
+                }
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 pr-8 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5"
+              >
+                <option value="Customer">Customer</option>
+                <option value="Reseller">Reseller</option>
+                <option value="Distributor">Distributor</option>
+              </select>
             </div>
 
             {/* Customer Address */}
             <div>
-              <Label htmlFor="customerAddress">Address (Optional)</Label>
+              <Label htmlFor="customerAddress">Address *</Label>
               <Textarea
                 id="customerAddress"
                 {...form.register("customerAddress")}
@@ -612,9 +815,29 @@ export function InvoiceForm({
                   handleFormChange("customerAddress", e.target.value)
                 }
                 placeholder="Enter customer address"
-                rows={3}
+                rows={2}
                 className="mt-1.5"
               />
+            </div>
+
+            {/* Customer Email */}
+            <div>
+              <Label htmlFor="customerEmail">Email</Label>
+              <Input
+                id="customerEmail"
+                type="email"
+                {...form.register("customerEmail")}
+                onChange={(e) =>
+                  handleFormChange("customerEmail", e.target.value)
+                }
+                placeholder="customer@example.com"
+                className="mt-1.5"
+              />
+              {form.formState.errors.customerEmail && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.customerEmail.message}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -782,35 +1005,58 @@ export function InvoiceForm({
             </div>
           )}
 
+          <Button
+            type="button"
+            disabled={
+              !currentInvoice.items ||
+              currentInvoice.items.length === 0 ||
+              isDownloading ||
+              subscriptionStatus?.remainingInvoices === 0
+            }
+            className="gap-2 w-full"
+            size="lg"
+            onClick={() => {
+              // Validate mandatory customer fields before opening dialog
+              const customerName = currentInvoice.customer?.name?.trim() || "";
+              const customerPhone =
+                currentInvoice.customer?.phone?.trim() || "";
+              const customerAddress =
+                currentInvoice.customer?.address?.trim() || "";
+
+              const missingFields: string[] = [];
+              if (customerName.length < 2) missingFields.push("Customer Name");
+              if (!customerPhone || customerPhone.length < 8)
+                missingFields.push("Phone");
+              if (!customerAddress || customerAddress.length < 5)
+                missingFields.push("Address");
+
+              if (missingFields.length > 0) {
+                toast.error(
+                  `Please fill in required fields: ${missingFields.join(", ")}`
+                );
+                return;
+              }
+
+              setIsReviewDialogOpen(true);
+            }}
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Eye size={20} />
+                Review & Download
+              </>
+            )}
+          </Button>
+
           <Dialog
             open={isReviewDialogOpen}
             onOpenChange={setIsReviewDialogOpen}
           >
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                disabled={
-                  !currentInvoice.items ||
-                  currentInvoice.items.length === 0 ||
-                  isDownloading ||
-                  subscriptionStatus?.remainingInvoices === 0
-                }
-                className="gap-2 w-full"
-                size="lg"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Eye size={20} />
-                    Review & Download
-                  </>
-                )}
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Review Invoice Details</DialogTitle>
@@ -832,12 +1078,29 @@ export function InvoiceForm({
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Customer</p>
-                    <p className="text-sm font-semibold">
-                      {currentInvoice.customer?.name || "No customer"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">
+                        {currentInvoice.customer?.name || "No customer"}
+                      </p>
+                      {currentInvoice.customer?.status && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">
+                          {currentInvoice.customer.status}
+                        </span>
+                      )}
+                    </div>
+                    {currentInvoice.customer?.phone && (
+                      <p className="text-xs text-gray-600">
+                        {currentInvoice.customer.phone}
+                      </p>
+                    )}
                     {currentInvoice.customer?.address && (
                       <p className="text-xs text-gray-600">
                         {currentInvoice.customer.address}
+                      </p>
+                    )}
+                    {currentInvoice.customer?.email && (
+                      <p className="text-xs text-gray-500">
+                        {currentInvoice.customer.email}
                       </p>
                     )}
                   </div>
@@ -1088,6 +1351,14 @@ export function InvoiceForm({
               return <ClassicInvoiceTemplate {...templateProps} />;
           }
         })()}
+
+      {/* Upgrade Modal for Customer Selector */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Customer Management"
+        featureDescription="Save and manage your customers for quick invoice creation."
+      />
     </div>
   );
 }

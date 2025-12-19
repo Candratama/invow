@@ -71,7 +71,13 @@
         --sidebar-border:
             220 13% 91%;
         --sidebar-ring:
-            46 68% 52%; /* Gold #D3AF37 */
+            46 68% 52%; /* Gold #D3AF37 */ --component-inactive-color:
+            var(--muted-foreground); --component-bg:
+            var(--card); --component-shadow:
+            var(--border); --component-active-bg:
+            var(--secondary); --component-line-inactive-color:
+            var(--border); --component-active-color-default:
+            var(--accent-foreground);
     }
   .dark {
         --background:
@@ -137,7 +143,23 @@
         --sidebar-border:
             0 0% 20%;
         --sidebar-ring:
-            46 68% 52%; /* Gold #D3AF37 */
+            46 68% 52%; /* Gold #D3AF37 */ --component-inactive-color:
+            var(--muted-foreground); --component-bg:
+            var(--card); --component-shadow:
+            var(--border); --component-active-bg:
+            var(--secondary); --component-line-inactive-color:
+            var(--muted-foreground); --component-active-color-default:
+            var(--accent-foreground);
+    }
+  .theme {
+        --color-chart-2:
+            var(--color-chart-2);
+        --color-chart-3:
+            var(--color-chart-3);
+        --color-chart-4:
+            var(--color-chart-4);
+        --color-chart-5:
+            var(--color-chart-5);
     }
 }
 
@@ -242,5 +264,30 @@
     }
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
+    }
+}
+
+@theme inline {
+  @keyframes iconBounce {
+  0%, 100% {
+    transform:
+            translateY(0);
+        }
+  20% {
+    transform:
+            translateY(-0.3em);
+        }
+  40% {
+    transform:
+            translateY(0);
+        }
+  60% {
+    transform:
+            translateY(-0.1em);
+        }
+  80% {
+    transform:
+            translateY(0);
+        }
     }
 }

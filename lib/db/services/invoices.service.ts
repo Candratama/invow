@@ -310,7 +310,8 @@ export class InvoicesService {
         .select(
           `
           *,
-          invoice_items (*)
+          invoice_items (*),
+          customers (phone)
         `,
         )
         .eq("id", invoiceId)
@@ -332,7 +333,31 @@ export class InvoicesService {
         );
       }
 
-      return { data: data as InvoiceWithItems, error: null };
+      // Fallback: if customer_phone is null but we have a linked customer, use their phone
+      if (!data.customer_phone && data.customers?.phone) {
+        data.customer_phone = data.customers.phone;
+      }
+
+      // Fallback 2: if still no phone and no customer_id, try to find matching customer by name
+      if (!data.customer_phone && !data.customer_id && data.customer_name && data.store_id) {
+        const { data: matchingCustomer } = await this.supabase
+          .from("customers")
+          .select("phone")
+          .eq("store_id", data.store_id)
+          .ilike("name", data.customer_name.trim())
+          .limit(1)
+          .single();
+
+        if (matchingCustomer?.phone) {
+          data.customer_phone = matchingCustomer.phone;
+        }
+      }
+
+      // Remove the customers relation from the response (not part of InvoiceWithItems type)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { customers: _customers, ...invoiceData } = data;
+
+      return { data: invoiceData as InvoiceWithItems, error: null };
     } catch (error) {
       return {
         data: null,
