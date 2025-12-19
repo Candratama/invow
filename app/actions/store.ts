@@ -259,6 +259,28 @@ export async function getStoreAndContactsAction() {
 }
 
 /**
+ * Get the user's default store
+ * Used by customer management and other features that need store context
+ */
+export async function getStoreAction() {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized', data: null }
+  }
+
+  const storesService = new StoresService(supabase)
+  const { data: store, error } = await storesService.getDefaultStore()
+
+  if (error) {
+    return { success: false, error: error.message, data: null }
+  }
+
+  return { success: true, data: store }
+}
+
+/**
  * Invalidate store and contacts cache
  * Use this after direct database updates to refresh cached data
  */

@@ -14,6 +14,7 @@ export interface TierFeatures {
   hasDashboardTotals: boolean;
   exportQualities: string[];
   hasMonthlyReport: boolean;
+  hasCustomerManagement: boolean;
 }
 
 export type FeatureName = keyof TierFeatures;
@@ -34,6 +35,7 @@ export const TIER_FEATURES: Record<string, TierFeatures> = {
     hasDashboardTotals: false,
     exportQualities: ['standard'],
     hasMonthlyReport: false,
+    hasCustomerManagement: false,
   },
   premium: {
     invoiceLimit: 200, // Premium tier limit
@@ -46,6 +48,7 @@ export const TIER_FEATURES: Record<string, TierFeatures> = {
     hasDashboardTotals: true,
     exportQualities: ['standard', 'high', 'print-ready'],
     hasMonthlyReport: true,
+    hasCustomerManagement: true,
   },
 } as const;
 

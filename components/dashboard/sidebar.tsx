@@ -1,16 +1,18 @@
-"use cache";
+"use client";
 
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
-import { FileText, Settings } from "lucide-react";
+import { FileText, Settings, Users } from "lucide-react";
+import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 
 interface SidebarLinkProps {
   href: string;
   icon: React.ReactNode;
   label: string;
+  badge?: React.ReactNode;
 }
 
-function SidebarLink({ href, icon, label }: SidebarLinkProps) {
+function SidebarLink({ href, icon, label, badge }: SidebarLinkProps) {
   return (
     <Link
       href={href}
@@ -19,16 +21,22 @@ function SidebarLink({ href, icon, label }: SidebarLinkProps) {
     >
       {icon}
       <span className="text-sm font-medium">{label}</span>
+      {badge}
     </Link>
   );
 }
 
 /**
- * Cached sidebar component for the dashboard shell.
- * This component is part of the donut pattern - it's a static server component
- * that gets cached and served instantly while dynamic content loads.
+ * Dashboard sidebar component with premium status awareness.
+ * Shows a "Pro" badge next to Customers menu item for free users.
+ * Requirements: 2.1
  */
-export async function DashboardSidebar() {
+export function DashboardSidebar() {
+  const { isPremium, isLoading } = usePremiumStatus();
+
+  // Show Pro badge for free users (not loading and not premium)
+  const showProBadge = !isLoading && !isPremium;
+
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
       {/* Logo */}
@@ -44,6 +52,18 @@ export async function DashboardSidebar() {
           href="/dashboard"
           icon={<FileText size={20} />}
           label="Invoices"
+        />
+        <SidebarLink
+          href="/dashboard/customers"
+          icon={<Users size={20} />}
+          label="Customers"
+          badge={
+            showProBadge ? (
+              <span className="ml-auto inline-flex items-center px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-semibold rounded">
+                Pro
+              </span>
+            ) : undefined
+          }
         />
         <SidebarLink
           href="/dashboard/settings"

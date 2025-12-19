@@ -17,7 +17,8 @@ export interface Invoice {
 
 export interface Customer {
   name: string;
-  email?: string; // Optional, not used in form
+  phone?: string; // Optional phone number
+  email?: string; // Optional email
   address?: string;
   status?: "Distributor" | "Reseller" | "Customer";
 }

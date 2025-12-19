@@ -166,6 +166,7 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
       dueDate: parseLocalDate(data.invoice_date),
       customer: {
         name: data.customer_name,
+        phone: data.customer_phone || "",
         email: data.customer_email || "",
         status: (data.customer_status as "Distributor" | "Reseller" | "Customer") || "Customer",
         address: data.customer_address || ""

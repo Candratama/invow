@@ -11,7 +11,8 @@ export type GatedFeature =
   | "hasBrandColor"
   | "hasCustomColors"
   | "hasMonthlyReport"
-  | "hasDashboardTotals";
+  | "hasDashboardTotals"
+  | "hasCustomerManagement";
 
 interface FeatureGateProps {
   /** The feature to gate access for */
@@ -39,6 +40,7 @@ const FEATURE_DISPLAY_NAMES: Record<GatedFeature, string> = {
   hasCustomColors: "Custom Brand Colors",
   hasMonthlyReport: "Monthly Reports",
   hasDashboardTotals: "Dashboard Totals",
+  hasCustomerManagement: "Customer Management",
 };
 
 const FEATURE_DESCRIPTIONS: Record<GatedFeature, string> = {
@@ -49,6 +51,8 @@ const FEATURE_DESCRIPTIONS: Record<GatedFeature, string> = {
   hasCustomColors: "Customize invoice colors to match your brand identity.",
   hasMonthlyReport: "Get detailed monthly reports of your invoicing activity.",
   hasDashboardTotals: "View total invoice count and revenue on your dashboard.",
+  hasCustomerManagement:
+    "Save and manage customer information for quick invoice creation.",
 };
 
 /**

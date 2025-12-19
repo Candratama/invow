@@ -191,14 +191,57 @@ export interface Database {
           updated_at?: string
         }
       }
+      customers: {
+        Row: {
+          id: string
+          store_id: string
+          name: string
+          phone: string
+          address: string
+          email: string | null
+          notes: string | null
+          status: 'Customer' | 'Reseller' | 'Distributor'
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          store_id: string
+          name: string
+          phone: string
+          address: string
+          email?: string | null
+          notes?: string | null
+          status?: 'Customer' | 'Reseller' | 'Distributor'
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          store_id?: string
+          name?: string
+          phone?: string
+          address?: string
+          email?: string | null
+          notes?: string | null
+          status?: 'Customer' | 'Reseller' | 'Distributor'
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       invoices: {
         Row: {
           id: string
           user_id: string
           store_id: string
+          customer_id: string | null
           invoice_number: string
           invoice_date: string
           customer_name: string
+          customer_phone: string | null
           customer_email: string | null
           customer_address: string | null
           customer_status: string | null
@@ -216,9 +259,11 @@ export interface Database {
           id?: string
           user_id: string
           store_id: string
+          customer_id?: string | null
           invoice_number: string
           invoice_date: string
           customer_name: string
+          customer_phone?: string | null
           customer_email?: string | null
           customer_address?: string | null
           customer_status?: string | null
@@ -236,9 +281,11 @@ export interface Database {
           id?: string
           user_id?: string
           store_id?: string
+          customer_id?: string | null
           invoice_number?: string
           invoice_date?: string
           customer_name?: string
+          customer_phone?: string | null
           customer_email?: string | null
           customer_address?: string | null
           customer_status?: string | null
@@ -495,3 +542,7 @@ export type PaymentTransactionUpdate = Database['public']['Tables']['payment_tra
 export type InvoiceUsage = Database['public']['Tables']['invoice_usage']['Row']
 export type InvoiceUsageInsert = Database['public']['Tables']['invoice_usage']['Insert']
 export type InvoiceUsageUpdate = Database['public']['Tables']['invoice_usage']['Update']
+
+export type Customer = Database['public']['Tables']['customers']['Row']
+export type CustomerInsert = Database['public']['Tables']['customers']['Insert']
+export type CustomerUpdate = Database['public']['Tables']['customers']['Update']
