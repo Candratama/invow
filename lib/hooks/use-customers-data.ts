@@ -39,7 +39,9 @@ export function useCustomers(storeId: string | undefined, initialData?: Customer
     enabled: !!storeId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchOnMount: false,
+    // Use true instead of false - this will refetch on mount only when data is stale
+    // This ensures invalidated data gets refetched when navigating to the page
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 }
@@ -60,7 +62,10 @@ export function useSearchCustomers(storeId: string | undefined, query: string) {
       return result.data as Customer[];
     },
     enabled: !!storeId && query.length > 0,
-    staleTime: 30 * 1000,
+    staleTime: 30 * 1000, // 30 seconds for search results
+    gcTime: 60 * 1000, // Keep in cache for 1 minute
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 

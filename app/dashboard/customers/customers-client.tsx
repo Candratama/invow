@@ -59,6 +59,7 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
   const {
     data: customers,
     isLoading: customersLoading,
+    isRefetching: customersRefetching,
     error: customersError,
     refetch,
   } = useCustomers(isPremium ? storeId || undefined : undefined);
@@ -70,6 +71,15 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
   const debouncedSearch = useDebouncedCallback((query: string) => {
     setDebouncedQuery(query);
   }, 300);
+
+  // Show error toast when error occurs but cached data exists - Requirements: 3.4
+  useEffect(() => {
+    if (customersError && customers) {
+      toast.error("Failed to refresh customers", {
+        description: "Showing cached data. Pull to refresh or try again later.",
+      });
+    }
+  }, [customersError, customers]);
 
   // Fetch store ID if not provided
   useEffect(() => {
@@ -221,9 +231,13 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
   }
 
   // Show loading state for premium users while customers are loading
+  // Show skeleton ONLY when loading AND no cached data - Requirements: 1.1, 1.5, 2.5, 3.2
   if (customersLoading && !customers) {
     return <CustomersSkeleton />;
   }
+
+  // Determine if we're refetching in background (for subtle indicator)
+  const isBackgroundRefetching = customersRefetching && customers;
 
   // Error state - show inline error with retry option
   if (customersError && !customers) {
@@ -273,6 +287,16 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
+      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
+      {isBackgroundRefetching && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-primary/20 overflow-hidden">
+          <div
+            className="h-full w-1/3 bg-primary animate-pulse"
+            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b shadow-sm">
         <div className="max-w-4xl mx-auto px-4 lg:px-6">

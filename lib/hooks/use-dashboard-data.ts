@@ -68,6 +68,7 @@ export function useDashboardData(
     initialData: page === 1 ? initialData : undefined,
     // Data dianggap fresh selama 5 menit
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false, // Don't refetch on component mount if data exists
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
@@ -129,6 +130,7 @@ export function useRevenueData(initialData?: DashboardData) {
     },
     initialData: initialDataRef.current,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
@@ -186,6 +188,7 @@ export function useInvoiceList(page: number = 1, initialData?: DashboardData) {
     },
     initialData: initialDataRef.current,
     staleTime: 2 * 60 * 1000, // 2 minutes for invoice list
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });

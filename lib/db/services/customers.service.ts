@@ -57,7 +57,6 @@ export class CustomersService {
         .eq("id", id)
         .single();
 
-
       if (error) {
         // If not found, return null instead of error
         if (error.code === "PGRST116") {
@@ -75,16 +74,80 @@ export class CustomersService {
     }
   }
 
+
   /**
-   * Create a new customer
+   * Create a new customer or update existing one with same phone
+   * Uses phone number as unique identifier per store
    * @param data - Customer data to insert
-   * @returns Created customer
+   * @returns Created or updated customer
    */
   async createCustomer(data: CustomerInsert): Promise<{
     data: Customer | null;
     error: Error | null;
   }> {
     try {
+      // First check if a customer with this phone already exists for this store
+      const { data: existingCustomer } = await this.supabase
+        .from("customers")
+        .select("*")
+        .eq("store_id", data.store_id)
+        .eq("phone", data.phone)
+        .eq("is_active", true)
+        .single();
+
+      if (existingCustomer) {
+        // Update existing customer with new data
+        const { data: customer, error } = await this.supabase
+          .from("customers")
+          .update({
+            name: data.name,
+            address: data.address,
+            email: data.email || existingCustomer.email,
+            status: data.status || existingCustomer.status,
+            notes: data.notes || existingCustomer.notes,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingCustomer.id)
+          .select()
+          .single();
+
+        if (error) throw new Error(error.message);
+
+        return { data: customer, error: null };
+      }
+
+      // Check if there's an inactive customer with this phone - reactivate it
+      const { data: inactiveCustomer } = await this.supabase
+        .from("customers")
+        .select("*")
+        .eq("store_id", data.store_id)
+        .eq("phone", data.phone)
+        .eq("is_active", false)
+        .single();
+
+      if (inactiveCustomer) {
+        // Reactivate and update the inactive customer
+        const { data: customer, error } = await this.supabase
+          .from("customers")
+          .update({
+            name: data.name,
+            address: data.address,
+            email: data.email || inactiveCustomer.email,
+            status: data.status || inactiveCustomer.status,
+            notes: data.notes || inactiveCustomer.notes,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", inactiveCustomer.id)
+          .select()
+          .single();
+
+        if (error) throw new Error(error.message);
+
+        return { data: customer, error: null };
+      }
+
+      // No existing customer, create new one
       const { data: customer, error } = await this.supabase
         .from("customers")
         .insert(data)
@@ -101,6 +164,7 @@ export class CustomersService {
       };
     }
   }
+
 
   /**
    * Update an existing customer
@@ -137,7 +201,6 @@ export class CustomersService {
     }
   }
 
-
   /**
    * Soft delete a customer (set is_active to false)
    * @param id - Customer ID
@@ -167,6 +230,7 @@ export class CustomersService {
     }
   }
 
+
   /**
    * Search customers by name (case-insensitive)
    * Only returns active customers (is_active = true)
@@ -192,6 +256,45 @@ export class CustomersService {
         .order("name", { ascending: true });
 
       if (error) throw new Error(error.message);
+
+      return { data, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Find customer by phone number
+   * @param storeId - Store ID to filter customers
+   * @param phone - Phone number to search
+   * @returns Customer or null if not found
+   */
+  async findByPhone(
+    storeId: string,
+    phone: string
+  ): Promise<{
+    data: Customer | null;
+    error: Error | null;
+  }> {
+    try {
+      const { data, error } = await this.supabase
+        .from("customers")
+        .select("*")
+        .eq("store_id", storeId)
+        .eq("phone", phone)
+        .eq("is_active", true)
+        .single();
+
+      if (error) {
+        // If not found, return null instead of error
+        if (error.code === "PGRST116") {
+          return { data: null, error: null };
+        }
+        throw new Error(error.message);
+      }
 
       return { data, error: null };
     } catch (error) {

@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import type { StoreContact } from "@/lib/db/database.types";
 import type {
   SettingsPageStore,
@@ -58,7 +59,9 @@ interface SettingsClientProps {
 
 export function SettingsClient({ initialData }: SettingsClientProps) {
   // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
-  const { data, isLoading } = useSettingsData(initialData ?? undefined);
+  const { data, isLoading, isRefetching, error } = useSettingsData(
+    initialData ?? undefined
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -121,6 +124,15 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Show error toast when error occurs but cached data exists - Requirements: 3.4
+  useEffect(() => {
+    if (error && data) {
+      toast.error("Failed to refresh settings", {
+        description: "Showing cached data. Pull to refresh or try again later.",
+      });
+    }
+  }, [error, data]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -210,9 +222,13 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
   }, [isDirty, router]);
 
   // NOW we can do conditional returns - after all hooks
+  // Show skeleton ONLY when loading AND no cached data - Requirements: 1.1, 1.5, 2.5, 3.2
   if (authLoading || (isLoading && !data)) {
     return <SettingsSkeleton />;
   }
+
+  // Determine if we're refetching in background (for subtle indicator)
+  const isBackgroundRefetching = isRefetching && data;
 
   if (!user) {
     return null;
@@ -229,6 +245,16 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
 
   return (
     <>
+      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
+      {isBackgroundRefetching && (
+        <div className="fixed top-0 left-0 right-0 z-[60] h-1 bg-primary/20 overflow-hidden">
+          <div
+            className="h-full w-1/3 bg-primary animate-pulse"
+            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
+          />
+        </div>
+      )}
+
       <div className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden">
         <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
 

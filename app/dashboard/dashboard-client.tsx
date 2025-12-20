@@ -42,9 +42,9 @@ import { deleteInvoiceAction } from "@/app/actions/invoices";
 import {
   useRevenueData,
   useInvoiceList,
-  useInvalidateDashboard,
   type DashboardData,
 } from "@/lib/hooks/use-dashboard-data";
+import { useInvalidateRelatedQueries } from "@/lib/hooks/use-invalidate-related";
 import type { InvoiceWithItems } from "@/lib/db/services/invoices.service";
 import type { InvoiceItem } from "@/lib/db/database.types";
 import type { StoreSettings } from "@/lib/types";
@@ -176,16 +176,38 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const userEmail = user?.email || "";
 
   const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
-  const invalidateDashboard = useInvalidateDashboard();
+  const { afterInvoiceMutation } = useInvalidateRelatedQueries();
 
   // Separate queries for revenue (static) and invoices (paginated)
-  const { data: revenueData, isLoading: isLoadingRevenue } = useRevenueData(
-    initialData || undefined
-  );
-  const { data: invoiceData, isLoading: isLoadingInvoices } = useInvoiceList(
-    currentPage,
-    initialData || undefined
-  );
+  const {
+    data: revenueData,
+    isLoading: isLoadingRevenue,
+    isRefetching: isRefetchingRevenue,
+    error: revenueError,
+  } = useRevenueData(initialData || undefined);
+  const {
+    data: invoiceData,
+    isLoading: isLoadingInvoices,
+    isRefetching: isRefetchingInvoices,
+    error: invoiceError,
+  } = useInvoiceList(currentPage, initialData || undefined);
+
+  // Show error toast when error occurs but cached data exists - Requirements: 3.4
+  useEffect(() => {
+    if (revenueError && revenueData) {
+      toast.error("Failed to refresh data", {
+        description: "Showing cached data. Pull to refresh or try again later.",
+      });
+    }
+  }, [revenueError, revenueData]);
+
+  useEffect(() => {
+    if (invoiceError && invoiceData) {
+      toast.error("Failed to refresh invoices", {
+        description: "Showing cached data. Pull to refresh or try again later.",
+      });
+    }
+  }, [invoiceError, invoiceData]);
 
   // Extract data from query results (safe even if undefined)
   const invoices = (invoiceData?.invoices || []) as InvoiceWithItems[];
@@ -274,10 +296,16 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [view, defaultStore, handleNewInvoice]);
 
-  // Show skeleton while auth is loading or initial data fetch - AFTER all hooks
+  // Show skeleton ONLY when auth is loading or initial data fetch with no cache
+  // Requirements: 1.1, 1.5, 2.5, 3.2
   if (authLoading || (isLoadingRevenue && !revenueData)) {
     return <DashboardSkeleton />;
   }
+
+  // Determine if we're refetching in background (for subtle indicator)
+  const isBackgroundRefetching =
+    (isRefetchingRevenue && revenueData) ||
+    (isRefetchingInvoices && invoiceData);
 
   const handleDeleteCompleted = async (
     e: React.MouseEvent,
@@ -288,7 +316,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       startTransition(async () => {
         const result = await deleteInvoiceAction(invoiceId);
         if (result.success) {
-          invalidateDashboard();
+          afterInvoiceMutation(defaultStore?.id);
           toast.success("Invoice deleted", {
             description: "The invoice has been removed from your records",
           });
@@ -302,8 +330,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   };
 
   const handleInvoiceComplete = () => {
-    // Invalidate cache after creating/updating invoice
-    invalidateDashboard();
+    // Invalidate cache after creating/updating invoice (including customers cache for new customers)
+    afterInvoiceMutation(defaultStore?.id);
     setView("home");
   };
 
@@ -356,6 +384,16 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     <>
       <PaymentSuccessHandler />
 
+      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
+      {isBackgroundRefetching && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-primary/20 overflow-hidden">
+          <div
+            className="h-full w-1/3 bg-primary animate-pulse"
+            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
+          />
+        </div>
+      )}
+
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
         <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
           <div className="text-left mb-8 lg:mb-12 lg:text-center">
@@ -388,7 +426,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           />
 
           <>
-            {isLoadingInvoices ? (
+            {/* Show skeleton only when loading AND no cached data - Requirements: 1.1, 1.5 */}
+            {isLoadingInvoices && !invoiceData ? (
               <InvoicesListSkeleton />
             ) : isPending ? (
               <div className="bg-white p-8 rounded-lg shadow-sm text-center">
