@@ -24,6 +24,7 @@ import {
   setPrimaryContactAction,
   getStoreAndContactsAction,
 } from "@/app/actions/store";
+import { useInvalidateRelatedQueries } from "@/lib/hooks/use-invalidate-related";
 
 import { FeatureGate } from "@/components/ui/feature-gate";
 
@@ -91,6 +92,9 @@ export function BusinessInfoTab({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_store, setStore] = useState(initialStore);
   const isPremium = initialIsPremium;
+
+  // Cross-query invalidation for settings mutations
+  const { afterSettingsMutation } = useInvalidateRelatedQueries();
 
   // State for business info
   const [logo, setLogo] = useState<string>(initialStore?.logo || "");
@@ -428,6 +432,9 @@ export function BusinessInfoTab({
         if (onDirtyChange) {
           onDirtyChange(false);
         }
+
+        // Invalidate related caches (dashboard shows store info)
+        afterSettingsMutation();
 
         toast.success("Business info saved successfully!");
       } catch (error) {

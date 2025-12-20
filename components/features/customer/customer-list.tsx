@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Phone, MapPin, Pencil, Trash2 } from "lucide-react";
+import { User, Phone, MapPin, Mail, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/lib/db/database.types";
@@ -103,7 +103,10 @@ function CustomerCard({
 
           {/* Email (if exists) */}
           {customer.email && (
-            <p className="text-xs text-gray-400 pl-6">{customer.email}</p>
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <p className="text-sm text-gray-500">{customer.email}</p>
+            </div>
           )}
 
           {/* Notes (if exists) */}

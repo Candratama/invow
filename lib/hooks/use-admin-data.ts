@@ -64,6 +64,9 @@ export function useAdminUsers<T>(
     },
     initialData,
     staleTime: 2 * 60 * 1000, // 2 minutes for admin data
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -90,6 +93,9 @@ export function useAdminStores<T>(
     },
     initialData,
     staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -119,6 +125,9 @@ export function useAdminTransactions<T>(
     },
     initialData,
     staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -166,6 +175,9 @@ export function useAdminInvoices<T>(
     },
     initialData,
     staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -198,6 +210,9 @@ export function useAdminSubscriptions<T>(
     },
     initialData,
     staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -245,6 +260,9 @@ export function useAdminAnalytics<T>(
     },
     initialData,
     staleTime: 5 * 60 * 1000, // 5 minutes for analytics
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -262,6 +280,9 @@ export function useAdminPricing<T>(initialData?: T) {
     },
     initialData,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -279,6 +300,9 @@ export function useAdminTemplates<T>(initialData?: T) {
     },
     initialData,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 

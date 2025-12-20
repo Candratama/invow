@@ -106,10 +106,16 @@ export function InvoicesTableWrapper({
 
   return (
     <div className="space-y-4">
+      {/* Subtle loading indicator - Requirements: 3.3 */}
+      {isPending && (
+        <div className="h-1 bg-primary/20 overflow-hidden rounded-full">
+          <div className="h-full w-1/3 bg-primary animate-pulse" />
+        </div>
+      )}
       <div
         className={cn(
-          "rounded-lg border bg-card",
-          isPending && "opacity-60 pointer-events-none"
+          "rounded-lg border bg-card transition-opacity",
+          isPending && "opacity-80"
         )}
       >
         <div className="overflow-x-auto">
