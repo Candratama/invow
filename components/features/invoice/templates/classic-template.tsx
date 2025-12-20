@@ -489,7 +489,7 @@ export function ClassicInvoiceTemplate({
               </span>
             </div>
             <div
-              className="text-base lg:text-2xl font-semibold"
+              className="text-2xl font-semibold"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
