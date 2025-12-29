@@ -18,6 +18,7 @@ import { CustomersSkeleton } from "@/components/skeletons/customers-skeleton";
 import { toast } from "sonner";
 import { useDebouncedCallback } from "@/hooks/use-debounce";
 import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
+import { useStoreId } from "@/lib/hooks/use-store-data";
 import {
   useCustomers,
   useCreateCustomer,
@@ -30,24 +31,12 @@ import type {
   CustomerUpdate,
 } from "@/lib/db/database.types";
 
-interface CustomersClientProps {
-  initialStoreId: string | null;
-}
-
-/**
- * CustomersClient Component
- * Main client component for customer management page
- * Requirements: 4.1
- */
-export function CustomersClient({ initialStoreId }: CustomersClientProps) {
-  // ALL HOOKS MUST BE CALLED FIRST
+export function CustomersClient() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-
-  // Premium status check - Requirements: 1.1, 1.2
   const { isPremium, isLoading: premiumLoading } = usePremiumStatus();
+  const { storeId, isLoading: storeIdLoading } = useStoreId();
 
-  const [storeId, setStoreId] = useState<string | null>(initialStoreId);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -55,7 +44,6 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [hasExistingCustomers, setHasExistingCustomers] = useState(false);
 
-  // React Query hooks - only fetch if premium (to avoid server action errors)
   const {
     data: customers,
     isLoading: customersLoading,
@@ -67,12 +55,10 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
   const updateMutation = useUpdateCustomer();
   const deleteMutation = useDeleteCustomer();
 
-  // Debounced search
   const debouncedSearch = useDebouncedCallback((query: string) => {
     setDebouncedQuery(query);
   }, 300);
 
-  // Show error toast when error occurs but cached data exists - Requirements: 3.4
   useEffect(() => {
     if (customersError && customers) {
       toast.error("Failed to refresh customers", {
@@ -81,31 +67,10 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
     }
   }, [customersError, customers]);
 
-  // Fetch store ID if not provided
-  useEffect(() => {
-    const fetchStoreId = async () => {
-      if (!storeId && user) {
-        try {
-          const { getStoreAction } = await import("@/app/actions/store");
-          const result = await getStoreAction();
-          if (result.success && result.data) {
-            setStoreId(result.data.id);
-          }
-        } catch (error) {
-          console.error("Failed to fetch store:", error);
-        }
-      }
-    };
-    fetchStoreId();
-  }, [storeId, user]);
-
-  // Check if user has existing customers (for data preservation message)
-  // Requirements: 5.3
   useEffect(() => {
     const checkExistingCustomers = async () => {
       if (!isPremium && storeId) {
         try {
-          // Use direct Supabase query to check count without premium restriction
           const { hasExistingCustomersAction } = await import(
             "@/app/actions/customers"
           );
@@ -121,14 +86,12 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
     checkExistingCustomers();
   }, [isPremium, storeId]);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/dashboard/login");
     }
   }, [user, authLoading, router]);
 
-  // Filter customers based on search query
   const filteredCustomers = useMemo(() => {
     if (!customers) return [];
     if (!debouncedQuery.trim()) return customers;
@@ -216,8 +179,7 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
     router.push("/dashboard");
   }, [router]);
 
-  // Conditional returns AFTER all hooks
-  if (authLoading || premiumLoading) {
+  if (authLoading || premiumLoading || storeIdLoading) {
     return <CustomersSkeleton />;
   }
 
@@ -225,21 +187,16 @@ export function CustomersClient({ initialStoreId }: CustomersClientProps) {
     return null;
   }
 
-  // Show locked state for free users - Requirements: 1.1, 1.2, 5.3
   if (!isPremium) {
     return <CustomersLocked hasExistingCustomers={hasExistingCustomers} />;
   }
 
-  // Show loading state for premium users while customers are loading
-  // Show skeleton ONLY when loading AND no cached data - Requirements: 1.1, 1.5, 2.5, 3.2
   if (customersLoading && !customers) {
     return <CustomersSkeleton />;
   }
 
-  // Determine if we're refetching in background (for subtle indicator)
   const isBackgroundRefetching = customersRefetching && customers;
 
-  // Error state - show inline error with retry option
   if (customersError && !customers) {
     return (
       <div className="flex flex-col h-full bg-gray-50">

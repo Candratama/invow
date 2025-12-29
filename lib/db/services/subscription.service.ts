@@ -251,12 +251,15 @@ export class SubscriptionService {
 
       const subscriptionStartDate = new Date(subscription.subscription_start_date);
       
-      // Check if billing cycle has changed based on subscription start date
-      const currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
-      if (subscription.month_year !== currentCycle) {
-        // Reset counter for new billing cycle
-        await this.resetMonthlyCounter(userId, currentCycle);
-        subscription.current_month_count = 0;
+      // Only reset billing cycle for FREE tier
+      // Paid tiers (premium) use accumulated credits that don't reset monthly
+      if (subscription.tier === 'free') {
+        const currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
+        if (subscription.month_year !== currentCycle) {
+          // Reset counter for new billing cycle (free tier only)
+          await this.resetMonthlyCounter(userId, currentCycle);
+          subscription.current_month_count = 0;
+        }
       }
 
       const canGenerate =
@@ -292,12 +295,17 @@ export class SubscriptionService {
       }
 
       const subscriptionStartDate = new Date(subscription.subscription_start_date);
+      let currentCycle = subscription.month_year;
       
-      // Check if billing cycle has changed based on subscription start date
-      const currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
-      if (subscription.month_year !== currentCycle) {
-        // Reset counter for new billing cycle
-        await this.resetMonthlyCounter(userId, currentCycle);
+      // Only reset billing cycle for FREE tier
+      // Paid tiers (premium) use accumulated credits that don't reset monthly
+      if (subscription.tier === 'free') {
+        currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
+        if (subscription.month_year !== currentCycle) {
+          // Reset counter for new billing cycle (free tier only)
+          await this.resetMonthlyCounter(userId, currentCycle);
+          subscription.current_month_count = 0;
+        }
       }
 
       // Increment count
@@ -346,12 +354,15 @@ export class SubscriptionService {
 
       const subscriptionStartDate = new Date(subscription.subscription_start_date);
       
-      // Check if billing cycle has changed based on subscription start date
-      const currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
-      if (subscription.month_year !== currentCycle) {
-        // Reset counter for new billing cycle
-        await this.resetMonthlyCounter(userId, currentCycle);
-        subscription.current_month_count = 0;
+      // Only reset billing cycle for FREE tier
+      // Paid tiers (premium) use accumulated credits that don't reset monthly
+      if (subscription.tier === 'free') {
+        const currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
+        if (subscription.month_year !== currentCycle) {
+          // Reset counter for new billing cycle (free tier only)
+          await this.resetMonthlyCounter(userId, currentCycle);
+          subscription.current_month_count = 0;
+        }
       }
 
       const remaining =
@@ -387,14 +398,18 @@ export class SubscriptionService {
       }
 
       const subscriptionStartDate = new Date(subscription.subscription_start_date);
+      let currentCycle = subscription.month_year;
       
-      // Check if billing cycle has changed based on subscription start date
-      const currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
-      if (subscription.month_year !== currentCycle) {
-        // Reset counter for new billing cycle
-        await this.resetMonthlyCounter(userId, currentCycle);
-        subscription.current_month_count = 0;
-        subscription.month_year = currentCycle;
+      // Only reset billing cycle for FREE tier
+      // Paid tiers (premium) use accumulated credits that don't reset monthly
+      if (subscription.tier === 'free') {
+        currentCycle = this.getCurrentBillingCycle(subscriptionStartDate);
+        if (subscription.month_year !== currentCycle) {
+          // Reset counter for new billing cycle (free tier only)
+          await this.resetMonthlyCounter(userId, currentCycle);
+          subscription.current_month_count = 0;
+          subscription.month_year = currentCycle;
+        }
       }
 
       const remaining =
