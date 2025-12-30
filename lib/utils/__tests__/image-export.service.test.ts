@@ -80,7 +80,7 @@ describe("ImageExportService", () => {
     it("should compress images to respect quality limit", async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.constantFrom(70, 100, 150),
+          fc.constantFrom(50 as const, 100 as const, 150 as const),
           async (qualityLimitKB) => {
             // Create a test element
             const testElement = document.createElement("div");
@@ -127,8 +127,8 @@ describe("ImageExportService", () => {
       await fc.assert(
         fc.asyncProperty(
           fc.record({
-            smallLimit: fc.constant(70),
-            largeLimit: fc.constant(150),
+            smallLimit: fc.constant(50 as const),
+            largeLimit: fc.constant(150 as const),
           }),
           async ({ smallLimit, largeLimit }) => {
             const testElement = document.createElement("div");
@@ -139,11 +139,11 @@ describe("ImageExportService", () => {
             try {
               // First export with small limit
               vi.mocked(html2canvas).mockResolvedValueOnce(createMockCanvas());
-              const smallBlob = await exportAsJPEG(testElement, smallLimit);
+              const smallBlob = await exportAsJPEG(testElement, smallLimit as 50 | 100 | 150);
               
               // Second export with large limit
               vi.mocked(html2canvas).mockResolvedValueOnce(createMockCanvas());
-              const largeBlob = await exportAsJPEG(testElement, largeLimit);
+              const largeBlob = await exportAsJPEG(testElement, largeLimit as 50 | 100 | 150);
 
               // Property: smaller limit should produce smaller or equal file size
               expect(smallBlob.size).toBeLessThanOrEqual(largeBlob.size);

@@ -14,7 +14,23 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
+
+// Type declarations for jest-axe
+interface AxeViolation {
+  id: string;
+  impact?: string;
+  description: string;
+  nodes: Array<{ html: string }>;
+}
+interface AxeResults {
+  violations: AxeViolation[];
+}
+type AxeFn = (container: Element | Document | null) => Promise<AxeResults>;
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const jestAxeModule = require('jest-axe') as any;
+const axe: AxeFn = jestAxeModule.axe;
+const toHaveNoViolations = jestAxeModule.toHaveNoViolations;
 
 // Extend expect with jest-axe matchers
 expect.extend(toHaveNoViolations);
@@ -235,7 +251,7 @@ describe('Accessibility Audit - Typography System', () => {
       );
 
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toHaveLength(0);
     });
 
     it('should have proper text hierarchy in card components', () => {

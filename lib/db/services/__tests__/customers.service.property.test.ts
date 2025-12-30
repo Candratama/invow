@@ -37,6 +37,7 @@ function simulateCreateCustomer(
     address: data.address,
     email: data.email ?? null,
     notes: data.notes ?? null,
+    status: data.status ?? 'Customer',
     is_active: data.is_active ?? true,
     created_at: now,
     updated_at: now,

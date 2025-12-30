@@ -111,6 +111,7 @@ function createCustomerInDb(
     address,
     email: null,
     notes: null,
+    status: 'Customer',
     is_active: true,
     created_at: now,
     updated_at: now,

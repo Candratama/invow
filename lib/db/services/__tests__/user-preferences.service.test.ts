@@ -20,14 +20,17 @@ vi.mock('@/lib/supabase/client', () => {
 
 describe('UserPreferencesService - Property-Based Tests', () => {
   let service: UserPreferencesService;
-  let mockSupabase: ReturnType<typeof vi.fn>;
+  let mockSupabase: {
+    auth: { getUser: ReturnType<typeof vi.fn> };
+    from: ReturnType<typeof vi.fn>;
+  };
   const mockUser = { id: 'user-123', email: 'test@example.com' };
 
   beforeEach(async () => {
     vi.clearAllMocks();
     
     const { createClient } = await import('@/lib/supabase/client');
-    mockSupabase = createClient();
+    mockSupabase = createClient() as unknown as typeof mockSupabase;
     
     // Pass the mocked client to the service
     service = new UserPreferencesService(mockSupabase as any);

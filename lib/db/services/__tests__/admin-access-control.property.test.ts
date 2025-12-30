@@ -91,7 +91,7 @@ describe('Property 1: Admin access control', () => {
     await fc.assert(
       fc.asyncProperty(userArb, async (user) => {
         const hasAccess = shouldGrantAdminAccess(user)
-        const isAdminTrue = user.user_metadata?.is_admin === true
+        const isAdminTrue = (user.user_metadata as { is_admin?: boolean })?.is_admin === true
 
         // Property: Access granted iff is_admin === true
         expect(hasAccess).toBe(isAdminTrue)

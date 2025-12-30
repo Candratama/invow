@@ -181,7 +181,7 @@ describe('Property 8: Error Response Structure', () => {
             case 'createContact':
               result = await createContactAction({
                 name: 'Test',
-                phone: '123',
+                title: 'Manager',
               })
               break
             case 'updateContact':
@@ -198,15 +198,14 @@ describe('Property 8: Error Response Structure', () => {
             case 'createInvoice':
               result = await createInvoiceAction(
                 {
+                  store_id: 'store-123',
                   invoice_number: 'INV-001',
                   invoice_date: '2024-01-01',
-                  due_date: '2024-01-31',
                   status: 'draft',
                   subtotal: 100,
-                  tax: 0,
+                  tax_amount: 0,
                   total: 100,
-                  notes: null,
-                  terms: null,
+                  note: null,
                   customer_name: 'Test',
                   customer_email: null,
                   customer_phone: null,
@@ -258,21 +257,20 @@ describe('Property 8: Error Response Structure', () => {
             case 'createContact':
               result = await createContactAction({
                 name: 'Test',
-                phone: '123',
+                title: 'Manager',
               })
               break
             case 'createInvoice':
               result = await createInvoiceAction(
                 {
+                  store_id: 'store-123',
                   invoice_number: 'INV-001',
                   invoice_date: '2024-01-01',
-                  due_date: '2024-01-31',
                   status: 'draft',
                   subtotal: 100,
-                  tax: 0,
+                  tax_amount: 0,
                   total: 100,
-                  notes: null,
-                  terms: null,
+                  note: null,
                   customer_name: 'Test',
                   customer_email: null,
                   customer_phone: null,
@@ -326,7 +324,7 @@ describe('Property 8: Error Response Structure', () => {
             case 'createContact':
               result = await createContactAction({
                 name: 'Test',
-                phone: '123',
+                title: 'Manager',
               })
               break
             case 'deleteInvoice':

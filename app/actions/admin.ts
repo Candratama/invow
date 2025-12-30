@@ -32,10 +32,10 @@ import {
 } from '@/lib/db/services/admin-transactions.service'
 
 /**
- * Verify admin access for mutations only
- * Read operations rely on middleware auth check
+ * Verify admin access for any admin operation
+ * Defense in depth: validates auth even if middleware should have caught it
  */
-async function verifyAdminAccessForMutation(): Promise<string | null> {
+async function verifyAdminAccess(): Promise<string | null> {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -52,19 +52,20 @@ async function verifyAdminAccessForMutation(): Promise<string | null> {
 }
 
 // ============================================
-// READ OPERATIONS (cached, rely on middleware)
+// READ OPERATIONS (cached, with defense-in-depth auth)
 // ============================================
 
-/**
- * Get dashboard metrics (cached)
- * Auth is handled by middleware for /admin routes
- */
 export async function getAdminDashboardMetricsAction(): Promise<{
   success: boolean
   data?: DashboardMetrics
   error?: string
 }> {
   try {
+    const adminId = await verifyAdminAccess()
+    if (!adminId) {
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
     const result = await getAdminDashboardMetrics()
 
     if (result.error || !result.data) {
@@ -84,15 +85,17 @@ export async function getAdminDashboardMetricsAction(): Promise<{
   }
 }
 
-/**
- * Get recent transactions (cached)
- */
 export async function getAdminRecentTransactionsAction(limit: number = 10): Promise<{
   success: boolean
   data?: RecentTransactionItem[]
   error?: string
 }> {
   try {
+    const adminId = await verifyAdminAccess()
+    if (!adminId) {
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
     const result = await getAdminRecentTransactions(limit)
 
     if (result.error) {
@@ -109,15 +112,17 @@ export async function getAdminRecentTransactionsAction(limit: number = 10): Prom
   }
 }
 
-/**
- * Get users list (cached)
- */
 export async function getUsers(filters: UserFilters = {}): Promise<{
   success: boolean
   data?: { users: UserListItem[]; total: number }
   error?: string
 }> {
   try {
+    const adminId = await verifyAdminAccess()
+    if (!adminId) {
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
     const result = await getAdminUsers(filters)
 
     if (result.error || !result.data) {
@@ -137,15 +142,17 @@ export async function getUsers(filters: UserFilters = {}): Promise<{
   }
 }
 
-/**
- * Get user detail (cached)
- */
 export async function getUserDetail(userId: string): Promise<{
   success: boolean
   data?: UserDetail
   error?: string
 }> {
   try {
+    const adminId = await verifyAdminAccess()
+    if (!adminId) {
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
     if (!userId) {
       return { success: false, error: 'User ID is required' }
     }
@@ -169,15 +176,17 @@ export async function getUserDetail(userId: string): Promise<{
   }
 }
 
-/**
- * Get subscriptions list (cached)
- */
 export async function getSubscriptions(filters: SubscriptionFilters = {}): Promise<{
   success: boolean
   data?: { subscriptions: SubscriptionListItem[]; total: number }
   error?: string
 }> {
   try {
+    const adminId = await verifyAdminAccess()
+    if (!adminId) {
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
     const result = await getAdminSubscriptions(filters)
 
     if (result.error || !result.data) {
@@ -197,15 +206,17 @@ export async function getSubscriptions(filters: SubscriptionFilters = {}): Promi
   }
 }
 
-/**
- * Get transactions list (cached)
- */
 export async function getTransactions(filters: TransactionFilters = {}): Promise<{
   success: boolean
   data?: { transactions: TransactionListItem[]; total: number }
   error?: string
 }> {
   try {
+    const adminId = await verifyAdminAccess()
+    if (!adminId) {
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
     const result = await getAdminTransactions(filters)
 
     if (result.error || !result.data) {
@@ -237,7 +248,7 @@ export async function upgradeUserToPremium(userId: string): Promise<{
   error?: string
 }> {
   try {
-    const adminId = await verifyAdminAccessForMutation()
+    const adminId = await verifyAdminAccess()
     if (!adminId) {
       return { success: false, error: 'Unauthorized: Admin access required' }
     }
@@ -278,7 +289,7 @@ export async function downgradeUserToFree(userId: string): Promise<{
   error?: string
 }> {
   try {
-    const adminId = await verifyAdminAccessForMutation()
+    const adminId = await verifyAdminAccess()
     if (!adminId) {
       return { success: false, error: 'Unauthorized: Admin access required' }
     }
@@ -319,7 +330,7 @@ export async function extendSubscription(userId: string, days: number): Promise<
   error?: string
 }> {
   try {
-    const adminId = await verifyAdminAccessForMutation()
+    const adminId = await verifyAdminAccess()
     if (!adminId) {
       return { success: false, error: 'Unauthorized: Admin access required' }
     }
@@ -363,7 +374,7 @@ export async function resetInvoiceCounter(userId: string): Promise<{
   error?: string
 }> {
   try {
-    const adminId = await verifyAdminAccessForMutation()
+    const adminId = await verifyAdminAccess()
     if (!adminId) {
       return { success: false, error: 'Unauthorized: Admin access required' }
     }
@@ -403,7 +414,7 @@ export async function verifyTransaction(transactionId: string): Promise<{
   error?: string
 }> {
   try {
-    const adminId = await verifyAdminAccessForMutation()
+    const adminId = await verifyAdminAccess()
     if (!adminId) {
       return { success: false, error: 'Unauthorized: Admin access required' }
     }

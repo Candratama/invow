@@ -19,7 +19,11 @@ vi.mock('@/lib/supabase/client', () => {
 
 describe('InvoicesService', () => {
   let service: InvoicesService;
-  let mockSupabase: ReturnType<typeof vi.fn>;
+  let mockSupabase: {
+    auth: { getUser: ReturnType<typeof vi.fn> };
+    from: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
+  };
   const mockUser = { id: 'user-123', email: 'test@example.com' };
 
   beforeEach(async () => {
@@ -27,7 +31,7 @@ describe('InvoicesService', () => {
     
     // Get the mocked supabase client
     const { createClient } = await import('@/lib/supabase/client');
-    mockSupabase = createClient();
+    mockSupabase = createClient() as unknown as typeof mockSupabase;
     
     // Pass the mocked client to the service
     service = new InvoicesService(mockSupabase as any);

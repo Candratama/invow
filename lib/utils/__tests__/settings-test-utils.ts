@@ -246,7 +246,7 @@ export const invalidInvoiceSettingsArbitrary = fc.oneof(
   fc.record({
     selectedTemplate: templateIdArbitrary,
     taxEnabled: fc.boolean(),
-    exportQuality: fc.integer({ min: 200, max: 500 }) as unknown as 50 | 100 | 150,
+    exportQuality: fc.integer({ min: 200, max: 500 }) as unknown as fc.Arbitrary<50 | 100 | 150>,
   })
 );
 

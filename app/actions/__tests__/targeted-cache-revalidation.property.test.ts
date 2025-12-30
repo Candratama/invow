@@ -179,7 +179,7 @@ describe('Property 5: Targeted Cache Revalidation', () => {
               await updateStoreAction({ name: 'Test Store' })
               break
             case 'createContact':
-              await createContactAction({ name: 'Test', phone: '123' })
+              await createContactAction({ name: 'Test', title: 'Manager' })
               break
             case 'updateContact':
               await updateContactAction('contact-1', { name: 'Updated' })
@@ -270,7 +270,7 @@ describe('Property 5: Targeted Cache Revalidation', () => {
               await updateStoreAction({ name: 'Test' })
               break
             case 'contact':
-              await createContactAction({ name: 'Test', phone: '123' })
+              await createContactAction({ name: 'Test', title: 'Manager' })
               break
             case 'preferences':
               await updatePreferencesAction({ export_quality_kb: 100 })
@@ -344,7 +344,7 @@ describe('Property 5: Targeted Cache Revalidation', () => {
               await updateStoreAction({ name: 'Test' })
               break
             case 'createContact':
-              await createContactAction({ name: 'Test', phone: '123' })
+              await createContactAction({ name: 'Test', title: 'Manager' })
               break
             case 'updateContact':
               await updateContactAction('contact-1', { name: 'Updated' })

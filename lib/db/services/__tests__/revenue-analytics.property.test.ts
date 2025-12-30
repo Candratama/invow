@@ -117,7 +117,7 @@ describe("Property 15: Revenue total calculation", () => {
           // Ensure no completed transactions
           const nonCompleted = transactions.map((t) => ({
             ...t,
-            status: t.status === "completed" ? "pending" : t.status,
+            status: (t.status as string) === "completed" ? "pending" : t.status,
           }));
 
           const totalRevenue = calculateTotalRevenue(nonCompleted);
