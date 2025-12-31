@@ -441,9 +441,7 @@ export function InvoiceSettingsTab({
                     inputMode="numeric"
                     value={
                       form.watch("buybackPricePerGram")
-                        ? form
-                            .watch("buybackPricePerGram")
-                            .toLocaleString("id-ID")
+                        ? (form.watch("buybackPricePerGram") ?? 0).toLocaleString("id-ID")
                         : ""
                     }
                     onChange={(e) => {
