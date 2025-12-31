@@ -458,76 +458,69 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             isLoading={isLoadingRevenue}
           />
 
-          {/* Subscription quota display - simple version */}
+          {/* Subscription quota display - 2-row layout */}
           {subscriptionStatus && (
             <div className="mt-6 lg:mt-8 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                {/* Tier & Usage */}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                      subscriptionStatus.tier === 'premium'
-                        ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {subscriptionStatus.tier === 'premium' ? '⚡ Premium' : '🎁 Free'}
-                    </span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-gray-600">Invoices: </span>
-                    <span className="font-semibold">
-                      {subscriptionStatus.currentMonthCount} / {subscriptionStatus.invoiceLimit}
-                    </span>
+              {/* Row 1: Progress bar & Credit left */}
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex-1">
+                  <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${
+                        (subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100 >= 90
+                          ? 'bg-red-500'
+                          : (subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100 >= 70
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
+                      }`}
+                      style={{
+                        width: `${Math.min((subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100, 100)}%`
+                      }}
+                    />
                   </div>
                 </div>
-
-                {/* Progress Bar & Remaining */}
-                <div className="flex items-center gap-4 flex-1 lg:max-w-md">
-                  <div className="flex-1">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${
-                          (subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100 >= 90
-                            ? 'bg-red-500'
-                            : (subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100 >= 70
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                        }`}
-                        style={{
-                          width: `${Math.min((subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100, 100)}%`
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="text-sm whitespace-nowrap">
-                    <span className={`font-semibold ${
-                      subscriptionStatus.remainingInvoices <= 5
-                        ? 'text-red-600'
-                        : subscriptionStatus.remainingInvoices <= 20
-                        ? 'text-yellow-600'
-                        : 'text-green-600'
-                    }`}>
-                      {subscriptionStatus.remainingInvoices} left
-                    </span>
-                  </div>
+                <div className="text-sm font-semibold whitespace-nowrap">
+                  <span className={
+                    subscriptionStatus.remainingInvoices <= 5
+                      ? 'text-red-600'
+                      : subscriptionStatus.remainingInvoices <= 20
+                      ? 'text-yellow-600'
+                      : 'text-green-600'
+                  }>
+                    {subscriptionStatus.remainingInvoices} left
+                  </span>
                 </div>
               </div>
 
-              {/* Reset/Expiry Date */}
-              {subscriptionStatus.resetDate && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">
-                    {subscriptionStatus.tier === 'premium' ? 'Expires' : 'Resets'} on{' '}
-                    <span className="font-medium text-gray-700">
-                      {new Date(subscriptionStatus.resetDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
+              {/* Row 2: Expired date & Invoice count */}
+              <div className="flex items-center justify-between text-xs text-gray-600">
+                <div>
+                  {subscriptionStatus.resetDate && (
+                    <span>
+                      {subscriptionStatus.tier === 'premium' ? 'Expires' : 'Resets'} on{' '}
+                      <span className="font-medium text-gray-700">
+                        {new Date(subscriptionStatus.resetDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
                     </span>
-                  </p>
+                  )}
                 </div>
-              )}
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    subscriptionStatus.tier === 'premium'
+                      ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {subscriptionStatus.tier === 'premium' ? '⚡ Premium' : '🎁 Free'}
+                  </span>
+                  <span className="font-medium text-gray-700">
+                    {subscriptionStatus.currentMonthCount} / {subscriptionStatus.invoiceLimit}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
