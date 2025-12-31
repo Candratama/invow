@@ -23,6 +23,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -71,9 +72,28 @@ const invoiceSchema = z.object({
 
 const itemSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  quantity: z.number().min(1, "Quantity must be at least 1"),
-  price: z.number().min(0, "Price must be positive"),
-});
+  quantity: z.number().min(1, "Quantity must be at least 1").optional(),
+  price: z.number().min(0, "Price must be positive").optional(),
+  gram: z.number().positive("Gram must be greater than 0").optional(),
+  is_buyback: z.boolean().optional(),
+}).refine(
+  (data) => {
+    // If buyback mode, gram is required
+    if (data.is_buyback) {
+      return data.gram !== undefined && data.gram > 0;
+    }
+    // If regular mode, quantity and price are required
+    return (
+      data.quantity !== undefined &&
+      data.quantity > 0 &&
+      data.price !== undefined &&
+      data.price >= 0
+    );
+  },
+  {
+    message: "For buyback items, gram is required. For regular items, quantity and price are required.",
+  }
+);
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
 type ItemFormData = z.infer<typeof itemSchema>;
@@ -137,6 +157,10 @@ export function InvoiceForm({
   // Export quality - cached to avoid extra DB call during download
   const [exportQuality, setExportQuality] = useState<50 | 100 | 150>(50);
 
+  // Buyback mode toggle and price per gram
+  const [isBuybackMode, setIsBuybackMode] = useState(false);
+  const [buybackPricePerGram, setBuybackPricePerGram] = useState(0);
+
   // Selected customer from CustomerSelector
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
@@ -167,10 +191,17 @@ export function InvoiceForm({
           setExportQuality(
             (result.data.export_quality_kb as 50 | 100 | 150) || 50
           );
+          setBuybackPricePerGram(result.data.buyback_price_per_gram ?? 0);
+        } else {
+          // Settings load failed, use defaults
+          console.warn("Failed to load preferences, using defaults");
+          setBuybackPricePerGram(0);
         }
       } catch (error) {
-        console.warn("Failed to fetch latest preferences:", error);
+        console.error("Failed to fetch latest preferences:", error);
         // Keep using initial values if fetch fails
+        setBuybackPricePerGram(0);
+        toast.error("Failed to load invoice settings. Using default values.");
       }
     };
 
@@ -381,23 +412,54 @@ export function InvoiceForm({
   };
 
   const handleAddItem = (data: ItemFormData) => {
+    const itemData = isBuybackMode
+      ? {
+          description: data.description,
+          is_buyback: true,
+          gram: data.gram,
+          buyback_rate: buybackPricePerGram,
+          total: (data.gram || 0) * buybackPricePerGram,
+          // Explicitly set regular fields to undefined for buyback items
+          quantity: undefined,
+          price: undefined,
+          subtotal: undefined,
+        }
+      : {
+          description: data.description,
+          quantity: data.quantity,
+          price: data.price,
+          subtotal: (data.quantity || 0) * (data.price || 0),
+          // Explicitly set buyback fields to undefined for regular items
+          is_buyback: false,
+          gram: undefined,
+          buyback_rate: undefined,
+          total: undefined,
+        };
+
     if (editingItem) {
-      updateInvoiceItem(editingItem.id, data);
+      updateInvoiceItem(editingItem.id, itemData);
     } else {
-      addInvoiceItem(data);
+      addInvoiceItem(itemData);
     }
     calculateTotals();
     itemForm.reset();
     setEditingItem(null);
+    setIsBuybackMode(false); // Reset buyback mode after adding
     setShowItemModal(false);
   };
 
   const handleEditItem = (item: InvoiceItem) => {
     setEditingItem(item);
+    // Set buyback mode based on item
+    if (item.is_buyback) {
+      setIsBuybackMode(true);
+    }
     itemForm.reset({
       description: item.description,
       quantity: item.quantity,
       price: item.price,
+      gram: item.gram,
+      is_buyback: item.is_buyback,
     });
     setShowItemModal(true);
   };
@@ -597,14 +659,33 @@ export function InvoiceForm({
             status: "synced" as const,
           };
 
-          const items = (currentInvoice.items || []).map((item, index) => ({
-            id: item.id,
-            description: item.description,
-            quantity: item.quantity,
-            price: item.price,
-            subtotal: item.subtotal,
-            position: index,
-          }));
+          const items = (currentInvoice.items || []).map((item, index) => {
+            // Base fields that all items have
+            const baseItem: any = {
+              id: item.id,
+              description: item.description,
+              position: index,
+            };
+
+            // Add buyback or regular fields
+            if (item.is_buyback) {
+              return {
+                ...baseItem,
+                is_buyback: true,
+                gram: item.gram,
+                buyback_rate: item.buyback_rate,
+                total: item.total,
+              };
+            } else {
+              return {
+                ...baseItem,
+                is_buyback: false,
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.subtotal,
+              };
+            }
+          });
 
           // Use Server Action to save invoice
           const result = await upsertInvoiceWithItemsAction(invoiceData, items);
@@ -1121,12 +1202,18 @@ export function InvoiceForm({
                           <p className="font-medium truncate">
                             {item.description}
                           </p>
-                          <p className="text-xs text-gray-600">
-                            {item.quantity} × {formatCurrency(item.price)}
-                          </p>
+                          {item.is_buyback ? (
+                            <p className="text-xs text-gray-600">
+                              {item.gram}g × {formatCurrency(item.buyback_rate || 0)}/gram
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-600">
+                              {item.quantity} × {formatCurrency(item.price || 0)}
+                            </p>
+                          )}
                         </div>
                         <p className="font-semibold whitespace-nowrap">
-                          {formatCurrency(item.subtotal)}
+                          {formatCurrency(item.is_buyback ? (item.total || 0) : (item.subtotal || 0))}
                         </p>
                       </div>
                     ))}
@@ -1231,6 +1318,7 @@ export function InvoiceForm({
         onClose={() => {
           setShowItemModal(false);
           setEditingItem(null);
+          setIsBuybackMode(false); // Reset buyback mode
           itemForm.reset();
         }}
         title={editingItem ? "Edit Item" : "Add Item"}
@@ -1240,6 +1328,45 @@ export function InvoiceForm({
           onSubmit={itemForm.handleSubmit(handleAddItem)}
           className="py-4 space-y-4 lg:py-6"
         >
+          {/* Buyback Mode Toggle */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex-1">
+              <Label htmlFor="buybackMode" className="font-medium">
+                Buyback Invoice
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Calculate price per gram
+              </p>
+            </div>
+            <Switch
+              id="buybackMode"
+              checked={isBuybackMode}
+              onCheckedChange={(checked) => {
+                // Check if switching mode would mix items
+                const hasItems = (currentInvoice?.items?.length || 0) > 0;
+                if (hasItems) {
+                  const existingItemsAreBuyback = currentInvoice?.items?.[0]?.is_buyback;
+                  if (existingItemsAreBuyback !== checked) {
+                    toast.error(
+                      "Cannot mix buyback and regular items in the same invoice. Please clear items first."
+                    );
+                    return;
+                  }
+                }
+                setIsBuybackMode(checked);
+                // Update form value to sync with validation
+                itemForm.setValue("is_buyback", checked);
+              }}
+            />
+          </div>
+
+          {/* Hidden field to track buyback mode for validation */}
+          <input
+            type="hidden"
+            {...itemForm.register("is_buyback")}
+            value={isBuybackMode ? "true" : "false"}
+          />
+
           <div>
             <Label htmlFor="description">Description *</Label>
             <Input
@@ -1256,46 +1383,98 @@ export function InvoiceForm({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 lg:gap-4">
-            <div>
-              <Label htmlFor="quantity">Quantity *</Label>
-              <Input
-                id="quantity"
-                type="number"
-                inputMode="numeric"
-                {...itemForm.register("quantity", { valueAsNumber: true })}
-                min="1"
-                className="mt-1.5"
-              />
-              {itemForm.formState.errors.quantity && (
-                <p className="text-sm text-destructive mt-1">
-                  {itemForm.formState.errors.quantity.message}
-                </p>
+          {isBuybackMode ? (
+            /* Buyback Mode Fields */
+            <div className="space-y-3">
+              {/* Warning if buyback price not set */}
+              {buybackPricePerGram === 0 && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800 font-medium">
+                    ⚠️ Buyback price not set
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Please set the buyback price per gram in Settings before creating buyback invoices.
+                  </p>
+                </div>
               )}
-            </div>
 
-            <div>
-              <Label htmlFor="price">Price *</Label>
-              <Controller
-                name="price"
-                control={itemForm.control}
-                render={({ field }) => (
-                  <CurrencyInput
-                    id="price"
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="0"
-                    className="mt-1.5"
-                  />
+              <div>
+                <Label htmlFor="gram">Weight (gram) *</Label>
+                <Input
+                  id="gram"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  {...itemForm.register("gram", { valueAsNumber: true })}
+                  min="0"
+                  className="mt-1.5"
+                  placeholder="0.00"
+                />
+                {itemForm.formState.errors.gram && (
+                  <p className="text-sm text-destructive mt-1">
+                    {itemForm.formState.errors.gram.message}
+                  </p>
                 )}
-              />
-              {itemForm.formState.errors.price && (
-                <p className="text-sm text-destructive mt-1">
-                  {itemForm.formState.errors.price.message}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Rate: {formatCurrency(buybackPricePerGram)}/gram • Total:{" "}
+                  {formatCurrency(
+                    (itemForm.watch("gram") || 0) * buybackPricePerGram
+                  )}
                 </p>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Regular Mode Fields */
+            <div className="grid grid-cols-2 gap-3 lg:gap-4">
+              <div>
+                <Label htmlFor="quantity">Quantity *</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  inputMode="numeric"
+                  {...itemForm.register("quantity", { valueAsNumber: true })}
+                  min="1"
+                  className="mt-1.5"
+                />
+                {itemForm.formState.errors.quantity && (
+                  <p className="text-sm text-destructive mt-1">
+                    {itemForm.formState.errors.quantity.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="price">Price *</Label>
+                <Controller
+                  name="price"
+                  control={itemForm.control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="price"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="0"
+                      className="mt-1.5"
+                    />
+                  )}
+                />
+                {itemForm.formState.errors.price && (
+                  <p className="text-sm text-destructive mt-1">
+                    {itemForm.formState.errors.price.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Display root-level validation errors */}
+          {itemForm.formState.errors.root && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive">
+                {itemForm.formState.errors.root.message}
+              </p>
+            </div>
+          )}
 
           <div className="pt-4 flex gap-3">
             <Button
@@ -1304,6 +1483,7 @@ export function InvoiceForm({
               onClick={() => {
                 setShowItemModal(false);
                 setEditingItem(null);
+                setIsBuybackMode(false); // Reset buyback mode
                 itemForm.reset();
               }}
               className="flex-1"

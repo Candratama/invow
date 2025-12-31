@@ -66,7 +66,8 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
     const newItem: InvoiceItem = {
       ...item,
       id: generateUUID(),
-      subtotal: item.quantity * item.price,
+      // Only calculate subtotal for regular items, not buyback items
+      ...(item.is_buyback ? {} : { subtotal: (item.quantity || 0) * (item.price || 0) }),
     };
 
     const items = [...(current.items || []), newItem];
@@ -80,7 +81,10 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
     const items = current.items.map((item) => {
       if (item.id === id) {
         const updated = { ...item, ...updates };
-        updated.subtotal = updated.quantity * updated.price;
+        // Only calculate subtotal for regular items, not buyback items
+        if (!updated.is_buyback) {
+          updated.subtotal = (updated.quantity || 0) * (updated.price || 0);
+        }
         return updated;
       }
       return item;
@@ -122,10 +126,12 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
     const current = get().currentInvoice;
     if (!current || !current.items) return;
 
-    const subtotal = current.items.reduce(
-      (sum, item) => sum + item.subtotal,
-      0,
-    );
+    const subtotal = current.items.reduce((sum, item) => {
+      // For buyback items, use 'total', for regular items use 'subtotal'
+      const itemTotal = item.is_buyback ? (item.total || 0) : (item.subtotal || 0);
+      return sum + itemTotal;
+    }, 0);
+
     const shippingCost = current.shippingCost || 0;
     const total = subtotal + shippingCost;
 

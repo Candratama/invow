@@ -42,6 +42,7 @@ export async function updatePreferencesAction(updates: {
   timezone?: string
   date_format?: string
   currency?: string
+  buyback_price_per_gram?: number | null
 }) {
   try {
     const supabase = await createClient()

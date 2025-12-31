@@ -42,7 +42,7 @@ export function calculateRevenueMetrics(invoices: Invoice[]): RevenueMetrics {
   const currentYear = now.getFullYear();
 
   const completedInvoices = invoices.filter(invoice =>
-    invoice.status === 'completed'
+    invoice.status === 'completed' || invoice.status === 'synced'
   );
 
   const totalRevenue = completedInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
@@ -186,8 +186,8 @@ export function calculateFinancialMetrics(invoices: Invoice[]): FinancialMetrics
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  // Filter completed invoices only
-  const completedInvoices = invoices.filter(i => i.status === 'completed');
+  // Filter completed invoices only (including synced status)
+  const completedInvoices = invoices.filter(i => i.status === 'completed' || i.status === 'synced');
 
   // Separate by type based on items
   const salesInvoices = completedInvoices.filter(invoice => !isBuybackInvoice(invoice));

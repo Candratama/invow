@@ -5,10 +5,39 @@ A Next.js application for generating invoices with subscription-based limits and
 ## Features
 
 - Invoice generation with PDF export
+- **Buyback Invoice Support**: Create invoices for buying back items calculated per gram
 - Subscription tiers (Free: 30 invoices/month, Starter: 200 invoices/month)
 - Mayar payment gateway integration
 - Real-time subscription tracking
 - Monthly usage limits enforcement
+- 8 professional invoice templates
+- Tax calculation support
+- Customer management with status levels (Distributor, Reseller, Customer)
+
+### Buyback Invoice Feature
+
+The application supports creating buyback invoices for businesses that purchase items by weight (e.g., gold, precious metals).
+
+**How to use:**
+1. **Set Buyback Price**: Go to Settings > Invoice Settings and set your buyback price per gram
+2. **Create Invoice**: When adding items, toggle "Buyback Invoice" mode
+3. **Enter Weight**: Input the weight in grams instead of quantity
+4. **Automatic Calculation**: Total is automatically calculated as `gram × buyback_rate`
+5. **Export**: Download as JPEG with proper buyback item display
+
+**Features:**
+- Separate buyback price configuration in settings
+- Toggle between regular and buyback modes
+- Real-time calculation preview
+- Prevents mixing buyback and regular items in same invoice
+- All 8 templates support buyback item display
+- Database schema supports both invoice types
+
+**Technical Details:**
+- Buyback items stored with `is_buyback: true`, `gram`, `buyback_rate`, `total` fields
+- Regular items use `quantity`, `price`, `subtotal` fields
+- Check constraints ensure data integrity
+- Backward compatible with existing invoices
 
 ## Environment Variables
 

@@ -256,7 +256,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     shippingCost: inv.shipping_cost,
     total: inv.total,
     note: inv.note || undefined,
-    status: "completed" as const, // All synced invoices are completed
+    status: (inv.status === 'synced' ? 'completed' : inv.status) as 'completed' | 'draft' | 'pending', // Map synced to completed
     createdAt: new Date(inv.created_at),
     updatedAt: new Date(inv.updated_at),
     syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
@@ -291,7 +291,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       shippingCost: inv.shipping_cost,
       total: inv.total,
       note: inv.note || undefined,
-      status: "completed" as const,
+      status: (inv.status === 'synced' ? 'completed' : inv.status) as 'completed' | 'draft' | 'pending', // Map synced to completed for display
       createdAt: new Date(inv.created_at),
       updatedAt: new Date(inv.updated_at),
       syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,

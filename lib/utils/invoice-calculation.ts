@@ -3,11 +3,35 @@
  * Handles tax calculations and total computation for invoices
  */
 
+import { InvoiceItem } from "@/lib/types";
+
 export interface TaxCalculation {
   subtotal: number;
   shippingCost: number;
   taxAmount: number;
   total: number;
+}
+
+/**
+ * Round to two decimal places
+ */
+function roundToTwoDecimals(num: number): number {
+  return Math.round(num * 100) / 100;
+}
+
+/**
+ * Calculate total for a single invoice item
+ * Supports both regular items (quantity × price) and buyback items (gram × buyback_rate)
+ */
+export function calculateItemTotal(item: InvoiceItem, buybackRate?: number): number {
+  if (item.is_buyback) {
+    // Buyback: gram × buyback_rate
+    const rate = item.buyback_rate || buybackRate || 0;
+    return roundToTwoDecimals((item.gram || 0) * rate);
+  } else {
+    // Regular: quantity × price
+    return roundToTwoDecimals((item.quantity || 0) * (item.price || 0));
+  }
 }
 
 /**
@@ -27,16 +51,16 @@ export function calculateTotal(
 ): TaxCalculation {
   // Calculate tax amount: (subtotal × tax_percentage) / 100
   // If tax is disabled, tax amount is 0
-  const taxAmount = taxEnabled 
-    ? Math.round((subtotal * taxPercentage) / 100 * 100) / 100  // Round to 2 decimal places
+  const taxAmount = taxEnabled
+    ? roundToTwoDecimals((subtotal * taxPercentage) / 100)
     : 0;
 
   // Calculate final total: subtotal + shipping + tax
-  const total = Math.round((subtotal + shippingCost + taxAmount) * 100) / 100;  // Round to 2 decimal places
+  const total = roundToTwoDecimals(subtotal + shippingCost + taxAmount);
 
   return {
-    subtotal: Math.round(subtotal * 100) / 100,  // Ensure subtotal is also rounded
-    shippingCost: Math.round(shippingCost * 100) / 100,  // Ensure shipping is also rounded
+    subtotal: roundToTwoDecimals(subtotal),
+    shippingCost: roundToTwoDecimals(shippingCost),
     taxAmount,
     total,
   };
