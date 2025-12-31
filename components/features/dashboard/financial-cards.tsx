@@ -40,7 +40,7 @@ function SalesRevenueCard({ metrics, isPremium, isVisible }: CardProps) {
   const { sales } = metrics;
 
   return (
-    <div className="min-w-[280px] snap-center">
+    <div className="min-w-[280px] lg:min-w-[320px] snap-center">
       <div className="relative bg-green-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
@@ -94,7 +94,7 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
   const { buyback } = metrics;
 
   return (
-    <div className="min-w-[280px] snap-center">
+    <div className="min-w-[280px] lg:min-w-[320px] snap-center">
       <div className="relative bg-amber-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
@@ -148,7 +148,7 @@ function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
   const { profit } = metrics;
 
   return (
-    <div className="min-w-[280px] snap-center">
+    <div className="min-w-[280px] lg:min-w-[320px] snap-center">
       <div className="relative bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
@@ -213,9 +213,9 @@ export default function FinancialCards({
   if (isLoading) {
     return (
       <div className="mb-8 lg:mb-12">
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:grid lg:grid-cols-3 lg:overflow-visible">
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="min-w-[280px] snap-center">
+            <div key={i} className="min-w-[280px] lg:min-w-[320px] snap-center">
               <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-6 h-48 animate-pulse" />
             </div>
           ))}
@@ -247,8 +247,8 @@ export default function FinancialCards({
         </button>
       </div>
 
-      {/* Cards container */}
-      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:grid lg:grid-cols-3 lg:overflow-visible">
+      {/* Cards container - swipeable on all devices */}
+      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
         <SalesRevenueCard
           metrics={metrics}
           isPremium={isPremium}
@@ -266,11 +266,11 @@ export default function FinancialCards({
         />
       </div>
 
-      {/* Scroll indicator (mobile only) */}
-      <div className="flex justify-center gap-2 mt-4 lg:hidden">
+      {/* Scroll indicators */}
+      <div className="flex justify-center gap-2 mt-4">
         <div className="w-2 h-2 rounded-full bg-primary" />
-        <div className="w-2 h-2 rounded-full bg-gray-300" />
-        <div className="w-2 h-2 rounded-full bg-gray-300" />
+        <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
+        <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
       </div>
     </div>
   );
