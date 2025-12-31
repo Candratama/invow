@@ -26,6 +26,7 @@ function EmptyStateUI() {
 }
 import { FABButton } from "@/components/ui/fab-button";
 import FinancialCards from "@/components/features/dashboard/financial-cards";
+import SubscriptionStatus from "@/components/features/subscription/status";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
@@ -457,6 +458,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             subscriptionStatus={subscriptionStatus}
             isLoading={isLoadingRevenue}
           />
+
+          {/* Subscription quota/credit display */}
+          <div className="mt-6 lg:mt-8">
+            <SubscriptionStatus subscription={subscriptionStatus} />
+          </div>
 
           <>
             {/* Show skeleton only when loading AND no cached data - Requirements: 1.1, 1.5 */}
