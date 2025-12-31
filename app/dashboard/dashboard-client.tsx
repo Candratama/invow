@@ -467,7 +467,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <div className="flex items-center gap-2">
                     <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
                       subscriptionStatus.tier === 'premium'
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200'
                         : 'bg-gray-100 text-gray-700'
                     }`}>
                       {subscriptionStatus.tier === 'premium' ? '⚡ Premium' : '🎁 Free'}
