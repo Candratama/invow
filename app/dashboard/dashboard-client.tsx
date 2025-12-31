@@ -428,7 +428,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       )}
 
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
-        <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
+        <div className="max-w-md lg:max-w-6xl mx-auto pt-8 ">
           <div className="text-left mb-8 lg:mb-12 lg:text-center">
             <p className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
               Welcome back,
