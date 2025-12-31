@@ -512,6 +512,22 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Reset/Expiry Date */}
+              {subscriptionStatus.resetDate && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    {subscriptionStatus.tier === 'premium' ? 'Expires' : 'Resets'} on{' '}
+                    <span className="font-medium text-gray-700">
+                      {new Date(subscriptionStatus.resetDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
