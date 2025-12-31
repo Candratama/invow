@@ -37,6 +37,12 @@ export const getAllInvoices = cache(async (status?: "draft" | "pending" | "synce
   return await service.getInvoices(status)
 })
 
+export const getAllInvoicesWithItems = cache(async (status?: "draft" | "pending" | "synced") => {
+  const supabase = await createClient()
+  const service = new InvoicesService(supabase)
+  return await service.getAllInvoicesWithItems(status)
+})
+
 export const getInvoiceById = cache(async (invoiceId: string) => {
   const supabase = await createClient()
   const service = new InvoicesService(supabase)

@@ -80,6 +80,66 @@ export class InvoicesService {
   }
 
   /**
+   * Get all invoices with items for the authenticated user
+   * Used for dashboard metrics calculation
+   * @param status - Optional filter by status (defaults to 'synced' for completed invoices)
+   * @returns Array of invoices with items
+   */
+  async getAllInvoicesWithItems(
+    status?: "draft" | "pending" | "synced",
+  ): Promise<{
+    data: InvoiceWithItems[] | null;
+    error: Error | null;
+  }> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      let query = this.supabase
+        .from("invoices")
+        .select(
+          `
+          *,
+          invoice_items (*)
+        `
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (status) {
+        query = query.eq("status", status);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw new Error(error.message);
+
+      // Sort items by position for each invoice
+      const invoices = (data || []).map((invoice) => {
+        const typedInvoice = invoice as InvoiceWithItems;
+        if (typedInvoice.invoice_items) {
+          typedInvoice.invoice_items.sort(
+            (a: InvoiceItem, b: InvoiceItem) => a.position - b.position
+          );
+        }
+        return typedInvoice;
+      });
+
+      return { data: invoices, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
    * Get paginated invoices with items (optimized with JOIN)
    * @param page - Page number (1-indexed)
    * @param pageSize - Number of invoices per page
@@ -667,6 +727,7 @@ export class InvoicesService {
         }));
 
         // Remove any existing fields that could cause conflicts during insert
+        // Also remove undefined fields to prevent null constraint violations
         const cleanItems = itemsWithInvoiceId.map(({
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           id,
@@ -675,7 +736,16 @@ export class InvoicesService {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           updated_at,
           ...item
-        }) => item);
+        }) => {
+          // Remove undefined fields to prevent null constraint violations
+          const cleaned: Record<string, any> = {};
+          Object.entries(item).forEach(([key, value]) => {
+            if (value !== undefined) {
+              cleaned[key] = value;
+            }
+          });
+          return cleaned;
+        });
 
         const { error: itemsError } = await this.supabase
           .from("invoice_items")

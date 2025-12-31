@@ -25,7 +25,7 @@ function EmptyStateUI() {
   );
 }
 import { FABButton } from "@/components/ui/fab-button";
-import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
+import FinancialCards from "@/components/features/dashboard/financial-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
@@ -39,6 +39,7 @@ import { Invoice } from "@/lib/types";
 import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { deleteInvoiceAction } from "@/app/actions/invoices";
+import { calculateFinancialMetrics } from "@/lib/utils/revenue";
 import {
   useRevenueData,
   useInvoiceList,
@@ -215,14 +216,6 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const hasMoreHistory = invoiceData?.hasMoreHistory || false;
   const historyLimitMessage = invoiceData?.historyLimitMessage;
 
-  const revenueMetrics = revenueData?.revenueMetrics || {
-    totalRevenue: 0,
-    monthlyRevenue: 0,
-    invoiceCount: 0,
-    monthlyInvoiceCount: 0,
-    averageOrderValue: 0,
-    monthlyAverageOrderValue: 0,
-  };
   const subscriptionStatus = revenueData?.subscriptionStatus || null;
   const storeSettings = revenueData?.storeSettings as StoreSettings | null;
   const defaultStore = revenueData?.defaultStore || null;
@@ -231,6 +224,46 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     taxEnabled: false,
     taxPercentage: 0,
   };
+
+  // Transform all invoices with items from database format to Invoice type for metrics calculation
+  const allInvoicesWithItems = (revenueData?.allInvoices || []) as InvoiceWithItems[];
+  const transformedInvoices: Invoice[] = allInvoicesWithItems.map((inv) => ({
+    id: inv.id,
+    invoiceNumber: inv.invoice_number,
+    invoiceDate: parseLocalDate(inv.invoice_date),
+    dueDate: parseLocalDate(inv.invoice_date),
+    customer: {
+      name: inv.customer_name,
+      email: inv.customer_email || "",
+      status:
+        (inv.customer_status as "Distributor" | "Reseller" | "Customer") ||
+        "Customer",
+      address: inv.customer_address || "",
+    },
+    items: inv.invoice_items?.map((item: InvoiceItem) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      price: item.price,
+      subtotal: item.subtotal,
+      // Include buyback fields (will be undefined until migration is run)
+      is_buyback: (item as any).is_buyback,
+      gram: (item as any).gram,
+      buyback_rate: (item as any).buyback_rate,
+      total: (item as any).total,
+    })) || [],
+    subtotal: inv.subtotal,
+    shippingCost: inv.shipping_cost,
+    total: inv.total,
+    note: inv.note || undefined,
+    status: "completed" as const, // All synced invoices are completed
+    createdAt: new Date(inv.created_at),
+    updatedAt: new Date(inv.updated_at),
+    syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
+  }));
+
+  // Calculate financial metrics from all invoices
+  const financialMetrics = calculateFinancialMetrics(transformedInvoices);
 
   // Transform paginated invoices for display
   const completedInvoices =
@@ -419,8 +452,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             }
           />
 
-          <RevenueCards
-            metrics={revenueMetrics}
+          <FinancialCards
+            metrics={financialMetrics}
             subscriptionStatus={subscriptionStatus}
             isLoading={isLoadingRevenue}
           />
