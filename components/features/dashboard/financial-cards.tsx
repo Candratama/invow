@@ -41,7 +41,7 @@ function SalesRevenueCard({ metrics, isPremium, isVisible }: CardProps) {
 
   return (
     <div className="min-w-[280px] snap-center lg:min-w-0">
-      <div className="relative bg-green-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
+      <div className="relative bg-gradient-to-br from-amber-400 to-yellow-500 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
@@ -95,7 +95,7 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
 
   return (
     <div className="min-w-[280px] snap-center lg:min-w-0">
-      <div className="relative bg-amber-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
+      <div className="relative bg-gradient-to-br from-yellow-600 to-amber-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
@@ -149,7 +149,7 @@ function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
 
   return (
     <div className="min-w-[280px] snap-center lg:min-w-0">
-      <div className="relative bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
+      <div className="relative bg-gradient-to-br from-amber-700 to-orange-700 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
