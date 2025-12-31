@@ -26,7 +26,6 @@ function EmptyStateUI() {
 }
 import { FABButton } from "@/components/ui/fab-button";
 import FinancialCards from "@/components/features/dashboard/financial-cards";
-import SubscriptionStatus from "@/components/features/subscription/status";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
@@ -459,10 +458,62 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             isLoading={isLoadingRevenue}
           />
 
-          {/* Subscription quota/credit display */}
-          <div className="mt-6 lg:mt-8">
-            <SubscriptionStatus subscription={subscriptionStatus} />
-          </div>
+          {/* Subscription quota display - simple version */}
+          {subscriptionStatus && (
+            <div className="mt-6 lg:mt-8 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                {/* Tier & Usage */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
+                      subscriptionStatus.tier === 'premium'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {subscriptionStatus.tier === 'premium' ? '⚡ Premium' : '🎁 Free'}
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-gray-600">Invoices: </span>
+                    <span className="font-semibold">
+                      {subscriptionStatus.currentMonthCount} / {subscriptionStatus.invoiceLimit}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar & Remaining */}
+                <div className="flex items-center gap-4 flex-1 lg:max-w-md">
+                  <div className="flex-1">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${
+                          (subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100 >= 90
+                            ? 'bg-red-500'
+                            : (subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100 >= 70
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
+                        }`}
+                        style={{
+                          width: `${Math.min((subscriptionStatus.currentMonthCount / subscriptionStatus.invoiceLimit) * 100, 100)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-sm whitespace-nowrap">
+                    <span className={`font-semibold ${
+                      subscriptionStatus.remainingInvoices <= 5
+                        ? 'text-red-600'
+                        : subscriptionStatus.remainingInvoices <= 20
+                        ? 'text-yellow-600'
+                        : 'text-green-600'
+                    }`}>
+                      {subscriptionStatus.remainingInvoices} left
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <>
             {/* Show skeleton only when loading AND no cached data - Requirements: 1.1, 1.5 */}
