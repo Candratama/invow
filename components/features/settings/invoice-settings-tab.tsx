@@ -437,12 +437,24 @@ export function InvoiceSettingsTab({
                   </span>
                   <Input
                     id="buybackPricePerGram"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...form.register("buybackPricePerGram", {
-                      valueAsNumber: true,
-                    })}
+                    type="text"
+                    inputMode="numeric"
+                    value={
+                      form.watch("buybackPricePerGram")
+                        ? form
+                            .watch("buybackPricePerGram")
+                            .toLocaleString("id-ID")
+                        : ""
+                    }
+                    onChange={(e) => {
+                      // Remove all non-digit characters
+                      const value = e.target.value.replace(/\D/g, "");
+                      // Convert to number
+                      const numValue = value === "" ? 0 : parseInt(value, 10);
+                      form.setValue("buybackPricePerGram", numValue, {
+                        shouldDirty: true,
+                      });
+                    }}
                     placeholder="0"
                     className="pl-8"
                   />

@@ -26,7 +26,20 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools
+          initialIsOpen={false}
+          position="bottom-right"
+          toggleButtonProps={{
+            style: {
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              zIndex: 99999,
+            }
+          }}
+        />
+      )}
     </QueryClientProvider>
   );
 }

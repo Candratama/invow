@@ -40,8 +40,8 @@ function SalesRevenueCard({ metrics, isPremium, isVisible }: CardProps) {
   const { sales } = metrics;
 
   return (
-    <div className="min-w-[280px] snap-center lg:min-w-0">
-      <div className="relative bg-gradient-to-br from-amber-600 to-yellow-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
+    <div className="w-[90%] flex-shrink-0 snap-center lg:w-auto lg:min-w-0">
+      <div className="relative bg-gradient-to-br from-amber-400 to-yellow-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
@@ -54,7 +54,9 @@ function SalesRevenueCard({ metrics, isPremium, isVisible }: CardProps) {
           {isPremium ? (
             <>
               <h3 className="text-3xl font-bold mt-2">
-                {isVisible ? formatCurrency(sales.monthlyRevenue) : formatCurrencyWithDots(sales.monthlyRevenue)}
+                {isVisible
+                  ? formatCurrency(sales.monthlyRevenue)
+                  : formatCurrencyWithDots(sales.monthlyRevenue)}
               </h3>
               <p className="text-sm mt-1 opacity-80">
                 {sales.monthlyInvoiceCount} invoices this month
@@ -65,9 +67,7 @@ function SalesRevenueCard({ metrics, isPremium, isVisible }: CardProps) {
               <h3 className="text-3xl font-bold mt-2">
                 {sales.monthlyInvoiceCount}
               </h3>
-              <p className="text-sm mt-1 opacity-80">
-                invoices this month
-              </p>
+              <p className="text-sm mt-1 opacity-80">invoices this month</p>
             </>
           )}
 
@@ -79,8 +79,7 @@ function SalesRevenueCard({ metrics, isPremium, isVisible }: CardProps) {
                   ? isVisible
                     ? formatCurrency(sales.totalRevenue)
                     : formatCurrencyWithDots(sales.totalRevenue)
-                  : `${sales.invoiceCount} invoices`
-                }
+                  : `${sales.invoiceCount} invoices`}
               </span>
             </div>
           </div>
@@ -94,8 +93,8 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
   const { buyback } = metrics;
 
   return (
-    <div className="min-w-[280px] snap-center lg:min-w-0">
-      <div className="relative bg-gradient-to-br from-yellow-600 to-amber-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
+    <div className="w-[90%] flex-shrink-0 snap-center lg:w-auto lg:min-w-0">
+      <div className="relative bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
@@ -108,7 +107,9 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
           {isPremium ? (
             <>
               <h3 className="text-3xl font-bold mt-2">
-                {isVisible ? formatCurrency(buyback.monthlyExpenses) : formatCurrencyWithDots(buyback.monthlyExpenses)}
+                {isVisible
+                  ? formatCurrency(buyback.monthlyExpenses)
+                  : formatCurrencyWithDots(buyback.monthlyExpenses)}
               </h3>
               <p className="text-sm mt-1 opacity-80">
                 {buyback.monthlyInvoiceCount} purchases this month
@@ -119,9 +120,7 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
               <h3 className="text-3xl font-bold mt-2">
                 {buyback.monthlyInvoiceCount}
               </h3>
-              <p className="text-sm mt-1 opacity-80">
-                purchases this month
-              </p>
+              <p className="text-sm mt-1 opacity-80">purchases this month</p>
             </>
           )}
 
@@ -133,8 +132,7 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
                   ? isVisible
                     ? formatCurrency(buyback.totalExpenses)
                     : formatCurrencyWithDots(buyback.totalExpenses)
-                  : `${buyback.invoiceCount} purchases`
-                }
+                  : `${buyback.invoiceCount} purchases`}
               </span>
             </div>
           </div>
@@ -148,8 +146,8 @@ function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
   const { profit } = metrics;
 
   return (
-    <div className="min-w-[280px] snap-center lg:min-w-0">
-      <div className="relative bg-gradient-to-br from-amber-700 to-orange-700 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
+    <div className="w-[90%] flex-shrink-0 snap-center lg:w-auto lg:min-w-0">
+      <div className="relative bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
@@ -162,7 +160,9 @@ function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
           {isPremium ? (
             <>
               <h3 className="text-3xl font-bold mt-2">
-                {isVisible ? formatCurrency(profit.monthlyNetProfit) : formatCurrencyWithDots(profit.monthlyNetProfit)}
+                {isVisible
+                  ? formatCurrency(profit.monthlyNetProfit)
+                  : formatCurrencyWithDots(profit.monthlyNetProfit)}
               </h3>
               <p className="text-sm mt-1 opacity-80">
                 {profit.profitMargin.toFixed(1)}% margin this month
@@ -170,12 +170,8 @@ function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
             </>
           ) : (
             <>
-              <h3 className="text-3xl font-bold mt-2">
-                Premium Only
-              </h3>
-              <p className="text-sm mt-1 opacity-80">
-                Upgrade to view profit
-              </p>
+              <h3 className="text-3xl font-bold mt-2">Premium Only</h3>
+              <p className="text-sm mt-1 opacity-80">Upgrade to view profit</p>
             </>
           )}
 
@@ -187,8 +183,7 @@ function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
                   ? isVisible
                     ? formatCurrency(profit.totalNetProfit)
                     : formatCurrencyWithDots(profit.totalNetProfit)
-                  : "Premium Only"
-                }
+                  : "Premium Only"}
               </span>
             </div>
           </div>
