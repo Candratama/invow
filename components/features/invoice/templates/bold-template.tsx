@@ -266,10 +266,31 @@ export function BoldInvoiceTemplate({
             </div>
 
             {items.map((item, index) => {
-              const { symbol: priceSymbol, amount: priceAmount } =
-                splitCurrency(item.price);
-              const { symbol: subtotalSymbol, amount: subtotalAmount } =
-                splitCurrency(item.subtotal);
+              // Handle buyback vs regular items differently
+              const isBuyback = item.is_buyback;
+
+              let qtyDisplay, priceSymbol, priceAmount, subtotalSymbol, subtotalAmount;
+
+              if (isBuyback) {
+                // Buyback item: show gram and buyback_rate
+                qtyDisplay = `${item.gram}g`;
+                const priceData = splitCurrency(item.buyback_rate || 0);
+                priceSymbol = priceData.symbol;
+                priceAmount = `${priceData.amount}/g`;
+                const totalData = splitCurrency(item.total || 0);
+                subtotalSymbol = totalData.symbol;
+                subtotalAmount = totalData.amount;
+              } else {
+                // Regular item: show quantity and price
+                qtyDisplay = item.quantity;
+                const priceData = splitCurrency(item.price || 0);
+                priceSymbol = priceData.symbol;
+                priceAmount = priceData.amount;
+                const subtotalData = splitCurrency(item.subtotal || 0);
+                subtotalSymbol = subtotalData.symbol;
+                subtotalAmount = subtotalData.amount;
+              }
+
               return (
                 <div
                   key={item.id}
@@ -306,7 +327,7 @@ export function BoldInvoiceTemplate({
                       fontWeight: "700",
                     }}
                   >
-                    {item.quantity}
+                    {qtyDisplay}
                   </div>
                   <div
                     style={{

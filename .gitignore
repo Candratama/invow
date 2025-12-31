@@ -56,7 +56,7 @@ tmp/
 *.log
 
 # Sensitive files
-mcp.json
+.mcp.json
 *-credentials.json
 *-secrets.json
 

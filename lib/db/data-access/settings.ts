@@ -57,6 +57,7 @@ export interface SettingsPagePreferences {
   tax_enabled: boolean
   tax_percentage?: number | null
   export_quality_kb: number
+  buyback_price_per_gram?: number | null
 }
 
 export interface SettingsPageData {
@@ -122,7 +123,8 @@ async function fetchSettingsData(userId: string): Promise<SettingsPageData> {
     selected_template: preferencesResult.data.selected_template,
     tax_enabled: preferencesResult.data.tax_enabled,
     tax_percentage: preferencesResult.data.tax_percentage,
-    export_quality_kb: preferencesResult.data.export_quality_kb
+    export_quality_kb: preferencesResult.data.export_quality_kb,
+    buyback_price_per_gram: preferencesResult.data.buyback_price_per_gram
   } : null
 
   return {

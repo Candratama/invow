@@ -30,6 +30,7 @@ export interface Database {
           tax_enabled: boolean
           tax_percentage: number | null
           selected_template: 'classic' | 'simple' | 'modern' | 'elegant' | 'bold' | 'compact' | 'creative' | 'corporate'
+          buyback_price_per_gram?: number | null
           created_at: string
           updated_at: string
         }
@@ -45,6 +46,7 @@ export interface Database {
           tax_enabled?: boolean
           tax_percentage?: number | null
           selected_template?: 'classic' | 'simple' | 'modern' | 'elegant' | 'bold' | 'compact' | 'creative' | 'corporate'
+          buyback_price_per_gram?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -60,6 +62,7 @@ export interface Database {
           tax_enabled?: boolean
           tax_percentage?: number | null
           selected_template?: 'classic' | 'simple' | 'modern' | 'elegant' | 'bold' | 'compact' | 'creative' | 'corporate'
+          buyback_price_per_gram?: number | null
           created_at?: string
           updated_at?: string
         }

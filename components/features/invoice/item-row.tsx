@@ -91,12 +91,27 @@ export function ItemRow({ item, onEdit, onDelete }: ItemRowProps) {
           <h4 className="text-base font-medium text-foreground truncate mb-1">
             {item.description}
           </h4>
-          <p className="text-sm text-muted-foreground mb-2">
-            {item.quantity} × {formatCurrency(item.price)}
-          </p>
-          <p className="text-base font-semibold text-foreground">
-            {formatCurrency(item.subtotal)}
-          </p>
+          {item.is_buyback ? (
+            /* Buyback Item Display */
+            <>
+              <p className="text-sm text-muted-foreground mb-2">
+                {item.gram}g × {formatCurrency(item.buyback_rate || 0)}/gram
+              </p>
+              <p className="text-base font-semibold text-foreground">
+                {formatCurrency(item.total || 0)}
+              </p>
+            </>
+          ) : (
+            /* Regular Item Display */
+            <>
+              <p className="text-sm text-muted-foreground mb-2">
+                {item.quantity} × {formatCurrency(item.price || 0)}
+              </p>
+              <p className="text-base font-semibold text-foreground">
+                {formatCurrency(item.subtotal || 0)}
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

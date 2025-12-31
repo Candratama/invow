@@ -332,9 +332,9 @@ export function InvoicePreview({
               </div>
               {items.map((item, index) => {
                 const { symbol: priceSymbol, amount: priceAmount } =
-                  splitCurrency(item.price);
+                  splitCurrency(item.price || 0);
                 const { symbol: subtotalSymbol, amount: subtotalAmount } =
-                  splitCurrency(item.subtotal);
+                  splitCurrency(item.subtotal || 0);
 
                 return (
                   <div
@@ -752,11 +752,11 @@ export function InvoicePreview({
                             {item.description}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {item.quantity} × {formatCurrency(item.price)}
+                            {item.quantity} × {formatCurrency(item.price || 0)}
                           </p>
                         </div>
                         <p className="text-sm font-semibold whitespace-nowrap">
-                          {formatCurrency(item.subtotal)}
+                          {formatCurrency(item.subtotal || 0)}
                         </p>
                       </div>
                     ))}

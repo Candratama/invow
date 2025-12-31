@@ -9,7 +9,7 @@ export interface Invoice {
   shippingCost: number; // Changed from taxPercentage/taxAmount
   total: number;
   note?: string; // Optional note field
-  status: "draft" | "pending" | "completed";
+  status: "draft" | "pending" | "completed" | "synced";
   createdAt: Date;
   updatedAt: Date;
   syncedAt?: Date;
@@ -25,10 +25,24 @@ export interface Customer {
 
 export interface InvoiceItem {
   id: string;
+
+  // Common fields
   description: string;
-  quantity: number;
-  price: number;
-  subtotal: number;
+
+  // Regular invoice fields (optional for buyback items)
+  quantity?: number;
+  price?: number;
+  subtotal?: number;
+
+  // Buyback invoice fields (optional for regular items)
+  is_buyback?: boolean;
+  gram?: number;
+  buyback_rate?: number;
+  total?: number; // Auto-calculated: gram × buyback_rate
+
+  // Timestamps
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface StoreSettings {

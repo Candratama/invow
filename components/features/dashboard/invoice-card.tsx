@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Trash2 } from "lucide-react";
+import { CheckCircle, Trash2, TrendingUp, ShoppingCart } from "lucide-react";
 import { Invoice } from "@/lib/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -11,11 +11,22 @@ interface InvoiceCardProps {
 }
 
 export function InvoiceCard({ invoice, onOpen, onDelete }: InvoiceCardProps) {
+  // Determine if this is a buyback invoice (all items must be buyback)
+  const isBuyback = invoice.items?.length > 0 && invoice.items.every((item) => item.is_buyback === true);
+
   return (
     <div className="relative border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
       {/* Top row: Icons - Absolute positioned */}
       <div className="absolute top-1 right-1 flex items-center gap-2 z-10">
-        <CheckCircle size={18} className="text-primary" />
+        {isBuyback ? (
+          <div className="w-9 h-9 flex items-center justify-center rounded-full bg-amber-50">
+            <ShoppingCart size={18} className="text-amber-600" />
+          </div>
+        ) : (
+          <div className="w-9 h-9 flex items-center justify-center rounded-full bg-green-50">
+            <TrendingUp size={18} className="text-green-600" />
+          </div>
+        )}
         <button
           onClick={(e) => onDelete(e, invoice.id)}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 active:bg-red-100 text-red-600 transition-colors"

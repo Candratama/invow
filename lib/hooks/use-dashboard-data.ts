@@ -15,6 +15,7 @@ export const dashboardKeys = {
 
 export interface DashboardData {
   invoices: unknown[];
+  allInvoices?: unknown[]; // All invoices with items for metrics calculation
   revenueMetrics: {
     totalRevenue: number;
     monthlyRevenue: number;
@@ -82,19 +83,21 @@ export function useRevenueData(initialData?: DashboardData) {
   
   // Check if we already have cached data - don't overwrite with initialData
   const existingData = queryClient.getQueryData<{
+    allInvoices: unknown[];
     revenueMetrics: DashboardData["revenueMetrics"];
     subscriptionStatus: DashboardData["subscriptionStatus"];
     storeSettings: unknown;
     defaultStore: { id: string } | null;
     userPreferences: DashboardData["userPreferences"];
   }>(dashboardKeys.revenue());
-  
+
   // Only use initialData on first mount when no cache exists
   const initialDataRef = useRef(
     existingData
       ? undefined
       : initialData
       ? {
+          allInvoices: initialData.allInvoices || [],
           revenueMetrics: initialData.revenueMetrics,
           subscriptionStatus: initialData.subscriptionStatus,
           storeSettings: initialData.storeSettings,
@@ -103,8 +106,9 @@ export function useRevenueData(initialData?: DashboardData) {
         }
       : undefined
   );
-  
+
   return useQuery<{
+    allInvoices: unknown[];
     revenueMetrics: DashboardData["revenueMetrics"];
     subscriptionStatus: DashboardData["subscriptionStatus"];
     storeSettings: unknown;
@@ -121,6 +125,7 @@ export function useRevenueData(initialData?: DashboardData) {
         throw new Error(result.error || "Failed to fetch revenue data");
       }
       return {
+        allInvoices: result.data?.allInvoices || [],
         revenueMetrics: result.data?.revenueMetrics || null,
         subscriptionStatus: result.data?.subscriptionStatus || null,
         storeSettings: result.data?.storeSettings || null,

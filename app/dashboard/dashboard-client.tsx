@@ -25,7 +25,7 @@ function EmptyStateUI() {
   );
 }
 import { FABButton } from "@/components/ui/fab-button";
-import { RevenueCards } from "@/components/features/dashboard/revenue-cards";
+import FinancialCards from "@/components/features/dashboard/financial-cards";
 import { InvoicesListSkeleton } from "@/components/skeletons/invoices-list-skeleton";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
@@ -39,6 +39,7 @@ import { Invoice } from "@/lib/types";
 import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { deleteInvoiceAction } from "@/app/actions/invoices";
+import { calculateFinancialMetrics } from "@/lib/utils/revenue";
 import {
   useRevenueData,
   useInvoiceList,
@@ -215,14 +216,6 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const hasMoreHistory = invoiceData?.hasMoreHistory || false;
   const historyLimitMessage = invoiceData?.historyLimitMessage;
 
-  const revenueMetrics = revenueData?.revenueMetrics || {
-    totalRevenue: 0,
-    monthlyRevenue: 0,
-    invoiceCount: 0,
-    monthlyInvoiceCount: 0,
-    averageOrderValue: 0,
-    monthlyAverageOrderValue: 0,
-  };
   const subscriptionStatus = revenueData?.subscriptionStatus || null;
   const storeSettings = revenueData?.storeSettings as StoreSettings | null;
   const defaultStore = revenueData?.defaultStore || null;
@@ -231,6 +224,51 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     taxEnabled: false,
     taxPercentage: 0,
   };
+
+  // Transform all invoices with items from database format to Invoice type for metrics calculation
+  const allInvoicesWithItems = (revenueData?.allInvoices ||
+    []) as InvoiceWithItems[];
+  const transformedInvoices: Invoice[] = allInvoicesWithItems.map((inv) => ({
+    id: inv.id,
+    invoiceNumber: inv.invoice_number,
+    invoiceDate: parseLocalDate(inv.invoice_date),
+    dueDate: parseLocalDate(inv.invoice_date),
+    customer: {
+      name: inv.customer_name,
+      email: inv.customer_email || "",
+      status:
+        (inv.customer_status as "Distributor" | "Reseller" | "Customer") ||
+        "Customer",
+      address: inv.customer_address || "",
+    },
+    items:
+      inv.invoice_items?.map((item: InvoiceItem) => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        price: item.price,
+        subtotal: item.subtotal,
+        // Include buyback fields (will be undefined until migration is run)
+        is_buyback: (item as any).is_buyback,
+        gram: (item as any).gram,
+        buyback_rate: (item as any).buyback_rate,
+        total: (item as any).total,
+      })) || [],
+    subtotal: inv.subtotal,
+    shippingCost: inv.shipping_cost,
+    total: inv.total,
+    note: inv.note || undefined,
+    status: (inv.status === "synced" ? "completed" : inv.status) as
+      | "completed"
+      | "draft"
+      | "pending", // Map synced to completed
+    createdAt: new Date(inv.created_at),
+    updatedAt: new Date(inv.updated_at),
+    syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
+  }));
+
+  // Calculate financial metrics from all invoices
+  const financialMetrics = calculateFinancialMetrics(transformedInvoices);
 
   // Transform paginated invoices for display
   const completedInvoices =
@@ -253,12 +291,20 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         quantity: item.quantity,
         price: item.price,
         subtotal: item.subtotal,
+        // Include buyback fields for icon detection
+        is_buyback: (item as any).is_buyback,
+        gram: (item as any).gram,
+        buyback_rate: (item as any).buyback_rate,
+        total: (item as any).total,
       })),
       subtotal: inv.subtotal,
       shippingCost: inv.shipping_cost,
       total: inv.total,
       note: inv.note || undefined,
-      status: "completed" as const,
+      status: (inv.status === "synced" ? "completed" : inv.status) as
+        | "completed"
+        | "draft"
+        | "pending", // Map synced to completed for display
       createdAt: new Date(inv.created_at),
       updatedAt: new Date(inv.updated_at),
       syncedAt: inv.synced_at ? new Date(inv.synced_at) : undefined,
@@ -395,8 +441,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       )}
 
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
-        <div className="max-w-md lg:max-w-2xl mx-auto pt-8 ">
-          <div className="text-left mb-8 lg:mb-12 lg:text-center">
+        <div className="max-w-md lg:max-w-6xl mx-auto pt-8 ">
+          <div className="text-center mb-8 lg:mb-12">
             <p className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
               Welcome back,
               {userEmail
@@ -419,11 +465,114 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             }
           />
 
-          <RevenueCards
-            metrics={revenueMetrics}
+          <FinancialCards
+            metrics={financialMetrics}
             subscriptionStatus={subscriptionStatus}
             isLoading={isLoadingRevenue}
           />
+
+          {/* Subscription quota display - 2-row layout */}
+          {subscriptionStatus && (
+            <div className="mt-6 lg:mt-8 mb-6 lg:mb-8 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              {/* Title */}
+              <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">
+                Subscription Quota
+              </h3>
+
+              {/* Row 1: Progress bar & Credit left */}
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex-1">
+                  <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${
+                        (subscriptionStatus.currentMonthCount /
+                          subscriptionStatus.invoiceLimit) *
+                          100 >=
+                        90
+                          ? "bg-red-500"
+                          : (subscriptionStatus.currentMonthCount /
+                              subscriptionStatus.invoiceLimit) *
+                              100 >=
+                            70
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                      }`}
+                      style={{
+                        width: `${Math.min(
+                          (subscriptionStatus.currentMonthCount /
+                            subscriptionStatus.invoiceLimit) *
+                            100,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="text-sm font-semibold whitespace-nowrap">
+                  <span
+                    className={
+                      subscriptionStatus.remainingInvoices <= 5
+                        ? "text-red-600"
+                        : subscriptionStatus.remainingInvoices <= 20
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                    }
+                  >
+                    {subscriptionStatus.remainingInvoices} left
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 2: Expired date & Invoice count */}
+              <div className="flex items-center justify-between text-xs text-gray-600">
+                <div>
+                  {subscriptionStatus.resetDate && (
+                    <span>
+                      {subscriptionStatus.tier === "premium"
+                        ? "Expires"
+                        : "Resets"}{" "}
+                      on{" "}
+                      <span className="font-medium text-gray-700">
+                        {(() => {
+                          const date = new Date(subscriptionStatus.resetDate);
+                          const months = [
+                            "Jan",
+                            "Feb",
+                            "Mar",
+                            "Apr",
+                            "May",
+                            "Jun",
+                            "Jul",
+                            "Aug",
+                            "Sep",
+                            "Oct",
+                            "Nov",
+                            "Dec",
+                          ];
+                          return `${
+                            months[date.getMonth()]
+                          } ${date.getDate()}, ${date.getFullYear()}`;
+                        })()}
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      subscriptionStatus.tier === "premium"
+                        ? "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {subscriptionStatus.tier === "premium"
+                      ? "⚡ Premium"
+                      : "🎁 Free"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <>
             {/* Show skeleton only when loading AND no cached data - Requirements: 1.1, 1.5 */}
@@ -438,7 +587,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 <p className="text-gray-500">Updating...</p>
               </div>
             ) : completedInvoices.length > 0 ? (
-              <div className="bg-white p-6 rounded-lg shadow-sm lg:p-8">
+              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm lg:p-8">
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
                   Your Invoices
                 </h2>

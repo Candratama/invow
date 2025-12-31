@@ -69,6 +69,7 @@ const invoiceSettingsSchema = z.object({
   taxEnabled: z.boolean(),
   taxPercentage: z.number().min(0).max(100).optional(),
   exportQuality: z.union([z.literal(50), z.literal(100), z.literal(150)]),
+  buybackPricePerGram: z.number().min(0).optional(),
 });
 
 type InvoiceSettingsFormData = z.infer<typeof invoiceSettingsSchema>;
@@ -85,6 +86,7 @@ interface InvoiceSettingsTabProps {
     tax_enabled: boolean;
     tax_percentage?: number | null;
     export_quality_kb: number;
+    buyback_price_per_gram?: number | null;
   } | null;
   /** User's subscription tier - defaults to 'free' */
   userTier?: string;
@@ -163,6 +165,7 @@ export function InvoiceSettingsTab({
       taxEnabled: initialPreferences?.tax_enabled || false,
       taxPercentage: initialPreferences?.tax_percentage || 0,
       exportQuality: getDefaultExportQuality(),
+      buybackPricePerGram: initialPreferences?.buyback_price_per_gram || 0,
     },
   });
 
@@ -193,13 +196,14 @@ export function InvoiceSettingsTab({
           );
         }
 
-        // Save preferences (tax settings, export quality, and template selection)
+        // Save preferences (tax settings, export quality, template selection, and buyback price)
         savePromises.push(
           updatePreferencesAction({
             tax_enabled: data.taxEnabled,
             tax_percentage: data.taxPercentage,
             export_quality_kb: data.exportQuality,
             selected_template: data.selectedTemplate as InvoiceTemplateId,
+            buyback_price_per_gram: data.buybackPricePerGram,
           })
         );
 
@@ -424,6 +428,46 @@ export function InvoiceSettingsTab({
                   )}
                 </div>
               )}
+
+              <div className="pt-2 border-t border-gray-100">
+                <Label htmlFor="buybackPricePerGram">Buyback Price per Gram</Label>
+                <div className="relative mt-1.5">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    Rp
+                  </span>
+                  <Input
+                    id="buybackPricePerGram"
+                    type="text"
+                    inputMode="numeric"
+                    value={
+                      form.watch("buybackPricePerGram")
+                        ? form
+                            .watch("buybackPricePerGram")
+                            .toLocaleString("id-ID")
+                        : ""
+                    }
+                    onChange={(e) => {
+                      // Remove all non-digit characters
+                      const value = e.target.value.replace(/\D/g, "");
+                      // Convert to number
+                      const numValue = value === "" ? 0 : parseInt(value, 10);
+                      form.setValue("buybackPricePerGram", numValue, {
+                        shouldDirty: true,
+                      });
+                    }}
+                    placeholder="0"
+                    className="pl-8"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Price per gram for buyback invoices
+                </p>
+                {form.formState.errors.buybackPricePerGram && (
+                  <p className="text-sm text-destructive mt-1">
+                    {form.formState.errors.buybackPricePerGram.message}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

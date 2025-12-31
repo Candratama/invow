@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getInvoicesPaginatedWithTierLimit } from "@/lib/db/data-access/invoices";
+import { getInvoicesPaginatedWithTierLimit, getAllInvoicesWithItems } from "@/lib/db/data-access/invoices";
 import { getSubscriptionStatus } from "@/lib/db/data-access/subscription";
 import { getStoreSettings } from "@/lib/db/data-access/store";
 import { getRevenueMetrics } from "@/lib/db/data-access/revenue";
@@ -20,9 +20,10 @@ export async function getDashboardDataAction(page: number = 1) {
 
     const preferencesService = new UserPreferencesService(supabase);
 
-    const [invoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult] =
+    const [invoicesResult, allInvoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult] =
       await Promise.all([
         getInvoicesPaginatedWithTierLimit(page, 10, "synced"),
+        getAllInvoicesWithItems("synced"), // Fetch all invoices with items for metrics calculation
         getRevenueMetrics(user.id),
         getSubscriptionStatus(user.id),
         getStoreSettings(user.id),
@@ -30,6 +31,7 @@ export async function getDashboardDataAction(page: number = 1) {
       ]);
 
     const invoices = invoicesResult.data?.invoices || [];
+    const allInvoices = allInvoicesResult.data || []; // All invoices with items for metrics
     const revenueMetrics = revenueResult.data || null;
     const hasMoreHistory = invoicesResult.data?.hasMoreHistory || false;
     const historyLimitMessage = invoicesResult.data?.historyLimitMessage;
@@ -86,6 +88,7 @@ export async function getDashboardDataAction(page: number = 1) {
       success: true,
       data: {
         invoices,
+        allInvoices, // Add all invoices with items for metrics calculation
         revenueMetrics,
         subscriptionStatus,
         storeSettings,
