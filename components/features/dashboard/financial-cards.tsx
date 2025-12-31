@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Eye,
   EyeOff,
   TrendingUp,
   ShoppingCart,
   DollarSign,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { FinancialMetrics } from "@/lib/utils/revenue";
 import { formatCurrency } from "@/lib/utils";
@@ -204,10 +206,38 @@ export default function FinancialCards({
   isLoading = false,
 }: FinancialCardsProps) {
   const [isVisible, setIsVisible] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isPremium = subscriptionStatus?.tier === "premium";
 
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
+  };
+
+  const scrollToCard = (index: number) => {
+    if (containerRef.current) {
+      const cardWidth = 280; // min-width on mobile
+      const gap = 16; // gap-4 = 1rem = 16px
+      const scrollPosition = index * (cardWidth + gap);
+
+      containerRef.current.scrollTo({
+        left: scrollPosition,
+        behavior: "smooth",
+      });
+      setCurrentIndex(index);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      scrollToCard(currentIndex - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < 2) {
+      scrollToCard(currentIndex + 1);
+    }
   };
 
   if (isLoading) {
@@ -247,30 +277,74 @@ export default function FinancialCards({
         </button>
       </div>
 
-      {/* Cards container - swipeable on all devices */}
-      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide">
-        <SalesRevenueCard
-          metrics={metrics}
-          isPremium={isPremium}
-          isVisible={isVisible}
-        />
-        <BuybackExpensesCard
-          metrics={metrics}
-          isPremium={isPremium}
-          isVisible={isVisible}
-        />
-        <NetProfitCard
-          metrics={metrics}
-          isPremium={isPremium}
-          isVisible={isVisible}
-        />
+      {/* Cards container with navigation arrows */}
+      <div className="relative">
+        {/* Left Arrow */}
+        <button
+          onClick={handlePrevious}
+          disabled={currentIndex === 0}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Previous card"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+
+        {/* Cards container - swipeable on all devices */}
+        <div
+          ref={containerRef}
+          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+        >
+          <SalesRevenueCard
+            metrics={metrics}
+            isPremium={isPremium}
+            isVisible={isVisible}
+          />
+          <BuybackExpensesCard
+            metrics={metrics}
+            isPremium={isPremium}
+            isVisible={isVisible}
+          />
+          <NetProfitCard
+            metrics={metrics}
+            isPremium={isPremium}
+            isVisible={isVisible}
+          />
+        </div>
+
+        {/* Right Arrow */}
+        <button
+          onClick={handleNext}
+          disabled={currentIndex === 2}
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Next card"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Scroll indicators */}
       <div className="flex justify-center gap-2 mt-4">
-        <div className="w-2 h-2 rounded-full bg-primary" />
-        <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-        <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
+        <button
+          onClick={() => scrollToCard(0)}
+          className={`w-2 h-2 rounded-full transition-colors ${
+            currentIndex === 0 ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
+          }`}
+          aria-label="Go to Sales Revenue card"
+        />
+        <button
+          onClick={() => scrollToCard(1)}
+          className={`w-2 h-2 rounded-full transition-colors ${
+            currentIndex === 1 ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
+          }`}
+          aria-label="Go to Buyback Expenses card"
+        />
+        <button
+          onClick={() => scrollToCard(2)}
+          className={`w-2 h-2 rounded-full transition-colors ${
+            currentIndex === 2 ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
+          }`}
+          aria-label="Go to Net Profit card"
+        />
       </div>
     </div>
   );
