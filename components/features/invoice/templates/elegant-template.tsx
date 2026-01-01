@@ -32,6 +32,14 @@ export function ElegantInvoiceTemplate({
     invoiceDate,
   } = invoice;
 
+  // Check if this is a buyback invoice
+  const isBuybackInvoice = items.some(item => item.is_buyback);
+
+  // Format invoice number for buyback
+  const displayNumber = isBuybackInvoice
+    ? invoiceNumber.replace(/^INV-/, 'BUY-')
+    : invoiceNumber;
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -199,7 +207,7 @@ export function ElegantInvoiceTemplate({
               color: "#666666",
             }}
           >
-            {invoiceNumber} • {formatDate(new Date(invoiceDate))}
+            {displayNumber} • {formatDate(new Date(invoiceDate))}
           </div>
         </div>
 

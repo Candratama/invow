@@ -32,6 +32,14 @@ export function CompactInvoiceTemplate({
     invoiceDate,
   } = invoice;
 
+  // Check if this is a buyback invoice
+  const isBuybackInvoice = items.some(item => item.is_buyback);
+
+  // Format invoice number for buyback
+  const displayNumber = isBuybackInvoice
+    ? invoiceNumber.replace(/^INV-/, 'BUY-')
+    : invoiceNumber;
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -168,7 +176,7 @@ export function CompactInvoiceTemplate({
                 paddingRight: "16px",
               }}
             >
-              {invoiceNumber}
+              {displayNumber}
             </div>
             <div
               style={{

@@ -32,6 +32,14 @@ export function ClassicInvoiceTemplate({
     invoiceDate,
   } = invoice;
 
+  // Check if this is a buyback invoice
+  const isBuybackInvoice = items.some(item => item.is_buyback);
+
+  // Format invoice number for buyback
+  const displayNumber = isBuybackInvoice
+    ? invoiceNumber.replace(/^INV-/, 'BUY-')
+    : invoiceNumber;
+
   // Calculate totals with tax
   const calculation = calculateTotal(
     subtotal,
@@ -187,7 +195,7 @@ export function ClassicInvoiceTemplate({
                 marginBottom: "5px",
               }}
             >
-              INVOICE
+              {isBuybackInvoice ? "BUYBACK FORM" : "INVOICE"}
             </div>
             <div
               style={{
@@ -198,9 +206,9 @@ export function ClassicInvoiceTemplate({
             >
               <div>
                 <span style={{ color: "#111827", fontWeight: "bold" }}>
-                  Invoice:
+                  {isBuybackInvoice ? "Buyback:" : "Invoice:"}
                 </span>{" "}
-                {invoiceNumber}
+                {displayNumber}
               </div>
               <div>
                 <span style={{ color: "#111827", fontWeight: "bold" }}>
@@ -232,7 +240,7 @@ export function ClassicInvoiceTemplate({
                 marginBottom: "8px",
               }}
             >
-              Bill To:
+              {isBuybackInvoice ? "From:" : "Bill To:"}
             </div>
             <div
               className="text-base font-bold"

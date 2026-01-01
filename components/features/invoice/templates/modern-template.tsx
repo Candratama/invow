@@ -32,6 +32,14 @@ export function ModernInvoiceTemplate({
     invoiceDate,
   } = invoice;
 
+  // Check if this is a buyback invoice
+  const isBuybackInvoice = items.some(item => item.is_buyback);
+
+  // Format invoice number for buyback
+  const displayNumber = isBuybackInvoice
+    ? invoiceNumber.replace(/^INV-/, 'BUY-')
+    : invoiceNumber;
+
   // Calculate totals with tax
   const calculation = calculateTotal(
     subtotal,
@@ -218,7 +226,7 @@ export function ModernInvoiceTemplate({
               >
                 <div style={{ marginBottom: "4px" }}>
                   <span style={{ opacity: 0.8 }}>No:</span>{" "}
-                  <span style={{ fontWeight: "600" }}>{invoiceNumber}</span>
+                  <span style={{ fontWeight: "600" }}>{displayNumber}</span>
                 </div>
                 <div>
                   <span style={{ opacity: 0.8 }}>Date:</span>{" "}

@@ -32,6 +32,14 @@ export function CorporateInvoiceTemplate({
     invoiceDate,
   } = invoice;
 
+  // Check if this is a buyback invoice
+  const isBuybackInvoice = items.some(item => item.is_buyback);
+
+  // Format invoice number for buyback
+  const displayNumber = isBuybackInvoice
+    ? invoiceNumber.replace(/^INV-/, 'BUY-')
+    : invoiceNumber;
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -187,7 +195,7 @@ export function CorporateInvoiceTemplate({
             INVOICE
           </div>
           <div style={{ fontSize: "9pt", color: "#6b7280" }}>
-            Invoice Number: {invoiceNumber}
+            Invoice Number: {displayNumber}
           </div>
         </div>
 
@@ -236,7 +244,7 @@ export function CorporateInvoiceTemplate({
                 }}
               >
                 <span style={{ fontWeight: "600" }}>Invoice Number:</span>
-                <span>{invoiceNumber}</span>
+                <span>{displayNumber}</span>
               </div>
               {storeSettings?.storeNumber && (
                 <div

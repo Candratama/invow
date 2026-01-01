@@ -32,6 +32,14 @@ export function BoldInvoiceTemplate({
     invoiceDate,
   } = invoice;
 
+  // Check if this is a buyback invoice
+  const isBuybackInvoice = items.some(item => item.is_buyback);
+
+  // Format invoice number for buyback
+  const displayNumber = isBuybackInvoice
+    ? invoiceNumber.replace(/^INV-/, 'BUY-')
+    : invoiceNumber;
+
   const calculation = calculateTotal(
     subtotal,
     shippingCost,
@@ -190,7 +198,7 @@ export function BoldInvoiceTemplate({
               <div style={{ fontSize: "10pt", lineHeight: "1.8" }}>
                 <div>
                   <span style={{ fontWeight: "700" }}>Number:</span>{" "}
-                  {invoiceNumber}
+                  {displayNumber}
                 </div>
                 <div>
                   <span style={{ fontWeight: "700" }}>Date:</span>{" "}
