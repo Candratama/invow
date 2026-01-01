@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react'
+import { formatCompactCurrency } from '@/lib/utils/reports'
 
 interface SummaryCardProps {
   icon: LucideIcon
@@ -9,6 +10,11 @@ interface SummaryCardProps {
     isPositive: boolean
   }
   formatAsCurrency?: boolean
+  /**
+   * Use compact notation for large numbers (e.g., "Rp 139 Jt" instead of "Rp 138.990.000")
+   * Recommended for mobile to prevent overflow
+   */
+  useCompactFormat?: boolean
 }
 
 export function SummaryCard({
@@ -17,15 +23,32 @@ export function SummaryCard({
   value,
   trend,
   formatAsCurrency = false,
+  useCompactFormat = false,
 }: SummaryCardProps) {
-  const formattedValue = typeof value === 'number' && formatAsCurrency
-    ? new Intl.NumberFormat('id-ID', {
+  // Format value based on currency and compact settings
+  let formattedValue: string
+
+  if (typeof value === 'number' && formatAsCurrency) {
+    if (useCompactFormat) {
+      // Use compact format: "Rp 139 Jt"
+      formattedValue = formatCompactCurrency(value, true)
+    } else {
+      // Full format: "Rp 138.990.000"
+      formattedValue = new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       }).format(value)
-    : value.toLocaleString('id-ID')
+    }
+  } else {
+    formattedValue = typeof value === 'number'
+      ? value.toLocaleString('id-ID')
+      : value
+  }
+
+  // Detect if value is very long (would overflow on mobile)
+  const isLongValue = formattedValue.length > 15
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
@@ -51,8 +74,12 @@ export function SummaryCard({
       {/* Label */}
       <p className="text-sm text-gray-600 mb-1">{label}</p>
 
-      {/* Value */}
-      <p className="text-2xl lg:text-3xl font-bold text-gray-900">
+      {/* Value - responsive size, with word break for overflow prevention */}
+      <p className={`font-bold text-gray-900 break-words ${
+        isLongValue
+          ? 'text-xl lg:text-2xl' // Smaller for long values
+          : 'text-2xl lg:text-3xl' // Normal size
+      }`}>
         {formattedValue}
       </p>
     </div>

@@ -21,6 +21,68 @@ import type {
 } from '@/lib/types/reports'
 
 /**
+ * Format large numbers with K/M/B suffix for compact display
+ * Example: 1,500,000 → "1.5 Jt"
+ *
+ * @param value - Number to format
+ * @param locale - Locale for formatting (default: 'id-ID')
+ * @returns Compact formatted string
+ */
+export function formatCompactNumber(value: number, locale: string = 'id-ID'): string {
+  const absValue = Math.abs(value)
+
+  if (absValue >= 1_000_000_000) {
+    // Billion (Miliar)
+    return new Intl.NumberFormat(locale, {
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumFractionDigits: 1,
+    }).format(value).replace('B', ' M') // B → M (Miliar)
+  } else if (absValue >= 1_000_000) {
+    // Million (Juta)
+    return new Intl.NumberFormat(locale, {
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumFractionDigits: 1,
+    }).format(value).replace('M', ' Jt') // M → Jt (Juta)
+  } else if (absValue >= 1_000) {
+    // Thousand (Ribu)
+    return new Intl.NumberFormat(locale, {
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumFractionDigits: 1,
+    }).format(value).replace('K', ' Rb') // K → Rb (Ribu)
+  } else {
+    // Less than 1000, show full number
+    return value.toLocaleString(locale)
+  }
+}
+
+/**
+ * Format currency with compact notation for large values
+ * Example: 138,990,000 → "Rp 139 Jt"
+ *
+ * @param value - Number to format as currency
+ * @param useCompact - Whether to use compact notation (default: true for mobile)
+ * @returns Formatted currency string
+ */
+export function formatCompactCurrency(value: number, useCompact: boolean = true): string {
+  if (!useCompact) {
+    // Full format
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
+  }
+
+  // Compact format with Rp prefix
+  const compactValue = formatCompactNumber(value)
+  return `Rp ${compactValue}`
+}
+
+/**
  * Get smart default period based on current date
  * - If day <= 7: Show last month (current month has little data)
  * - If day > 7: Show current month
