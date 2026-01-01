@@ -35,8 +35,8 @@ export default function ReportsClient({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-4 lg:px-6 lg:pl-70">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="bg-white border-b border-gray-200 px-4 py-4 lg:px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between lg:ml-64">
           <div>
             <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
               Business Reports
