@@ -2,7 +2,7 @@
 
 import { DollarSign, FileText, TrendingUp, BarChart3 } from 'lucide-react'
 import { SummaryCard } from './summary-card'
-import { DateRangeSelector } from './date-range-selector'
+import { DateRangeSelector, DateRangeSelectorSkeleton } from './date-range-selector'
 import { useRevenueMetrics } from '@/lib/hooks/use-reports-data'
 import type { DateRange } from '@/lib/types/reports'
 
@@ -17,6 +17,9 @@ export function OverviewTab({ dateRange, onDateRangeChange }: OverviewTabProps) 
   if (isLoading) {
     return (
       <div className="space-y-6">
+        {/* Date Range Selector Skeleton */}
+        <DateRangeSelectorSkeleton />
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
