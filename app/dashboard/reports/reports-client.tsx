@@ -6,6 +6,7 @@ import { getSmartDefaultPeriod } from '@/lib/utils/reports'
 import type { DateRange } from '@/lib/types/reports'
 import { OverviewTab } from './components/overview-tab'
 import { DetailsTab } from './components/details-tab'
+import { ComparisonTab } from './components/comparison-tab'
 
 type ReportsTab = 'overview' | 'details' | 'comparison'
 
@@ -57,9 +58,7 @@ export default function ReportsClient({
           )}
 
           {activeTab === 'comparison' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-600">Comparison Tab - Coming soon</p>
-            </div>
+            <ComparisonTab dateRange={dateRange} />
           )}
         </div>
       </main>
