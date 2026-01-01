@@ -280,29 +280,27 @@ export function ClassicInvoiceTemplate({
               textTransform: "uppercase",
             }}
           >
-            <div style={{ width: "10%", textAlign: "center" }}>No</div>
-            <div style={{ width: "45%", textAlign: "left" }}>Items</div>
+            <div style={{ width: "8%", textAlign: "center" }}>No</div>
+            <div style={{ width: isBuybackInvoice ? "32%" : "45%", textAlign: "left" }}>Items</div>
+            {isBuybackInvoice && (
+              <div style={{ width: "12%", textAlign: "center" }}>Gramasi</div>
+            )}
             <div style={{ width: "8%", textAlign: "center" }}>Qty</div>
             <div style={{ width: "18%", textAlign: "center" }}>Price</div>
-            <div style={{ width: "18%", textAlign: "center" }}>Subtotal</div>
+            <div style={{ width: isBuybackInvoice ? "22%" : "18%", textAlign: "center" }}>Subtotal</div>
           </div>
           {items.map((item, index) => {
             // Handle buyback vs regular items differently
             const isBuyback = item.is_buyback;
 
-            let qtyDisplay, priceSymbol, priceAmount, subtotalSymbol, subtotalAmount;
+            let gramDisplay, qtyDisplay, priceSymbol, priceAmount, subtotalSymbol, subtotalAmount;
 
             if (isBuyback) {
-              // Buyback item: show gram and buyback_rate
-              // Buyback item: show gram × quantity if applicable
+              // Buyback item: separate gram and quantity
               const qty = item.quantity || 1;
-              const totalGram = (item.gram || 0) * qty;
+              gramDisplay = `${item.gram}g`;
+              qtyDisplay = qty;
 
-              if (qty > 1) {
-                qtyDisplay = `${item.gram}g × ${qty} = ${totalGram.toFixed(3)}g`;
-              } else {
-                qtyDisplay = `${item.gram}g`;
-              }
               const priceData = splitCurrency(item.buyback_rate || 0);
               priceSymbol = priceData.symbol;
               priceAmount = `${priceData.amount}/g`;
@@ -332,19 +330,24 @@ export function ClassicInvoiceTemplate({
                   backgroundColor: index % 2 === 1 ? "#f9fafb" : "#ffffff",
                 }}
               >
-                <div style={{ width: "10%", textAlign: "center" }}>
+                <div style={{ width: "8%", textAlign: "center" }}>
                   {index + 1}
                 </div>
                 <div
                   className="text-sm font-bold"
                   style={{
-                    width: "45%",
+                    width: isBuyback ? "32%" : "45%",
                     color: "#111827",
                     textAlign: "left",
                   }}
                 >
                   {item.description}
                 </div>
+                {isBuyback && (
+                  <div style={{ width: "12%", textAlign: "center" }}>
+                    {gramDisplay}
+                  </div>
+                )}
                 <div style={{ width: "8%", textAlign: "center" }}>
                   {qtyDisplay}
                 </div>
@@ -371,7 +374,7 @@ export function ClassicInvoiceTemplate({
                 </div>
                 <div
                   style={{
-                    width: "18%",
+                    width: isBuyback ? "22%" : "18%",
                     display: "flex",
                     justifyContent: "space-between",
                     paddingRight: "8px",
