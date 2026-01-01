@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { BarChart3, List, TrendingUp } from 'lucide-react'
 import { getSmartDefaultPeriod } from '@/lib/utils/reports'
 import type { DateRange } from '@/lib/types/reports'
+import { OverviewTab } from './components/overview-tab'
 
 type ReportsTab = 'overview' | 'details' | 'comparison'
 
@@ -44,9 +45,7 @@ export default function ReportsClient({
       <main className="pb-20 lg:pb-8 lg:pl-64">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
           {activeTab === 'overview' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-600">Overview Tab - Coming soon</p>
-            </div>
+            <OverviewTab dateRange={dateRange} />
           )}
 
           {activeTab === 'details' && (
