@@ -180,9 +180,16 @@ export const useStore = create<InvoiceStore>()((set, get) => ({
       items: data.invoice_items.map(item => ({
         id: item.id,
         description: item.description,
+        // Regular item fields
         quantity: item.quantity,
         price: item.price,
         subtotal: item.subtotal,
+        // Buyback item fields
+        is_buyback: (item as any).is_buyback || false,
+        gram: (item as any).gram,
+        buyback_rate: (item as any).buyback_rate,
+        custom_buyback_rate: (item as any).custom_buyback_rate,
+        total: (item as any).total,
       })),
       subtotal: data.subtotal,
       shippingCost: data.shipping_cost,

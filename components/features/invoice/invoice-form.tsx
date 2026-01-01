@@ -403,6 +403,49 @@ export function InvoiceForm({
     }
   };
 
+  // Auto-generate buyback summary in note
+  useEffect(() => {
+    if (!currentInvoice?.items) return;
+
+    const buybackItems = currentInvoice.items.filter((item) => item.is_buyback);
+    const currentNote = currentInvoice.note || "";
+
+    // Only generate summary if buyback mode and multiple items
+    if (isBuybackMode && buybackItems.length > 1) {
+      const totalPieces = buybackItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      const totalGramasi = buybackItems.reduce(
+        (sum, item) => sum + ((item.gram || 0) * (item.quantity || 1)),
+        0
+      );
+
+      const summary = `\n\n• Total Kepingan: ${totalPieces} pcs\n• Total Gramasi: ${parseFloat(totalGramasi.toFixed(3))} gram`;
+
+      // Get user note (everything before the summary marker)
+      const summaryMarker = "\n\n• Total Kepingan:";
+      const separatorIndex = currentNote.indexOf(summaryMarker);
+      const userNote = separatorIndex >= 0 ? currentNote.substring(0, separatorIndex) : currentNote;
+
+      // Combine user note with new summary
+      const newNote = userNote.trim() ? `${userNote.trim()}${summary}` : summary.trim();
+
+      // Only update if different to avoid infinite loop
+      if (currentNote !== newNote) {
+        updateCurrentInvoice({ note: newNote });
+      }
+    } else if (!isBuybackMode || buybackItems.length <= 1) {
+      // Remove summary if conditions no longer met
+      const summaryMarker = "\n\n• Total Kepingan:";
+      if (currentNote.includes(summaryMarker)) {
+        const separatorIndex = currentNote.indexOf(summaryMarker);
+        const userNote = separatorIndex >= 0 ? currentNote.substring(0, separatorIndex).trim() : currentNote;
+        if (currentNote !== userNote) {
+          updateCurrentInvoice({ note: userNote });
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentInvoice?.items, isBuybackMode]);
+
   const handleAddItem = (data: ItemFormData) => {
     const itemData = isBuybackMode
       ? {
@@ -1037,56 +1080,33 @@ export function InvoiceForm({
           )}
         </div>
 
-        {/* Auto-generated Summary for Buyback with Multiple Items */}
-        {isBuybackMode &&
-          currentInvoice.items &&
-          currentInvoice.items.length > 1 &&
-          currentInvoice.items.some((item) => item.is_buyback) && (() => {
-            // Calculate totals
-            const buybackItems = currentInvoice.items.filter((item) => item.is_buyback);
-            const totalPieces = buybackItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-            const totalGramasi = buybackItems.reduce(
-              (sum, item) => sum + ((item.gram || 0) * (item.quantity || 1)),
-              0
-            );
-
-            return (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 lg:p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <h4 className="text-sm font-semibold text-blue-900">
-                    Buyback Summary
-                  </h4>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-xs text-gray-500 mb-1">Total Kepingan</p>
-                    <p className="text-lg font-bold text-blue-900">
-                      {totalPieces} <span className="text-sm font-normal text-gray-600">pcs</span>
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-xs text-gray-500 mb-1">Total Gramasi</p>
-                    <p className="text-lg font-bold text-blue-900">
-                      {parseFloat(totalGramasi.toFixed(3))} <span className="text-sm font-normal text-gray-600">gram</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
         {/* Note Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm lg:p-6">
           <Label htmlFor="note">Note (Optional)</Label>
           <Textarea
             id="note"
             value={currentInvoice.note || ""}
-            onChange={(e) => handleFormChange("note", e.target.value)}
+            onChange={(e) => {
+              // Get user's input
+              const newValue = e.target.value;
+
+              // Extract only user's note (before summary marker)
+              const summaryMarker = "\n\n• Total Kepingan:";
+              const separatorIndex = newValue.indexOf(summaryMarker);
+              const userNote = separatorIndex >= 0 ? newValue.substring(0, separatorIndex) : newValue;
+
+              // Update with user note only, useEffect will add summary back
+              handleFormChange("note", userNote);
+            }}
             placeholder="Add any additional notes or instructions..."
-            rows={3}
-            className="mt-1.5"
+            rows={6}
+            className="mt-1.5 font-mono text-sm"
           />
+          {isBuybackMode && currentInvoice.items && currentInvoice.items.filter(item => item.is_buyback).length > 1 && (
+            <p className="text-xs text-amber-600 mt-2">
+              ℹ️ Buyback summary akan otomatis ditambahkan di bawah note
+            </p>
+          )}
         </div>
 
         {/* Totals Section */}
