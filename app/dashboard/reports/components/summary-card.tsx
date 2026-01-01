@@ -77,8 +77,8 @@ export function SummaryCard({
       {/* Value - responsive size, with word break for overflow prevention */}
       <p className={`font-bold text-gray-900 break-words ${
         isLongValue
-          ? 'text-xl lg:text-2xl' // Smaller for long values
-          : 'text-2xl lg:text-3xl' // Normal size
+          ? 'text-lg lg:text-xl' // Smaller for long values
+          : 'text-xl lg:text-2xl' // Normal size
       }`}>
         {formattedValue}
       </p>
