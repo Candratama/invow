@@ -76,6 +76,7 @@ const itemSchema = z.object({
   price: z.number().min(0, "Price must be positive").optional(),
   gram: z.number().positive("Gram must be greater than 0").optional(),
   is_buyback: z.boolean().optional(),
+  custom_buyback_rate: z.number().positive("Custom rate must be positive").optional(),
 }).refine(
   (data) => {
     // If buyback mode, gram is required
@@ -160,6 +161,10 @@ export function InvoiceForm({
   // Buyback mode toggle and price per gram
   const [isBuybackMode, setIsBuybackMode] = useState(false);
   const [buybackPricePerGram, setBuybackPricePerGram] = useState(0);
+
+  // Custom price toggle for individual buyback items
+  const [useCustomPrice, setUseCustomPrice] = useState(false);
+  const [customBuybackRate, setCustomBuybackRate] = useState(0);
 
   // Selected customer from CustomerSelector
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
@@ -404,8 +409,9 @@ export function InvoiceForm({
           description: data.description,
           is_buyback: true,
           gram: data.gram,
-          buyback_rate: buybackPricePerGram,
-          total: (data.gram || 0) * buybackPricePerGram,
+          buyback_rate: useCustomPrice ? (data.custom_buyback_rate || 0) : buybackPricePerGram,
+          custom_buyback_rate: useCustomPrice ? data.custom_buyback_rate : undefined,
+          total: (data.gram || 0) * (useCustomPrice ? (data.custom_buyback_rate || 0) : buybackPricePerGram),
           // Explicitly set regular fields to undefined for buyback items
           quantity: undefined,
           price: undefined,
@@ -420,6 +426,7 @@ export function InvoiceForm({
           is_buyback: false,
           gram: undefined,
           buyback_rate: undefined,
+          custom_buyback_rate: undefined,
           total: undefined,
         };
 
@@ -432,6 +439,9 @@ export function InvoiceForm({
     itemForm.reset();
     setEditingItem(null);
     setShowItemModal(false);
+    // Reset custom price state
+    setUseCustomPrice(false);
+    setCustomBuybackRate(0);
   };
 
   const handleEditItem = (item: InvoiceItem) => {
@@ -439,6 +449,11 @@ export function InvoiceForm({
     // Set buyback mode based on item
     if (item.is_buyback) {
       setIsBuybackMode(true);
+      // Check if item has custom buyback rate
+      if (item.custom_buyback_rate !== undefined && item.custom_buyback_rate !== null) {
+        setUseCustomPrice(true);
+        setCustomBuybackRate(item.custom_buyback_rate);
+      }
     }
     itemForm.reset({
       description: item.description,
@@ -446,6 +461,7 @@ export function InvoiceForm({
       price: item.price,
       gram: item.gram,
       is_buyback: item.is_buyback,
+      custom_buyback_rate: item.custom_buyback_rate,
     });
     setShowItemModal(true);
   };
@@ -940,15 +956,44 @@ export function InvoiceForm({
               />
             </div>
 
-            {/* Warning if buyback price not set */}
-            {isBuybackMode && buybackPricePerGram === 0 && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800 font-medium">
-                  ⚠️ Buyback price not set
+            {/* Buyback Price Input - shown when buyback mode is enabled */}
+            {isBuybackMode && (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <Label htmlFor="buybackPricePerGram" className="font-medium">
+                  Buyback Price per Gram *
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                  Set the price per gram for buyback items
                 </p>
-                <p className="text-xs text-amber-700 mt-1">
-                  Please set the buyback price per gram in Settings before creating buyback invoices.
-                </p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    Rp
+                  </span>
+                  <Input
+                    id="buybackPricePerGram"
+                    type="text"
+                    inputMode="numeric"
+                    value={
+                      buybackPricePerGram
+                        ? buybackPricePerGram.toLocaleString("id-ID")
+                        : ""
+                    }
+                    onChange={(e) => {
+                      // Remove all non-digit characters
+                      const value = e.target.value.replace(/\D/g, "");
+                      // Convert to number
+                      const numValue = value === "" ? 0 : parseInt(value, 10);
+                      setBuybackPricePerGram(numValue);
+                    }}
+                    placeholder="0"
+                    className="pl-8"
+                  />
+                </div>
+                {buybackPricePerGram === 0 && (
+                  <p className="text-sm text-amber-600 mt-2">
+                    ⚠️ Please enter buyback price per gram
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -1403,13 +1448,73 @@ export function InvoiceForm({
                     {itemForm.formState.errors.gram.message}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  Rate: {formatCurrency(buybackPricePerGram)}/gram • Total:{" "}
-                  {formatCurrency(
-                    (itemForm.watch("gram") || 0) * buybackPricePerGram
-                  )}
-                </p>
               </div>
+
+              {/* Custom Price Toggle */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex-1">
+                  <Label htmlFor="useCustomPrice" className="font-medium cursor-pointer">
+                    Use custom price for this item
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Override global buyback price ({formatCurrency(buybackPricePerGram)}/gram)
+                  </p>
+                </div>
+                <Switch
+                  id="useCustomPrice"
+                  checked={useCustomPrice}
+                  onCheckedChange={(checked) => {
+                    setUseCustomPrice(checked);
+                    if (!checked) {
+                      setCustomBuybackRate(0);
+                      itemForm.setValue("custom_buyback_rate", undefined);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Custom Price Input - shown when toggle is enabled */}
+              {useCustomPrice && (
+                <div>
+                  <Label htmlFor="customBuybackRate">Custom Buyback Price (per gram) *</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      Rp
+                    </span>
+                    <Input
+                      id="customBuybackRate"
+                      type="text"
+                      inputMode="numeric"
+                      value={
+                        customBuybackRate
+                          ? customBuybackRate.toLocaleString("id-ID")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        const numValue = value === "" ? 0 : parseInt(value, 10);
+                        setCustomBuybackRate(numValue);
+                        itemForm.setValue("custom_buyback_rate", numValue);
+                      }}
+                      placeholder="0"
+                      className="pl-8 mt-1.5"
+                    />
+                  </div>
+                  {itemForm.formState.errors.custom_buyback_rate && (
+                    <p className="text-sm text-destructive mt-1">
+                      {itemForm.formState.errors.custom_buyback_rate.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Calculation Display */}
+              <p className="text-xs text-muted-foreground p-2 bg-blue-50 rounded border border-blue-200">
+                Rate: {formatCurrency(useCustomPrice ? customBuybackRate : buybackPricePerGram)}/gram • Total:{" "}
+                {formatCurrency(
+                  (itemForm.watch("gram") || 0) * (useCustomPrice ? customBuybackRate : buybackPricePerGram)
+                )}
+              </p>
             </div>
           ) : (
             /* Regular Mode Fields */

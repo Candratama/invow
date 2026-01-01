@@ -38,6 +38,7 @@ export interface InvoiceItem {
   is_buyback?: boolean;
   gram?: number;
   buyback_rate?: number;
+  custom_buyback_rate?: number; // Custom rate for individual items (overrides global rate)
   total?: number; // Auto-calculated: gram × buyback_rate
 
   // Timestamps

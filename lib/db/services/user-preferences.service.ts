@@ -91,6 +91,7 @@ export class UserPreferencesService {
             tax_enabled: false,
             tax_percentage: null,
             selected_template: "simple",
+            buyback_price_per_gram: 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };

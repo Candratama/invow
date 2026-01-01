@@ -96,6 +96,11 @@ export function ItemRow({ item, onEdit, onDelete }: ItemRowProps) {
             <>
               <p className="text-sm text-muted-foreground mb-2">
                 {item.gram}g × {formatCurrency(item.buyback_rate || 0)}/gram
+                {item.custom_buyback_rate && (
+                  <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                    Custom Price
+                  </span>
+                )}
               </p>
               <p className="text-base font-semibold text-foreground">
                 {formatCurrency(item.total || 0)}
