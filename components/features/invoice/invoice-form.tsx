@@ -213,10 +213,6 @@ export function InvoiceForm({
     const initInvoice = async () => {
       // Wait for both user and defaultStore to be available
       if (!user?.id || !defaultStore?.id) {
-        console.log("⏳ Waiting for user or store...", {
-          userId: user?.id,
-          storeId: defaultStore?.id,
-        });
         return;
       }
 
@@ -225,11 +221,8 @@ export function InvoiceForm({
       const needsFix = currentInvoice?.invoiceNumber?.includes("XXXXXXXX");
 
       if (!needsInit && !needsFix) {
-        console.log("✅ Invoice already properly initialized");
         return;
       }
-
-      console.log("🚀 Initializing/fixing invoice with userId:", user.id);
 
       // Get sequence number for today
       const today = new Date();
@@ -246,8 +239,6 @@ export function InvoiceForm({
         user.id,
         sequence || 1
       );
-
-      console.log("✅ Generated invoice number:", invoiceNumber);
 
       if (needsInit) {
         // Initialize new invoice with proper invoice number
@@ -267,11 +258,9 @@ export function InvoiceForm({
         };
 
         setCurrentInvoice(newInvoice);
-        console.log("✨ New invoice initialized");
       } else if (needsFix) {
         // Fix existing invoice number
         updateCurrentInvoice({ invoiceNumber });
-        console.log("🔧 Invoice number fixed");
       }
     };
 
@@ -390,15 +379,11 @@ export function InvoiceForm({
             user.id,
             sequence || 1
           );
-          console.log("📅 Date changed, new invoice number:", newInvoiceNumber);
           updateCurrentInvoice({
             [field]: newDate,
             invoiceNumber: newInvoiceNumber,
           });
         } else {
-          console.warn(
-            "⚠️ Cannot regenerate invoice number: user or store not available"
-          );
           updateCurrentInvoice({
             [field]: newDate,
           });
@@ -414,10 +399,6 @@ export function InvoiceForm({
   };
 
   const handleAddItem = (data: ItemFormData) => {
-    console.log("🔍 handleAddItem called with data:", data);
-    console.log("🔍 isBuybackMode:", isBuybackMode);
-    console.log("🔍 Form errors:", itemForm.formState.errors);
-
     const itemData = isBuybackMode
       ? {
           description: data.description,
@@ -442,8 +423,6 @@ export function InvoiceForm({
           total: undefined,
         };
 
-    console.log("🔍 itemData to be added:", itemData);
-
     if (editingItem) {
       updateInvoiceItem(editingItem.id, itemData);
     } else {
@@ -452,7 +431,6 @@ export function InvoiceForm({
     calculateTotals();
     itemForm.reset();
     setEditingItem(null);
-    setIsBuybackMode(false); // Reset buyback mode after adding
     setShowItemModal(false);
   };
 
@@ -623,27 +601,18 @@ export function InvoiceForm({
                   email: currentInvoice.customer.email || "",
                   status: currentInvoice.customer.status || "Customer",
                 };
-                console.log("📝 Saving new customer:", customerData);
                 const customerResult = await createCustomerAction(customerData);
                 if (customerResult.success && customerResult.data) {
                   customerId = customerResult.data.id;
                   setSelectedCustomer(customerResult.data);
-                  console.log("✅ Customer saved:", customerResult.data);
                   toast.success("Customer saved to your customer list");
                 } else {
-                  console.warn(
-                    "⚠️ Failed to save customer:",
-                    customerResult.error
-                  );
                   toast.error(
                     `Failed to save customer: ${customerResult.error}`
                   );
                 }
               } catch (error) {
-                console.warn(
-                  "Failed to save customer, continuing with invoice:",
-                  error
-                );
+                // Silent fail - continue with invoice creation
               }
             }
           }
@@ -928,6 +897,60 @@ export function InvoiceForm({
                 </p>
               )}
             </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">
+                  invoice type
+                </span>
+              </div>
+            </div>
+
+            {/* Buyback Invoice Toggle */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex-1">
+                <Label htmlFor="buybackInvoiceMode" className="font-medium">
+                  Buyback Invoice
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Calculate price per gram for gold buyback
+                </p>
+              </div>
+              <Switch
+                id="buybackInvoiceMode"
+                checked={isBuybackMode}
+                onCheckedChange={(checked) => {
+                  // Check if switching mode would mix items
+                  const hasItems = (currentInvoice?.items?.length || 0) > 0;
+                  if (hasItems) {
+                    const existingItemsAreBuyback = currentInvoice?.items?.[0]?.is_buyback;
+                    if (existingItemsAreBuyback !== checked) {
+                      toast.error(
+                        "Cannot mix buyback and regular items in the same invoice. Please clear items first."
+                      );
+                      return;
+                    }
+                  }
+                  setIsBuybackMode(checked);
+                }}
+              />
+            </div>
+
+            {/* Warning if buyback price not set */}
+            {isBuybackMode && buybackPricePerGram === 0 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 font-medium">
+                  ⚠️ Buyback price not set
+                </p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Please set the buyback price per gram in Settings before creating buyback invoices.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1326,7 +1349,6 @@ export function InvoiceForm({
         onClose={() => {
           setShowItemModal(false);
           setEditingItem(null);
-          setIsBuybackMode(false); // Reset buyback mode
           itemForm.reset();
         }}
         title={editingItem ? "Edit Item" : "Add Item"}
@@ -1336,38 +1358,6 @@ export function InvoiceForm({
           onSubmit={itemForm.handleSubmit(handleAddItem)}
           className="py-4 space-y-4 lg:py-6"
         >
-          {/* Buyback Mode Toggle */}
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex-1">
-              <Label htmlFor="buybackMode" className="font-medium">
-                Buyback Invoice
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Calculate price per gram
-              </p>
-            </div>
-            <Switch
-              id="buybackMode"
-              checked={isBuybackMode}
-              onCheckedChange={(checked) => {
-                // Check if switching mode would mix items
-                const hasItems = (currentInvoice?.items?.length || 0) > 0;
-                if (hasItems) {
-                  const existingItemsAreBuyback = currentInvoice?.items?.[0]?.is_buyback;
-                  if (existingItemsAreBuyback !== checked) {
-                    toast.error(
-                      "Cannot mix buyback and regular items in the same invoice. Please clear items first."
-                    );
-                    return;
-                  }
-                }
-                setIsBuybackMode(checked);
-                // Update form value to sync with validation
-                itemForm.setValue("is_buyback", checked);
-              }}
-            />
-          </div>
-
           {/* Hidden field to track buyback mode for validation */}
           <input
             type="hidden"
@@ -1396,18 +1386,6 @@ export function InvoiceForm({
           {isBuybackMode ? (
             /* Buyback Mode Fields */
             <div className="space-y-3">
-              {/* Warning if buyback price not set */}
-              {buybackPricePerGram === 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800 font-medium">
-                    ⚠️ Buyback price not set
-                  </p>
-                  <p className="text-xs text-amber-700 mt-1">
-                    Please set the buyback price per gram in Settings before creating buyback invoices.
-                  </p>
-                </div>
-              )}
-
               <div>
                 <Label htmlFor="gram">Weight (gram) *</Label>
                 <Input
@@ -1498,7 +1476,6 @@ export function InvoiceForm({
               onClick={() => {
                 setShowItemModal(false);
                 setEditingItem(null);
-                setIsBuybackMode(false); // Reset buyback mode
                 itemForm.reset();
               }}
               className="flex-1"
