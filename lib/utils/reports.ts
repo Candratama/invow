@@ -22,7 +22,7 @@ import type {
 
 /**
  * Format large numbers with K/M/B suffix for compact display
- * Example: 1,500,000 → "1.5 Jt"
+ * Example: 1,500,000 → "1.5 Jt", 27,975,000 → "27.98 Jt"
  *
  * @param value - Number to format
  * @param locale - Locale for formatting (default: 'id-ID')
@@ -36,21 +36,24 @@ export function formatCompactNumber(value: number, locale: string = 'id-ID'): st
     return new Intl.NumberFormat(locale, {
       notation: 'compact',
       compactDisplay: 'short',
-      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2, // Keep 2 decimal places for precision
     }).format(value).replace('B', ' M') // B → M (Miliar)
   } else if (absValue >= 1_000_000) {
     // Million (Juta)
     return new Intl.NumberFormat(locale, {
       notation: 'compact',
       compactDisplay: 'short',
-      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2, // Keep 2 decimal places for precision
     }).format(value).replace('M', ' Jt') // M → Jt (Juta)
   } else if (absValue >= 1_000) {
     // Thousand (Ribu)
     return new Intl.NumberFormat(locale, {
       notation: 'compact',
       compactDisplay: 'short',
-      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2, // Keep 2 decimal places for precision
     }).format(value).replace('K', ' Rb') // K → Rb (Ribu)
   } else {
     // Less than 1000, show full number
@@ -60,7 +63,7 @@ export function formatCompactNumber(value: number, locale: string = 'id-ID'): st
 
 /**
  * Format currency with compact notation for large values
- * Example: 138,990,000 → "Rp 139 Jt"
+ * Example: 138,990,000 → "Rp 138.99 Jt", 27,975,000 → "Rp 27.98 Jt"
  *
  * @param value - Number to format as currency
  * @param useCompact - Whether to use compact notation (default: true for mobile)
