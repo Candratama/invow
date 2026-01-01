@@ -13,7 +13,12 @@ import {
   startOfDay,
   endOfDay,
 } from 'date-fns'
-import type { DateRange } from '@/lib/types/reports'
+import type {
+  DateRange,
+  CustomerTypeBreakdown,
+  SalesTypeBreakdown,
+  ComparisonData,
+} from '@/lib/types/reports'
 
 /**
  * Get smart default period based on current date
@@ -92,4 +97,157 @@ export function formatDateRange(range: DateRange): string {
   const start = new Date(range.start)
   const end = new Date(range.end)
   return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`
+}
+
+/**
+ * Calculate growth rate percentage
+ * @returns Growth rate as percentage (e.g., 15.7 for 15.7% increase)
+ */
+export function calculateGrowthRate(
+  current: number,
+  previous: number
+): number {
+  if (previous === 0) return current > 0 ? 100 : 0
+  return ((current - previous) / previous) * 100
+}
+
+/**
+ * Calculate average order value
+ */
+export function calculateAOV(
+  totalRevenue: number,
+  invoiceCount: number
+): number {
+  return invoiceCount > 0 ? totalRevenue / invoiceCount : 0
+}
+
+/**
+ * Calculate customer type breakdown from invoices
+ */
+export function calculateCustomerTypeBreakdown(
+  invoices: Array<{ customer_status: string; total: number }>
+): CustomerTypeBreakdown[] {
+  const VALID_TYPES = ['Distributor', 'Reseller', 'Customer'] as const
+  const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0)
+
+  const breakdown = invoices.reduce(
+    (acc, invoice) => {
+      const type = invoice.customer_status
+
+      // Skip invalid types
+      if (!VALID_TYPES.includes(type as any)) {
+        return acc
+      }
+
+      if (!acc[type]) {
+        acc[type] = {
+          type: type as 'Distributor' | 'Reseller' | 'Customer',
+          count: 0,
+          revenue: 0,
+          percentage: 0
+        }
+      }
+      acc[type].count++
+      acc[type].revenue += invoice.total
+      return acc
+    },
+    {} as Record<string, CustomerTypeBreakdown>
+  )
+
+  // Calculate percentages
+  return Object.values(breakdown).map((item) => ({
+    ...item,
+    percentage: totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0,
+  }))
+}
+
+/**
+ * Calculate sales type breakdown (buyback vs regular)
+ */
+export function calculateSalesTypeBreakdown(
+  invoices: Array<{ total: number; has_buyback?: boolean }>
+): SalesTypeBreakdown {
+  const buybackRevenue = invoices
+    .filter((inv) => inv.has_buyback)
+    .reduce((sum, inv) => sum + inv.total, 0)
+
+  const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0)
+  const regularRevenue = totalRevenue - buybackRevenue
+
+  return {
+    regularRevenue,
+    buybackRevenue,
+    regularPercentage: totalRevenue > 0 ? (regularRevenue / totalRevenue) * 100 : 0,
+    buybackPercentage: totalRevenue > 0 ? (buybackRevenue / totalRevenue) * 100 : 0,
+  }
+}
+
+/**
+ * Generate comparison data for two periods
+ */
+export function generateComparisonData(
+  currentMetrics: { revenue: number; count: number; aov: number },
+  previousMetrics: { revenue: number; count: number; aov: number }
+): ComparisonData[] {
+  return [
+    {
+      metric: 'Total Revenue',
+      current: currentMetrics.revenue,
+      previous: previousMetrics.revenue,
+      change: currentMetrics.revenue - previousMetrics.revenue,
+      changePercentage: calculateGrowthRate(
+        currentMetrics.revenue,
+        previousMetrics.revenue
+      ),
+    },
+    {
+      metric: 'Invoice Count',
+      current: currentMetrics.count,
+      previous: previousMetrics.count,
+      change: currentMetrics.count - previousMetrics.count,
+      changePercentage: calculateGrowthRate(
+        currentMetrics.count,
+        previousMetrics.count
+      ),
+    },
+    {
+      metric: 'Avg Order Value',
+      current: currentMetrics.aov,
+      previous: previousMetrics.aov,
+      change: currentMetrics.aov - previousMetrics.aov,
+      changePercentage: calculateGrowthRate(currentMetrics.aov, previousMetrics.aov),
+    },
+  ]
+}
+
+/**
+ * Generate insight text from comparison data
+ */
+export function generateInsights(comparisons: ComparisonData[]): string[] {
+  const insights: string[] = []
+
+  const revenueChange = comparisons.find((c) => c.metric === 'Total Revenue')
+  const countChange = comparisons.find((c) => c.metric === 'Invoice Count')
+
+  if (revenueChange && countChange) {
+    if (revenueChange.changePercentage > 0 && countChange.changePercentage < 0) {
+      insights.push(
+        `Revenue increased ${revenueChange.changePercentage.toFixed(1)}% despite ${Math.abs(countChange.changePercentage).toFixed(1)}% fewer invoices → Higher average order value`
+      )
+    } else if (revenueChange.changePercentage < 0 && countChange.changePercentage > 0) {
+      insights.push(
+        `Invoice count increased ${countChange.changePercentage.toFixed(1)}% but revenue decreased ${Math.abs(revenueChange.changePercentage).toFixed(1)}% → Lower average order value`
+      )
+    } else if (revenueChange.changePercentage > 10) {
+      insights.push(
+        `Strong growth: Revenue up ${revenueChange.changePercentage.toFixed(1)}%`
+      )
+    } else if (revenueChange.changePercentage < -10) {
+      insights.push(
+        `Revenue declined ${Math.abs(revenueChange.changePercentage).toFixed(1)}% from previous period`
+      )
+    }
+  }
+
+  return insights
 }
