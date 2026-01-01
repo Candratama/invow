@@ -61,7 +61,10 @@ export default function ReportsClient({
       <main className="pb-20 lg:pb-8 lg:pl-64">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
           {activeTab === 'overview' && (
-            <OverviewTab dateRange={dateRange} />
+            <OverviewTab
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
           )}
 
           {activeTab === 'details' && (

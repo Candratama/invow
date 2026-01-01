@@ -1,34 +1,17 @@
 'use client'
 
-import { DollarSign, FileText, TrendingUp, BarChart3, Calendar } from 'lucide-react'
+import { DollarSign, FileText, TrendingUp, BarChart3 } from 'lucide-react'
 import { SummaryCard } from './summary-card'
+import { DateRangeSelector } from './date-range-selector'
 import { useRevenueMetrics } from '@/lib/hooks/use-reports-data'
 import type { DateRange } from '@/lib/types/reports'
 
 interface OverviewTabProps {
   dateRange: DateRange
+  onDateRangeChange: (range: DateRange) => void
 }
 
-function formatDateRange(dateRange: DateRange): string {
-  const start = new Date(dateRange.start)
-  const end = new Date(dateRange.end)
-
-  const startFormatted = start.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  })
-
-  const endFormatted = end.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  })
-
-  return `${startFormatted} - ${endFormatted}`
-}
-
-export function OverviewTab({ dateRange }: OverviewTabProps) {
+export function OverviewTab({ dateRange, onDateRangeChange }: OverviewTabProps) {
   const { data: metrics, isLoading, error } = useRevenueMetrics(dateRange)
 
   if (isLoading) {
@@ -64,12 +47,8 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Period Display */}
-      <div className="flex items-center gap-2 text-sm text-gray-600 bg-white rounded-lg border border-gray-200 px-4 py-3">
-        <Calendar size={16} />
-        <span className="font-medium">Period:</span>
-        <span>{formatDateRange(dateRange)}</span>
-      </div>
+      {/* Date Range Selector */}
+      <DateRangeSelector dateRange={dateRange} onChange={onDateRangeChange} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
