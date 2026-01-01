@@ -9,6 +9,7 @@ import {
   calculateSalesTypeBreakdown,
   calculateAOV,
   calculateGrowthRate,
+  getPreviousPeriod,
 } from '@/lib/utils/reports'
 
 // Query keys - CORRECTED: Removed storeId
@@ -48,9 +49,17 @@ export function useRevenueMetrics(dateRange: DateRange) {
       // Calculate sales type breakdown
       const salesTypeBreakdown = calculateSalesTypeBreakdown(invoices)
 
-      // Get previous period data for growth calculation
-      // (Simplified: assume same-length previous period)
-      // In production, use getPreviousPeriod() utility
+      // Fetch previous period data for growth rate calculation
+      const previousPeriod = getPreviousPeriod(dateRange, 'month')
+      const { data: previousInvoices } = await service.getInvoicesForPeriod(
+        previousPeriod
+      )
+
+      const previousRevenue = previousInvoices
+        ? previousInvoices.reduce((sum, inv) => sum + inv.total, 0)
+        : 0
+
+      const growthRate = calculateGrowthRate(totalRevenue, previousRevenue)
 
       return {
         totalRevenue,
@@ -58,7 +67,7 @@ export function useRevenueMetrics(dateRange: DateRange) {
         avgOrderValue,
         customerTypeBreakdown,
         salesTypeBreakdown,
-        growthRate: 0, // TODO: Calculate vs previous period
+        growthRate,
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
