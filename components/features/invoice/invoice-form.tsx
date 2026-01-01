@@ -1392,11 +1392,11 @@ export function InvoiceForm({
                   id="gram"
                   type="number"
                   inputMode="decimal"
-                  step="0.01"
+                  step="0.001"
                   {...itemForm.register("gram", { valueAsNumber: true })}
                   min="0"
                   className="mt-1.5"
-                  placeholder="0.00"
+                  placeholder="0.000"
                 />
                 {itemForm.formState.errors.gram && (
                   <p className="text-sm text-destructive mt-1">
