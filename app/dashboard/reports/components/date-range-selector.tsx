@@ -3,6 +3,13 @@
 import { Calendar } from 'lucide-react'
 import { formatDateRange, getLastMonthRange, getCurrentMonthRange } from '@/lib/utils/reports'
 import type { DateRange } from '@/lib/types/reports'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface DateRangeSelectorProps {
   dateRange: DateRange
@@ -61,20 +68,18 @@ export function DateRangeSelector({ dateRange, onChange }: DateRangeSelectorProp
             {formatDateRange(dateRange)}
           </p>
         </div>
-        <select
-          onChange={(e) => handleQuickSelect(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          defaultValue=""
-        >
-          <option value="" disabled>
-            Change Period
-          </option>
-          <option value="last-month">Last Month</option>
-          <option value="this-month">This Month</option>
-          <option value="last-3-months">Last 3 Months</option>
-          <option value="last-6-months">Last 6 Months</option>
-          <option value="last-year">Last Year</option>
-        </select>
+        <Select onValueChange={handleQuickSelect}>
+          <SelectTrigger className="w-[160px] text-sm">
+            <SelectValue placeholder="Change Period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="last-month">Last Month</SelectItem>
+            <SelectItem value="this-month">This Month</SelectItem>
+            <SelectItem value="last-3-months">Last 3 Months</SelectItem>
+            <SelectItem value="last-6-months">Last 6 Months</SelectItem>
+            <SelectItem value="last-year">Last Year</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )
@@ -89,7 +94,7 @@ export function DateRangeSelectorSkeleton() {
           <div className="h-3 bg-gray-200 rounded w-12 mb-2" />
           <div className="h-4 bg-gray-200 rounded w-40" />
         </div>
-        <div className="w-32 h-9 bg-gray-200 rounded-lg" />
+        <div className="w-[160px] h-10 bg-gray-200 rounded-md" />
       </div>
     </div>
   )
