@@ -49,19 +49,19 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
           icon={DollarSign}
-          label="Total Revenue"
+          label="Sales Revenue"
           value={metrics.totalRevenue}
           formatAsCurrency
           useCompactFormat
         />
         <SummaryCard
           icon={FileText}
-          label="Invoice Count"
+          label="Sales Count"
           value={metrics.invoiceCount}
         />
         <SummaryCard
           icon={BarChart3}
-          label="Total Buyback"
+          label="Buyback Expenses"
           value={metrics.totalBuyback}
           formatAsCurrency
           useCompactFormat

@@ -39,14 +39,19 @@ export function useRevenueMetrics(dateRange: DateRange) {
       if (error) throw error
       if (!invoices) return null
 
-      const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0)
-      const invoiceCount = invoices.length
+      // Separate sales and buyback invoices
+      // Buyback = we pay customer to buy gold (EXPENSE)
+      // Sales = customer pays us (REVENUE)
+      const buybackInvoices = invoices.filter(inv => inv.has_buyback === true)
+      const salesInvoices = invoices.filter(inv => inv.has_buyback !== true)
+
+      // Total Revenue = SALES ONLY (customer payments to us)
+      const totalRevenue = salesInvoices.reduce((sum, inv) => sum + inv.total, 0)
+      const invoiceCount = salesInvoices.length
       const avgOrderValue = calculateAOV(totalRevenue, invoiceCount)
 
-      // Calculate total buyback revenue
-      const totalBuyback = invoices
-        .filter(inv => inv.has_buyback === true)
-        .reduce((sum, inv) => sum + inv.total, 0)
+      // Total Buyback = EXPENSES (our payments to customers)
+      const totalBuyback = buybackInvoices.reduce((sum, inv) => sum + inv.total, 0)
 
       // Calculate customer type breakdown
       const customerTypeBreakdown = calculateCustomerTypeBreakdown(invoices)

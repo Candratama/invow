@@ -21,10 +21,10 @@ export interface DateRange {
 
 /**
  * Aggregate revenue metrics for a specific period
- * @property totalRevenue - Sum of all invoice amounts in the period
- * @property invoiceCount - Total number of invoices created
- * @property avgOrderValue - Average invoice amount (totalRevenue / invoiceCount)
- * @property totalBuyback - Sum of all buyback invoice amounts in the period
+ * @property totalRevenue - Sum of SALES invoice amounts (customer payments to us, excludes buyback)
+ * @property invoiceCount - Total number of SALES invoices (excludes buyback)
+ * @property avgOrderValue - Average sales invoice amount (totalRevenue / invoiceCount)
+ * @property totalBuyback - Sum of BUYBACK invoice amounts (our payments to customers for gold)
  * @property growthRate - Percentage change vs previous period (can be negative, unbounded)
  * @property period - Date range for these metrics
  */
