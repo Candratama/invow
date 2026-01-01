@@ -420,13 +420,19 @@ export function InvoiceForm({
 
       const summary = `\n\n• Total Kepingan: ${totalPieces} pcs\n• Total Gramasi: ${parseFloat(totalGramasi.toFixed(3))} gram`;
 
-      // Get user note (everything before the summary marker)
-      const summaryMarker = "\n\n• Total Kepingan:";
-      const separatorIndex = currentNote.indexOf(summaryMarker);
-      const userNote = separatorIndex >= 0 ? currentNote.substring(0, separatorIndex) : currentNote;
+      // Get user note (everything before the summary marker - without leading \n\n)
+      const summaryMarker = "• Total Kepingan:";
+      let userNote = currentNote;
+
+      // Find the marker in the note
+      const markerIndex = currentNote.indexOf(summaryMarker);
+      if (markerIndex >= 0) {
+        // Extract everything before the marker, trim trailing whitespace
+        userNote = currentNote.substring(0, markerIndex).trimEnd();
+      }
 
       // Combine user note with new summary
-      const newNote = userNote.trim() ? `${userNote.trim()}${summary}` : summary.trim();
+      const newNote = userNote ? `${userNote}${summary}` : summary.trim();
 
       // Only update if different to avoid infinite loop
       if (currentNote !== newNote) {
@@ -434,10 +440,10 @@ export function InvoiceForm({
       }
     } else if (!isBuybackMode || buybackItems.length <= 1) {
       // Remove summary if conditions no longer met
-      const summaryMarker = "\n\n• Total Kepingan:";
-      if (currentNote.includes(summaryMarker)) {
-        const separatorIndex = currentNote.indexOf(summaryMarker);
-        const userNote = separatorIndex >= 0 ? currentNote.substring(0, separatorIndex).trim() : currentNote;
+      const summaryMarker = "• Total Kepingan:";
+      const markerIndex = currentNote.indexOf(summaryMarker);
+      if (markerIndex >= 0) {
+        const userNote = currentNote.substring(0, markerIndex).trimEnd();
         if (currentNote !== userNote) {
           updateCurrentInvoice({ note: userNote });
         }
@@ -1091,9 +1097,9 @@ export function InvoiceForm({
               const newValue = e.target.value;
 
               // Extract only user's note (before summary marker)
-              const summaryMarker = "\n\n• Total Kepingan:";
-              const separatorIndex = newValue.indexOf(summaryMarker);
-              const userNote = separatorIndex >= 0 ? newValue.substring(0, separatorIndex) : newValue;
+              const summaryMarker = "• Total Kepingan:";
+              const markerIndex = newValue.indexOf(summaryMarker);
+              const userNote = markerIndex >= 0 ? newValue.substring(0, markerIndex).trimEnd() : newValue;
 
               // Update with user note only, useEffect will add summary back
               handleFormChange("note", userNote);
@@ -1102,11 +1108,6 @@ export function InvoiceForm({
             rows={6}
             className="mt-1.5 font-mono text-sm"
           />
-          {isBuybackMode && currentInvoice.items && currentInvoice.items.filter(item => item.is_buyback).length > 1 && (
-            <p className="text-xs text-amber-600 mt-2">
-              ℹ️ Buyback summary akan otomatis ditambahkan di bawah note
-            </p>
-          )}
         </div>
 
         {/* Totals Section */}
