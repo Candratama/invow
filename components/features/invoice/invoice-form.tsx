@@ -326,7 +326,9 @@ export function InvoiceForm({
     defaultValues: {
       description: "",
       quantity: 1,
-      price: undefined,
+      price: 0,
+      gram: undefined,
+      is_buyback: false,
     },
   });
 
@@ -412,6 +414,10 @@ export function InvoiceForm({
   };
 
   const handleAddItem = (data: ItemFormData) => {
+    console.log("🔍 handleAddItem called with data:", data);
+    console.log("🔍 isBuybackMode:", isBuybackMode);
+    console.log("🔍 Form errors:", itemForm.formState.errors);
+
     const itemData = isBuybackMode
       ? {
           description: data.description,
@@ -435,6 +441,8 @@ export function InvoiceForm({
           buyback_rate: undefined,
           total: undefined,
         };
+
+    console.log("🔍 itemData to be added:", itemData);
 
     if (editingItem) {
       updateInvoiceItem(editingItem.id, itemData);
@@ -1363,7 +1371,9 @@ export function InvoiceForm({
           {/* Hidden field to track buyback mode for validation */}
           <input
             type="hidden"
-            {...itemForm.register("is_buyback")}
+            {...itemForm.register("is_buyback", {
+              setValueAs: (v) => v === "true" || v === true,
+            })}
             value={isBuybackMode ? "true" : "false"}
           />
 
@@ -1468,11 +1478,16 @@ export function InvoiceForm({
           )}
 
           {/* Display root-level validation errors */}
-          {itemForm.formState.errors.root && (
+          {Object.keys(itemForm.formState.errors).length > 0 && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive">
-                {itemForm.formState.errors.root.message}
+              <p className="text-sm font-medium text-destructive mb-2">
+                Validation errors:
               </p>
+              {Object.entries(itemForm.formState.errors).map(([key, error]) => (
+                <p key={key} className="text-sm text-destructive">
+                  {key}: {error?.message || "Invalid value"}
+                </p>
+              ))}
             </div>
           )}
 
