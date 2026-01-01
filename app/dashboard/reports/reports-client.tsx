@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { BarChart3, List, TrendingUp } from 'lucide-react'
+import { BarChart3, List, TrendingUp, Download } from 'lucide-react'
 import { getSmartDefaultPeriod } from '@/lib/utils/reports'
 import type { DateRange } from '@/lib/types/reports'
 import { OverviewTab } from './components/overview-tab'
 import { DetailsTab } from './components/details-tab'
 import { ComparisonTab } from './components/comparison-tab'
+import { ExportModal } from './components/export-modal'
+import { Button } from '@/components/ui/button'
 
 type ReportsTab = 'overview' | 'details' | 'comparison'
 
@@ -28,18 +30,30 @@ export default function ReportsClient({
   const [dateRange, setDateRange] = useState<DateRange>(() =>
     getSmartDefaultPeriod()
   )
+  const [showExportModal, setShowExportModal] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-4 lg:px-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-            Business Reports
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Analyze your performance and track growth
-          </p>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+              Business Reports
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Analyze your performance and track growth
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowExportModal(true)}
+            variant="outline"
+            size="sm"
+            className="hidden lg:flex"
+          >
+            <Download size={16} className="mr-2" />
+            Export
+          </Button>
         </div>
       </header>
 
@@ -110,6 +124,14 @@ export default function ReportsClient({
           />
         </nav>
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        dateRange={dateRange}
+        storeName="Your Business"
+      />
     </div>
   )
 }
