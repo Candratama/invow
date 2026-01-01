@@ -52,6 +52,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
           label="Total Revenue"
           value={metrics.totalRevenue}
           formatAsCurrency
+          useCompactFormat
         />
         <SummaryCard
           icon={FileText}
@@ -63,6 +64,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
           label="Average Order Value"
           value={metrics.avgOrderValue}
           formatAsCurrency
+          useCompactFormat
         />
         <SummaryCard
           icon={TrendingUp}
