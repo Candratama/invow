@@ -20,24 +20,27 @@ export default async function ReportsPage() {
     redirect('/dashboard/login')
   }
 
-  // Check subscription status
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('tier, invoice_limit, current_month_count, month_year')
-    .eq('user_id', user.id)
-    .single()
+  // Fetch subscription and preferences in parallel
+  const [
+    { data: subscription, error: subError },
+    { data: preferences, error: prefError }
+  ] = await Promise.all([
+    supabase
+      .from('user_subscriptions')
+      .select('tier, invoice_limit, current_month_count, month_year')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('user_preferences')
+      .select('default_store_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+  ])
 
   // Free tier users can't access reports
   if (!subscription || subscription.tier === 'free') {
     return <PremiumUpgradePrompt />
   }
-
-  // Get default store ID from preferences
-  const { data: preferences } = await supabase
-    .from('user_preferences')
-    .select('default_store_id')
-    .eq('user_id', user.id)
-    .single()
 
   if (!preferences?.default_store_id) {
     return (
