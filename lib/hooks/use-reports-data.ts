@@ -43,6 +43,11 @@ export function useRevenueMetrics(dateRange: DateRange) {
       const invoiceCount = invoices.length
       const avgOrderValue = calculateAOV(totalRevenue, invoiceCount)
 
+      // Calculate total buyback revenue
+      const totalBuyback = invoices
+        .filter(inv => inv.has_buyback === true)
+        .reduce((sum, inv) => sum + inv.total, 0)
+
       // Calculate customer type breakdown
       const customerTypeBreakdown = calculateCustomerTypeBreakdown(invoices)
 
@@ -65,6 +70,7 @@ export function useRevenueMetrics(dateRange: DateRange) {
         totalRevenue,
         invoiceCount,
         avgOrderValue,
+        totalBuyback,
         customerTypeBreakdown,
         salesTypeBreakdown,
         growthRate,

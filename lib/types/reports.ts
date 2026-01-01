@@ -24,6 +24,7 @@ export interface DateRange {
  * @property totalRevenue - Sum of all invoice amounts in the period
  * @property invoiceCount - Total number of invoices created
  * @property avgOrderValue - Average invoice amount (totalRevenue / invoiceCount)
+ * @property totalBuyback - Sum of all buyback invoice amounts in the period
  * @property growthRate - Percentage change vs previous period (can be negative, unbounded)
  * @property period - Date range for these metrics
  */
@@ -31,6 +32,7 @@ export interface RevenueMetrics {
   totalRevenue: number
   invoiceCount: number
   avgOrderValue: number
+  totalBuyback: number
   growthRate: number // Percentage vs previous period
   period: DateRange
 }

@@ -51,6 +51,7 @@ export function ExportModal({ isOpen, onClose, dateRange, storeName }: ExportMod
             totalRevenue: overviewData.totalRevenue,
             invoiceCount: overviewData.invoiceCount,
             avgOrderValue: overviewData.avgOrderValue,
+            totalBuyback: overviewData.totalBuyback,
             growthRate: overviewData.growthRate,
             period: dateRange,
           },

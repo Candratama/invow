@@ -61,8 +61,8 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
         />
         <SummaryCard
           icon={BarChart3}
-          label="Average Order Value"
-          value={metrics.avgOrderValue}
+          label="Total Buyback"
+          value={metrics.totalBuyback}
           formatAsCurrency
           useCompactFormat
         />
