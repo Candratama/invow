@@ -41,7 +41,7 @@ export default function ReportsClient({
       </header>
 
       {/* Tab Content Area */}
-      <main className="pb-20 lg:pb-8">
+      <main className="pb-20 lg:pb-8 lg:pl-64">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
           {activeTab === 'overview' && (
             <div className="bg-white rounded-lg shadow p-6">
@@ -129,6 +129,8 @@ function TabButton({
   return (
     <button
       onClick={onClick}
+      aria-label={`${label} tab`}
+      aria-current={active ? 'page' : undefined}
       className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
         active
           ? 'text-primary bg-primary/10'
@@ -156,6 +158,8 @@ function DesktopTabButton({
   return (
     <button
       onClick={onClick}
+      aria-label={`${label} tab`}
+      aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors ${
         active
           ? 'text-primary bg-primary/10 font-medium'
