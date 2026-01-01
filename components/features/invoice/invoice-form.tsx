@@ -79,7 +79,7 @@ const itemSchema = z.object({
   custom_buyback_rate: z.number().positive("Custom rate must be positive").optional(),
 }).refine(
   (data) => {
-    // If buyback mode, gram is required
+    // If buyback mode, gram is required, quantity optional
     if (data.is_buyback) {
       return data.gram !== undefined && data.gram > 0;
     }
@@ -409,11 +409,12 @@ export function InvoiceForm({
           description: data.description,
           is_buyback: true,
           gram: data.gram,
+          quantity: data.quantity || 1, // Default to 1 if not provided
           buyback_rate: useCustomPrice ? (data.custom_buyback_rate || 0) : buybackPricePerGram,
           custom_buyback_rate: useCustomPrice ? data.custom_buyback_rate : undefined,
-          total: (data.gram || 0) * (useCustomPrice ? (data.custom_buyback_rate || 0) : buybackPricePerGram),
+          // Total calculation: (gram × quantity) × rate
+          total: ((data.gram || 0) * (data.quantity || 1)) * (useCustomPrice ? (data.custom_buyback_rate || 0) : buybackPricePerGram),
           // Explicitly set regular fields to undefined for buyback items
-          quantity: undefined,
           price: undefined,
           subtotal: undefined,
         }
@@ -1431,23 +1432,45 @@ export function InvoiceForm({
           {isBuybackMode ? (
             /* Buyback Mode Fields */
             <div className="space-y-3">
-              <div>
-                <Label htmlFor="gram">Weight (gram) *</Label>
-                <Input
-                  id="gram"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.001"
-                  {...itemForm.register("gram", { valueAsNumber: true })}
-                  min="0"
-                  className="mt-1.5"
-                  placeholder="0.000"
-                />
-                {itemForm.formState.errors.gram && (
-                  <p className="text-sm text-destructive mt-1">
-                    {itemForm.formState.errors.gram.message}
-                  </p>
-                )}
+              {/* Quantity and Weight side by side */}
+              <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                <div>
+                  <Label htmlFor="buybackQuantity">Quantity *</Label>
+                  <Input
+                    id="buybackQuantity"
+                    type="number"
+                    inputMode="numeric"
+                    {...itemForm.register("quantity", { valueAsNumber: true })}
+                    min="1"
+                    defaultValue="1"
+                    className="mt-1.5"
+                    placeholder="1"
+                  />
+                  {itemForm.formState.errors.quantity && (
+                    <p className="text-sm text-destructive mt-1">
+                      {itemForm.formState.errors.quantity.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="gram">Weight (gram) *</Label>
+                  <Input
+                    id="gram"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.001"
+                    {...itemForm.register("gram", { valueAsNumber: true })}
+                    min="0"
+                    className="mt-1.5"
+                    placeholder="0.000"
+                  />
+                  {itemForm.formState.errors.gram && (
+                    <p className="text-sm text-destructive mt-1">
+                      {itemForm.formState.errors.gram.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Custom Price Toggle */}
@@ -1510,10 +1533,17 @@ export function InvoiceForm({
 
               {/* Calculation Display */}
               <p className="text-xs text-muted-foreground p-2 bg-blue-50 rounded border border-blue-200">
-                Rate: {formatCurrency(useCustomPrice ? customBuybackRate : buybackPricePerGram)}/gram • Total:{" "}
-                {formatCurrency(
-                  (itemForm.watch("gram") || 0) * (useCustomPrice ? customBuybackRate : buybackPricePerGram)
-                )}
+                {(() => {
+                  const gram = itemForm.watch("gram") || 0;
+                  const qty = itemForm.watch("quantity") || 1;
+                  const rate = useCustomPrice ? customBuybackRate : buybackPricePerGram;
+                  const totalGram = gram * qty;
+                  const totalPrice = totalGram * rate;
+
+                  return qty > 1
+                    ? `${gram}g × ${qty} pcs = ${totalGram}g × ${formatCurrency(rate)}/gram = ${formatCurrency(totalPrice)}`
+                    : `${gram}g × ${formatCurrency(rate)}/gram = ${formatCurrency(totalPrice)}`;
+                })()}
               </p>
             </div>
           ) : (

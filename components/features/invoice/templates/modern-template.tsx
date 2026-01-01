@@ -386,7 +386,15 @@ export function ModernInvoiceTemplate({
 
               if (isBuyback) {
                 // Buyback item: show gram and buyback_rate
+              // Buyback item: show gram × quantity if applicable
+              const qty = item.quantity || 1;
+              const totalGram = (item.gram || 0) * qty;
+
+              if (qty > 1) {
+                qtyDisplay = `${item.gram}g × ${qty} = ${totalGram.toFixed(3)}g`;
+              } else {
                 qtyDisplay = `${item.gram}g`;
+              }
                 const priceData = splitCurrency(item.buyback_rate || 0);
                 priceSymbol = priceData.symbol;
                 priceAmount = `${priceData.amount}/g`;

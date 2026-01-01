@@ -95,7 +95,17 @@ export function ItemRow({ item, onEdit, onDelete }: ItemRowProps) {
             /* Buyback Item Display */
             <>
               <p className="text-sm text-muted-foreground mb-2">
-                {item.gram}g × {formatCurrency(item.buyback_rate || 0)}/gram
+                {item.quantity && item.quantity > 1 ? (
+                  // Show quantity breakdown if more than 1
+                  <>
+                    {item.gram}g × {item.quantity} pcs = {((item.gram || 0) * (item.quantity || 1)).toFixed(3)}g × {formatCurrency(item.buyback_rate || 0)}/gram
+                  </>
+                ) : (
+                  // Single item
+                  <>
+                    {item.gram}g × {formatCurrency(item.buyback_rate || 0)}/gram
+                  </>
+                )}
                 {item.custom_buyback_rate && (
                   <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
                     Custom Price
