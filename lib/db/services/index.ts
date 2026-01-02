@@ -15,7 +15,6 @@ export { InvoiceCounterService } from './invoice-counter.service'
 export { TierService } from './tier.service'
 export { MonthlyReportService } from './monthly-report.service'
 export { CustomersService } from './customers.service'
-export { ReportsService } from './reports.service'
 export { isAdmin, getAdminUser } from './admin.service'
 
 // Re-export types for convenience

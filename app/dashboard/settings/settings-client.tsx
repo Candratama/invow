@@ -222,22 +222,17 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
   }, [isDirty, router]);
 
   // NOW we can do conditional returns - after all hooks
-  // Show skeleton when auth is loading - same pattern as customers page
-  if (authLoading) {
-    return <SettingsSkeleton />;
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  // Show skeleton ONLY when loading AND no cached data - same pattern as customers page
-  if (isLoading && !data) {
+  // Show skeleton ONLY when loading AND no cached data - Requirements: 1.1, 1.5, 2.5, 3.2
+  if (authLoading || (isLoading && !data)) {
     return <SettingsSkeleton />;
   }
 
   // Determine if we're refetching in background (for subtle indicator)
   const isBackgroundRefetching = isRefetching && data;
+
+  if (!user) {
+    return null;
+  }
 
   // Extract data from query result
   const initialStore = (data?.store as SettingsPageStore) || null;
