@@ -93,6 +93,8 @@ export function ElegantInvoiceTemplate({
           backgroundColor: "#ffffff",
           color: "#2d2d2d",
           lineHeight: "1.7",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:

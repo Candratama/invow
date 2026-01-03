@@ -91,6 +91,8 @@ export function BoldInvoiceTemplate({
           fontFamily: "Arial, Helvetica, sans-serif",
           backgroundColor: "#ffffff",
           color: "#000000",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:

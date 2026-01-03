@@ -108,6 +108,8 @@ export function CreativeInvoiceTemplate({
           color: "#1f2937",
           position: "relative",
           overflow: "hidden",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:

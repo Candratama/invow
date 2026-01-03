@@ -93,6 +93,8 @@ export function SimpleInvoiceTemplate({
           backgroundColor: "#ffffff",
           color: "#000000",
           lineHeight: "1.6",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:

@@ -93,6 +93,8 @@ export function CompactInvoiceTemplate({
           backgroundColor: "#ffffff",
           color: "#1f2937",
           lineHeight: "1.2",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:

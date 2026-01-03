@@ -72,11 +72,23 @@ const invoiceSchema = z.object({
 
 const itemSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  quantity: z.number().min(1, "Quantity must be at least 1").optional(),
-  price: z.number().min(0, "Price must be positive").optional(),
-  gram: z.number().positive("Gram must be greater than 0").optional(),
+  quantity: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().min(1, "Quantity must be at least 1").optional()
+  ),
+  price: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().min(0, "Price must be positive").optional()
+  ),
+  gram: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().positive("Gram must be greater than 0").optional()
+  ),
   is_buyback: z.boolean().optional(),
-  custom_buyback_rate: z.number().positive("Custom rate must be positive").optional(),
+  custom_buyback_rate: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().positive("Custom rate must be positive").optional()
+  ),
 }).refine(
   (data) => {
     // If buyback mode, gram is required, quantity optional
@@ -507,11 +519,11 @@ export function InvoiceForm({
     }
     itemForm.reset({
       description: item.description,
-      quantity: item.quantity,
-      price: item.price,
-      gram: item.gram,
+      quantity: item.quantity ?? undefined,
+      price: item.price ?? undefined,
+      gram: item.gram ?? undefined,
       is_buyback: item.is_buyback,
-      custom_buyback_rate: item.custom_buyback_rate,
+      custom_buyback_rate: item.custom_buyback_rate ?? undefined,
     });
     setShowItemModal(true);
   };

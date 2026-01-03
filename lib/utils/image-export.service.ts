@@ -36,8 +36,13 @@ export async function exportAsJPEG(
   }
 
   try {
-    // Wait for fonts and images to load (reduced from 300ms to 200ms)
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Wait for fonts and images to load
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Ensure document fonts are loaded
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
 
     // Convert HTML element to canvas with optimized settings
     const canvas = await html2canvas(element, {
@@ -57,6 +62,23 @@ export async function exportAsJPEG(
         if (clonedElement) {
           // Force font rendering by setting font-related properties
           (clonedElement as HTMLElement).style.setProperty('font-display', 'block');
+
+          // Fix spacing issues in html2canvas by ensuring proper word/letter spacing
+          const allElements = clonedElement.querySelectorAll('*');
+          allElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            // Ensure normal word spacing is preserved
+            if (!htmlEl.style.wordSpacing) {
+              htmlEl.style.wordSpacing = 'normal';
+            }
+            if (!htmlEl.style.letterSpacing) {
+              htmlEl.style.letterSpacing = 'normal';
+            }
+            // Preserve whitespace
+            if (!htmlEl.style.whiteSpace) {
+              htmlEl.style.whiteSpace = 'pre-wrap';
+            }
+          });
         }
       },
     });

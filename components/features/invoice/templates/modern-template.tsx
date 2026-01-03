@@ -108,6 +108,8 @@ export function ModernInvoiceTemplate({
           fontFamily: "Helvetica, Arial, sans-serif",
           backgroundColor: "#ffffff",
           color: "#1f2937",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:

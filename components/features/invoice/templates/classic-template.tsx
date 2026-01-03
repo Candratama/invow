@@ -96,6 +96,8 @@ export function ClassicInvoiceTemplate({
           fontSize: "12pt",
           fontFamily: "Helvetica, Arial, sans-serif",
           backgroundColor: "#ffffff",
+          wordSpacing: "normal",
+          letterSpacing: "normal",
           ...(preview
             ? {
                 boxShadow:
@@ -247,6 +249,8 @@ export function ClassicInvoiceTemplate({
               style={{
                 color: "#111827",
                 marginBottom: "4px",
+                whiteSpace: "pre-wrap",
+                wordSpacing: "normal",
               }}
             >
               {customer.name}
@@ -339,6 +343,8 @@ export function ClassicInvoiceTemplate({
                     width: isBuyback ? "32%" : "45%",
                     color: "#111827",
                     textAlign: "left",
+                    whiteSpace: "pre-wrap",
+                    wordSpacing: "normal",
                   }}
                 >
                   {item.description}
