@@ -128,8 +128,8 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters");
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
       return;
     }
 
@@ -481,7 +481,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Password must be at least 6 characters
+                  Password must be at least 8 characters
                 </p>
               </div>
             </div>

@@ -28,7 +28,7 @@ function ResetPasswordForm() {
   const [formError, setFormError] = useState<string | null>(null);
 
   // Password validation
-  const passwordMinLength = 6;
+  const passwordMinLength = 8;
   const isPasswordValid = password.length >= passwordMinLength;
   const doPasswordsMatch = password === confirmPassword && confirmPassword.length > 0;
 

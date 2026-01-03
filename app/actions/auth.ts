@@ -14,8 +14,8 @@ export async function updatePasswordAction(newPassword: string) {
       return { success: false, error: "Unauthorized" };
     }
 
-    if (newPassword.length < 6) {
-      return { success: false, error: "Password must be at least 6 characters" };
+    if (newPassword.length < 8) {
+      return { success: false, error: "Password must be at least 8 characters" };
     }
 
     const { error } = await supabase.auth.updateUser({

@@ -136,9 +136,9 @@ function SignupForm() {
                 placeholder="••••••••"
                 required
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
             </div>
 
             <div>
@@ -151,7 +151,7 @@ function SignupForm() {
                 placeholder="••••••••"
                 required
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
               />
             </div>
 
