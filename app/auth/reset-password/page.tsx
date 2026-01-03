@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,8 @@ type PageState = "loading" | "form" | "success" | "error";
 
 function ResetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
+  const hasChecked = useRef(false);
 
   const [pageState, setPageState] = useState<PageState>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -32,51 +32,80 @@ function ResetPasswordForm() {
   const isPasswordValid = password.length >= passwordMinLength;
   const doPasswordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
-  // Exchange code for session on mount
+  // Check session with retries
   useEffect(() => {
-    const exchangeCodeForSession = async () => {
-      const code = searchParams.get("code");
+    if (hasChecked.current) return;
+    hasChecked.current = true;
 
-      if (!code) {
-        setErrorMessage(
-          "Link reset password tidak valid. Silakan request ulang dari halaman forgot password."
-        );
-        setPageState("error");
+    let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 10;
+    const retryDelay = 500; // 500ms between retries
+
+    const checkSessionWithRetry = async (): Promise<boolean> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return !!session;
+    };
+
+    const startChecking = async () => {
+      // Listen for auth state changes first
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (!mounted) return;
+
+          console.log("Auth event:", event, "Session:", !!session);
+
+          if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+            if (session) {
+              setPageState("form");
+            }
+          }
+        }
+      );
+
+      // Check immediately
+      let hasSession = await checkSessionWithRetry();
+
+      if (hasSession) {
+        if (mounted) setPageState("form");
         return;
       }
 
-      try {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+      // Retry with exponential backoff
+      while (retryCount < maxRetries && mounted && !hasSession) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        hasSession = await checkSessionWithRetry();
+        retryCount++;
 
-        if (error) {
-          console.error("Code exchange error:", error);
-          if (error.message.includes("expired")) {
-            setErrorMessage(
-              "Link reset password sudah kadaluarsa. Silakan request ulang dari halaman forgot password."
-            );
-          } else {
-            setErrorMessage(
-              "Link reset password tidak valid. Silakan request ulang dari halaman forgot password."
-            );
-          }
-          setPageState("error");
+        if (hasSession) {
+          if (mounted) setPageState("form");
           return;
         }
+      }
 
-        // Successfully exchanged code, show password form
-        setPageState("form");
-      } catch (err) {
-        console.error("Unexpected error:", err);
-        setErrorMessage("Terjadi kesalahan. Silakan coba lagi.");
+      // After all retries, if still no session, show error
+      if (mounted && !hasSession) {
+        setErrorMessage(
+          "Link reset password tidak valid atau sudah kadaluarsa. Silakan request link baru."
+        );
         setPageState("error");
       }
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
     };
 
-    exchangeCodeForSession();
-  }, [searchParams, supabase.auth]);
+    startChecking();
+
+    return () => {
+      mounted = false;
+    };
+  }, [supabase.auth]);
 
   // Handle password update
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -117,7 +146,7 @@ function ResetPasswordForm() {
       setFormError("Gagal mengubah password. Silakan coba lagi.");
       setIsSubmitting(false);
     }
-  };
+  }, [password, isPasswordValid, doPasswordsMatch, supabase.auth, router]);
 
   // Loading state
   if (pageState === "loading") {
