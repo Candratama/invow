@@ -50,7 +50,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Summary Cards - 2x3 Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <SummaryCard
           title="Total Pendapatan"
           value={formatCurrency(summary.totalRevenue)}
@@ -86,7 +86,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
               title="Trend Pendapatan"
               color="#D4AF37"
               formatValue={formatCompactCurrency}
-              height={300}
+              height={220}
             />
           </CardContent>
         </Card>
@@ -100,16 +100,16 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Customer
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Invoice
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">
+                    <th className="text-right py-2 px-3 font-medium text-gray-700">
                       Total
                     </th>
                   </tr>
@@ -117,11 +117,11 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
                 <tbody>
                   {topCustomers.slice(0, 5).map((customer) => (
                     <tr key={customer.id} className="border-b last:border-0">
-                      <td className="py-3 px-4 text-gray-900">{customer.name}</td>
-                      <td className="py-3 px-4 text-gray-600">
+                      <td className="py-2 px-3 text-gray-900">{customer.name}</td>
+                      <td className="py-2 px-3 text-gray-600">
                         {customer.invoiceCount.toLocaleString('id-ID')}
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-900 font-medium">
+                      <td className="py-2 px-3 text-right text-gray-900 font-medium">
                         {formatCurrency(customer.totalValue)}
                       </td>
                     </tr>
@@ -140,12 +140,12 @@ function OverviewTabSkeleton() {
   return (
     <div className="space-y-6">
       {/* Summary Cards Skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i}>
-            <CardContent className="p-4">
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-8 w-32" />
+            <CardContent className="p-3">
+              <Skeleton className="h-3 w-20 mb-1" />
+              <Skeleton className="h-5 w-28" />
             </CardContent>
           </Card>
         ))}

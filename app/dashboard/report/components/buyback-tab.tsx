@@ -63,7 +63,7 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
   return (
     <div className="space-y-6">
       {/* Summary Cards - 5 cards grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <SummaryCard
           title="Total Gram Dibeli"
           value={formatGram(summary.totalGram)}
@@ -93,11 +93,12 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
             <div className="space-y-4">
               {/* Toggle Buttons */}
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">Trend Buyback</h3>
-                <div className="flex gap-2">
+                <h3 className="text-xs font-medium text-gray-700">Trend Buyback</h3>
+                <div className="flex gap-1.5">
                   <Button
                     variant={chartMode === 'gram' ? 'default' : 'outline'}
                     size="sm"
+                    className="h-7 text-xs px-2.5"
                     onClick={() => setChartMode('gram')}
                   >
                     Gram
@@ -105,6 +106,7 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
                   <Button
                     variant={chartMode === 'value' ? 'default' : 'outline'}
                     size="sm"
+                    className="h-7 text-xs px-2.5"
                     onClick={() => setChartMode('value')}
                   >
                     Value
@@ -117,7 +119,7 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
                 data={chartData}
                 color="#D4AF37"
                 formatValue={chartMode === 'gram' ? formatGram : formatCompactCurrency}
-                height={300}
+                height={220}
               />
             </div>
           </CardContent>
@@ -132,22 +134,22 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Tanggal
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Customer
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">
+                    <th className="text-right py-2 px-3 font-medium text-gray-700">
                       Gram
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">
+                    <th className="text-right py-2 px-3 font-medium text-gray-700">
                       Rate/Gram
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">
+                    <th className="text-right py-2 px-3 font-medium text-gray-700">
                       Total
                     </th>
                   </tr>
@@ -155,23 +157,23 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
                 <tbody>
                   {transactions.slice(0, 10).map((transaction) => (
                     <tr key={transaction.id} className="border-b last:border-0">
-                      <td className="py-3 px-4 text-gray-900">
+                      <td className="py-2 px-3 text-gray-900">
                         {new Date(transaction.date).toLocaleDateString('id-ID', {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </td>
-                      <td className="py-3 px-4 text-gray-900">
+                      <td className="py-2 px-3 text-gray-900">
                         {transaction.customerName}
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-900">
+                      <td className="py-2 px-3 text-right text-gray-900">
                         {formatGram(transaction.gram)}
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-600">
+                      <td className="py-2 px-3 text-right text-gray-600">
                         {formatCurrency(transaction.ratePerGram)}
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-900 font-medium">
+                      <td className="py-2 px-3 text-right text-gray-900 font-medium">
                         {formatCurrency(transaction.total)}
                       </td>
                     </tr>
@@ -190,12 +192,12 @@ function BuybackTabSkeleton() {
   return (
     <div className="space-y-6">
       {/* Summary Cards Skeleton - 5 cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {[1, 2, 3, 4, 5].map((i) => (
           <Card key={i}>
-            <CardContent className="p-4">
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-8 w-32" />
+            <CardContent className="p-3">
+              <Skeleton className="h-3 w-20 mb-1" />
+              <Skeleton className="h-5 w-28" />
             </CardContent>
           </Card>
         ))}

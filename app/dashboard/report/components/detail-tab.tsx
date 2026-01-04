@@ -79,17 +79,17 @@ export function DetailTab({ dateRange }: DetailTabProps) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             {/* Type Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              <span className="text-xs font-medium text-gray-700 whitespace-nowrap">
                 Tipe:
               </span>
               <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[90px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua</SelectItem>
-                  <SelectItem value="regular">Regular</SelectItem>
-                  <SelectItem value="buyback">Buyback</SelectItem>
+                  <SelectItem value="all" className="text-xs">Semua</SelectItem>
+                  <SelectItem value="regular" className="text-xs">Regular</SelectItem>
+                  <SelectItem value="buyback" className="text-xs">Buyback</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -101,11 +101,10 @@ export function DetailTab({ dateRange }: DetailTabProps) {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1"
+                className="flex-1 h-8 text-xs"
               />
-              <Button onClick={handleSearch} size="default">
-                <Search className="h-4 w-4" />
-                <span className="ml-2">Cari</span>
+              <Button onClick={handleSearch} size="sm" className="h-8 w-8 p-0">
+                <Search className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
@@ -124,25 +123,25 @@ export function DetailTab({ dateRange }: DetailTabProps) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       No Invoice
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Tanggal
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Customer
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-700">
                       Tipe
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">
+                    <th className="text-right py-2 px-3 font-medium text-gray-700">
                       Items
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-700">
+                    <th className="text-right py-2 px-3 font-medium text-gray-700">
                       Total
                     </th>
                   </tr>
@@ -150,34 +149,34 @@ export function DetailTab({ dateRange }: DetailTabProps) {
                 <tbody>
                   {invoices.map((invoice) => (
                     <tr key={invoice.id} className="border-b last:border-0">
-                      <td className="py-3 px-4 text-gray-900 font-medium">
+                      <td className="py-2 px-3 text-gray-900 font-medium">
                         {invoice.invoiceNumber}
                       </td>
-                      <td className="py-3 px-4 text-gray-900">
+                      <td className="py-2 px-3 text-gray-900">
                         {new Date(invoice.date).toLocaleDateString('id-ID', {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </td>
-                      <td className="py-3 px-4 text-gray-900">
+                      <td className="py-2 px-3 text-gray-900">
                         {invoice.customerName}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-3">
                         {invoice.type === 'buyback' ? (
-                          <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
                             Buyback
                           </Badge>
                         ) : (
-                          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
                             Regular
                           </Badge>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-900">
+                      <td className="py-2 px-3 text-right text-gray-900">
                         {invoice.itemCount}
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-900 font-medium">
+                      <td className="py-2 px-3 text-right text-gray-900 font-medium">
                         {formatCurrency(invoice.total)}
                       </td>
                     </tr>
@@ -191,29 +190,31 @@ export function DetailTab({ dateRange }: DetailTabProps) {
 
       {/* Pagination */}
       {totalPages > 0 && (
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-3">
           <Button
             variant="outline"
-            size="default"
+            size="sm"
+            className="h-8 text-xs"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={page === 1}
           >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="ml-2">Previous</span>
+            <ChevronLeft className="h-3.5 w-3.5" />
+            <span className="ml-1">Previous</span>
           </Button>
 
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700">
             {page} / {totalPages}
           </span>
 
           <Button
             variant="outline"
-            size="default"
+            size="sm"
+            className="h-8 text-xs"
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={page === totalPages}
           >
-            <span className="mr-2">Next</span>
-            <ChevronRight className="h-4 w-4" />
+            <span className="mr-1">Next</span>
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}

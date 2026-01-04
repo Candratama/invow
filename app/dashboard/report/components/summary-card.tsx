@@ -9,10 +9,10 @@ interface SummaryCardProps {
 export function SummaryCard({ title, value, subtitle }: SummaryCardProps) {
   return (
     <Card>
-      <CardContent className="p-4">
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
+      <CardContent className="p-3">
+        <p className="text-xs text-gray-500">{title}</p>
+        <p className="text-base font-bold mt-0.5">{value}</p>
+        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
       </CardContent>
     </Card>
   )
