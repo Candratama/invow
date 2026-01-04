@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/logo";
-import { FileText, Settings, Users } from "lucide-react";
+import { FileText, Settings, Users, BarChart3 } from "lucide-react";
 import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 import {
   usePrefetchDashboard,
   usePrefetchSettings,
   usePrefetchCustomers,
+  usePrefetchReport,
 } from "@/lib/hooks/use-prefetch";
 import { useRevenueData } from "@/lib/hooks/use-dashboard-data";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,7 @@ export function DashboardSidebar() {
   const prefetchDashboard = usePrefetchDashboard();
   const prefetchSettings = usePrefetchSettings();
   const prefetchCustomers = usePrefetchCustomers(storeId);
+  const prefetchReport = usePrefetchReport();
 
   // Show Pro badge for free users (not loading and not premium)
   const showProBadge = !isLoading && !isPremium;
@@ -75,6 +77,7 @@ export function DashboardSidebar() {
   // Determine active state based on current pathname
   const isDashboardActive = pathname === "/dashboard";
   const isCustomersActive = pathname === "/dashboard/customers";
+  const isReportActive = pathname === "/dashboard/report";
   const isSettingsActive = pathname === "/dashboard/settings";
 
   return (
@@ -113,6 +116,13 @@ export function DashboardSidebar() {
               </span>
             ) : undefined
           }
+        />
+        <SidebarLink
+          href="/dashboard/report"
+          icon={<BarChart3 size={20} />}
+          label="Laporan"
+          onPrefetch={prefetchReport}
+          isActive={isReportActive}
         />
         <SidebarLink
           href="/dashboard/settings"

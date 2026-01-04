@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { dashboardKeys } from "./use-dashboard-data";
 import { settingsKeys } from "./use-settings-data";
 import { customersKeys } from "./use-customers-data";
+import { reportKeys } from "./use-report-data";
 
 /**
  * Hook to prefetch dashboard data on hover/focus
@@ -116,4 +117,58 @@ export function usePrefetchCustomers(storeId: string | undefined) {
       staleTime: 5 * 60 * 1000,
     });
   }, [queryClient, storeId]);
+}
+
+/**
+ * Hook to prefetch report data on hover/focus
+ * Enables instant navigation to report page
+ *
+ * @returns Callback function to trigger prefetch
+ */
+export function usePrefetchReport() {
+  const queryClient = useQueryClient();
+
+  return useCallback(() => {
+    // Default date range: last 30 days
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+
+    const dateRange = {
+      start: startDate.toISOString().split('T')[0],
+      end: endDate.toISOString().split('T')[0],
+    };
+
+    // Prefetch overview data
+    queryClient.prefetchQuery({
+      queryKey: reportKeys.overview(dateRange),
+      queryFn: async () => {
+        const { getReportOverviewAction } = await import(
+          "@/app/actions/report"
+        );
+        const result = await getReportOverviewAction(dateRange);
+        if (!result.success) {
+          throw new Error(result.error || "Failed to fetch report overview");
+        }
+        return result.data;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+
+    // Prefetch buyback data
+    queryClient.prefetchQuery({
+      queryKey: reportKeys.buyback(dateRange),
+      queryFn: async () => {
+        const { getReportBuybackAction } = await import(
+          "@/app/actions/report"
+        );
+        const result = await getReportBuybackAction(dateRange);
+        if (!result.success) {
+          throw new Error(result.error || "Failed to fetch report buyback");
+        }
+        return result.data;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [queryClient]);
 }
