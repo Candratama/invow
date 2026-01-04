@@ -12,6 +12,15 @@ interface OverviewTabProps {
 }
 
 function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
+function formatCompactCurrency(value: number): string {
   if (value >= 1000000) {
     return `Rp ${(value / 1000000).toFixed(1)}M`
   }
@@ -19,15 +28,6 @@ function formatCurrency(value: number): string {
     return `Rp ${(value / 1000).toFixed(0)}K`
   }
   return `Rp ${value.toLocaleString('id-ID')}`
-}
-
-function formatFullCurrency(value: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 export function OverviewTab({ dateRange }: OverviewTabProps) {
@@ -84,8 +84,8 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
             <LineChart
               data={revenueChart}
               title="Trend Pendapatan"
-              color="#3b82f6"
-              formatValue={formatCurrency}
+              color="#D4AF37"
+              formatValue={formatCompactCurrency}
               height={300}
             />
           </CardContent>
@@ -122,7 +122,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
                         {customer.invoiceCount.toLocaleString('id-ID')}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-900 font-medium">
-                        {formatFullCurrency(customer.totalValue)}
+                        {formatCurrency(customer.totalValue)}
                       </td>
                     </tr>
                   ))}

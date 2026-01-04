@@ -18,6 +18,15 @@ function formatGram(value: number): string {
 }
 
 function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
+function formatCompactCurrency(value: number): string {
   if (value >= 1000000) {
     return `Rp ${(value / 1000000).toFixed(1)}M`
   }
@@ -25,15 +34,6 @@ function formatCurrency(value: number): string {
     return `Rp ${(value / 1000).toFixed(0)}K`
   }
   return `Rp ${value.toLocaleString('id-ID')}`
-}
-
-function formatFullCurrency(value: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 export function BuybackTab({ dateRange }: BuybackTabProps) {
@@ -115,8 +115,8 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
               {/* Bar Chart */}
               <BarChart
                 data={chartData}
-                color="#10b981"
-                formatValue={chartMode === 'gram' ? formatGram : formatCurrency}
+                color="#D4AF37"
+                formatValue={chartMode === 'gram' ? formatGram : formatCompactCurrency}
                 height={300}
               />
             </div>
@@ -169,10 +169,10 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
                         {formatGram(transaction.gram)}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-600">
-                        {formatFullCurrency(transaction.ratePerGram)}
+                        {formatCurrency(transaction.ratePerGram)}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-900 font-medium">
-                        {formatFullCurrency(transaction.total)}
+                        {formatCurrency(transaction.total)}
                       </td>
                     </tr>
                   ))}
