@@ -27,13 +27,19 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompactCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `Rp ${(value / 1000000).toFixed(1)}M`
+  const absValue = Math.abs(value)
+  const sign = value < 0 ? '-' : ''
+
+  if (absValue >= 1000000000) {
+    return `${sign}${(absValue / 1000000000).toFixed(1)}M`
   }
-  if (value >= 1000) {
-    return `Rp ${(value / 1000).toFixed(0)}K`
+  if (absValue >= 1000000) {
+    return `${sign}${(absValue / 1000000).toFixed(1)}jt`
   }
-  return `Rp ${value.toLocaleString('id-ID')}`
+  if (absValue >= 1000) {
+    return `${sign}${(absValue / 1000).toFixed(0)}rb`
+  }
+  return `${sign}${absValue.toLocaleString('id-ID')}`
 }
 
 export function BuybackTab({ dateRange }: BuybackTabProps) {
@@ -89,8 +95,8 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
       {/* Buyback Trend Chart with Toggle */}
       {trendChart && trendChart.length > 0 && (
         <Card>
-          <CardContent className="p-6">
-            <div className="space-y-4">
+          <CardContent className="p-3 pt-4">
+            <div className="space-y-3">
               {/* Toggle Buttons */}
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-medium text-gray-700">Trend Buyback</h3>
@@ -119,7 +125,8 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
                 data={chartData}
                 color="#D4AF37"
                 formatValue={chartMode === 'gram' ? formatGram : formatCompactCurrency}
-                height={220}
+                formatTooltipValue={chartMode === 'gram' ? formatGram : formatCurrency}
+                height={200}
               />
             </div>
           </CardContent>

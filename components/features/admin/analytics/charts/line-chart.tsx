@@ -22,6 +22,7 @@ interface LineChartProps {
   yAxisLabel?: string;
   color?: string;
   formatValue?: (value: number) => string;
+  formatTooltipValue?: (value: number) => string;
   formatDate?: (date: string) => string;
   height?: number;
 }
@@ -36,12 +37,15 @@ export function LineChart({
   yAxisLabel,
   color = "#3b82f6",
   formatValue = (v) => v.toLocaleString("id-ID"),
+  formatTooltipValue,
   formatDate = (d) => {
     const date = new Date(d);
     return date.toLocaleDateString("id-ID", { month: "short", day: "numeric" });
   },
   height = 300,
 }: LineChartProps) {
+  // Use formatTooltipValue if provided, otherwise fall back to formatValue
+  const tooltipFormatter = formatTooltipValue || formatValue;
   // Format data for Recharts
   const chartData = data.map((d) => ({
     date: d.date,
@@ -57,7 +61,7 @@ export function LineChart({
       <ResponsiveContainer width="100%" height={height}>
         <RechartsLineChart
           data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
@@ -88,7 +92,7 @@ export function LineChart({
             }
           />
           <Tooltip
-            formatter={(value: number) => [formatValue(value), "Value"]}
+            formatter={(value: number) => [tooltipFormatter(value), "Value"]}
             labelFormatter={(label) => `Date: ${label}`}
             contentStyle={{
               backgroundColor: "white",

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
-import { Settings, Users, Menu, FileText, X } from "lucide-react";
+import { Settings, Users, Menu, FileText, X, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 export function UserMenu() {
@@ -73,6 +73,14 @@ export function UserMenu() {
           >
             <Users size={18} />
             <span className="text-sm font-medium">Customers</span>
+          </Link>
+          <Link
+            href="/dashboard/report"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <BarChart3 size={18} />
+            <span className="text-sm font-medium">Laporan</span>
           </Link>
           <div className="border-t border-gray-100 my-1" />
           <Link

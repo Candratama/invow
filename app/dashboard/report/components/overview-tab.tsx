@@ -21,13 +21,19 @@ function formatCurrency(value: number): string {
 }
 
 function formatCompactCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `Rp ${(value / 1000000).toFixed(1)}M`
+  const absValue = Math.abs(value)
+  const sign = value < 0 ? '-' : ''
+
+  if (absValue >= 1000000000) {
+    return `${sign}${(absValue / 1000000000).toFixed(1)}M`
   }
-  if (value >= 1000) {
-    return `Rp ${(value / 1000).toFixed(0)}K`
+  if (absValue >= 1000000) {
+    return `${sign}${(absValue / 1000000).toFixed(1)}jt`
   }
-  return `Rp ${value.toLocaleString('id-ID')}`
+  if (absValue >= 1000) {
+    return `${sign}${(absValue / 1000).toFixed(0)}rb`
+  }
+  return `${sign}${absValue.toLocaleString('id-ID')}`
 }
 
 export function OverviewTab({ dateRange }: OverviewTabProps) {
@@ -80,13 +86,14 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
       {/* Revenue Chart */}
       {revenueChart && revenueChart.length > 0 && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 pt-4">
             <LineChart
               data={revenueChart}
               title="Trend Pendapatan"
               color="#D4AF37"
               formatValue={formatCompactCurrency}
-              height={220}
+              formatTooltipValue={formatCurrency}
+              height={200}
             />
           </CardContent>
         </Card>

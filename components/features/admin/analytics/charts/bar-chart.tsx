@@ -24,6 +24,7 @@ interface BarChartProps {
   color?: string;
   colors?: string[];
   formatValue?: (value: number) => string;
+  formatTooltipValue?: (value: number) => string;
   height?: number;
   layout?: "horizontal" | "vertical";
 }
@@ -51,9 +52,12 @@ export function BarChart({
   color,
   colors = DEFAULT_COLORS,
   formatValue = (v) => v.toLocaleString("id-ID"),
+  formatTooltipValue,
   height = 300,
   layout = "horizontal",
 }: BarChartProps) {
+  // Use formatTooltipValue if provided, otherwise fall back to formatValue
+  const tooltipFormatter = formatTooltipValue || formatValue;
   if (data.length === 0) {
     return (
       <div className="w-full">
@@ -81,7 +85,7 @@ export function BarChart({
         <RechartsBarChart
           data={data}
           layout={layout}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           {isVertical ? (
@@ -134,7 +138,7 @@ export function BarChart({
             </>
           )}
           <Tooltip
-            formatter={(value: number) => [formatValue(value), "Value"]}
+            formatter={(value: number) => [tooltipFormatter(value), "Value"]}
             contentStyle={{
               backgroundColor: "white",
               border: "1px solid #e5e7eb",
