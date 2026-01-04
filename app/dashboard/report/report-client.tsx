@@ -3,10 +3,12 @@
 import { useState, useEffect, Suspense, lazy, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/auth-context'
+import { usePremiumStatus } from '@/lib/hooks/use-premium-status'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import { DateRangePicker } from './components/date-range-picker'
 import { ExportBar } from './components/export-bar'
+import { ReportLocked } from './components/report-locked'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useReportOverview, useReportBuyback, useReportDetail } from '@/lib/hooks/use-report-data'
 import type { DateRange } from '@/lib/types/report'
@@ -76,6 +78,7 @@ export function ReportClient() {
   // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { isPremium, isLoading: premiumLoading } = usePremiumStatus()
 
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [mountedTabs, setMountedTabs] = useState<Set<TabId>>(
@@ -129,12 +132,17 @@ export function ReportClient() {
   }, [])
 
   // NOW we can do conditional returns - after all hooks
-  if (authLoading) {
+  if (authLoading || premiumLoading) {
     return <TabSkeleton />
   }
 
   if (!user) {
     return null
+  }
+
+  // Show locked state for non-premium users
+  if (!isPremium) {
+    return <ReportLocked />
   }
 
   // Determine if any query is loading

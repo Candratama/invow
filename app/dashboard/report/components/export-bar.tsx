@@ -252,23 +252,36 @@ export function ExportBar({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-end gap-4 px-4 sm:px-6 lg:px-8">
-        <Button
-          variant="outline"
-          onClick={handleCSVExport}
-          disabled={isDisabled || csvLoading}
-        >
-          {csvLoading ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <FileSpreadsheet />
-          )}
-          Download CSV
-        </Button>
-        <Button onClick={handlePDFExport} disabled={isDisabled || pdfLoading}>
-          {pdfLoading ? <Loader2 className="animate-spin" /> : <FileText />}
-          Download PDF
-        </Button>
+      <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
+        <div className="flex h-16 items-center justify-end gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCSVExport}
+            disabled={isDisabled || csvLoading}
+            className="gap-2"
+          >
+            {csvLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Download</span> CSV
+          </Button>
+          <Button
+            size="sm"
+            onClick={handlePDFExport}
+            disabled={isDisabled || pdfLoading}
+            className="gap-2"
+          >
+            {pdfLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Download</span> PDF
+          </Button>
+        </div>
       </div>
     </div>
   )
