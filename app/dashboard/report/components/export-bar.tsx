@@ -252,34 +252,32 @@ export function ExportBar({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
-        <div className="flex h-16 items-center justify-end gap-3">
+      <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8 py-3">
+        <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
-            size="sm"
             onClick={handleCSVExport}
             disabled={isDisabled || csvLoading}
-            className="gap-2"
+            className="w-full gap-2"
           >
             {csvLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <FileSpreadsheet className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">Download</span> CSV
+            Download CSV
           </Button>
           <Button
-            size="sm"
             onClick={handlePDFExport}
             disabled={isDisabled || pdfLoading}
-            className="gap-2"
+            className="w-full gap-2"
           >
             {pdfLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <FileText className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">Download</span> PDF
+            Download PDF
           </Button>
         </div>
       </div>
