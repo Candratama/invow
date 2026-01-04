@@ -193,35 +193,34 @@ export function ReportClient() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden bg-white">
-        <Suspense fallback={<TabSkeleton />}>
-          {mountedTabs.has('overview') && (
-            <div
-              className="h-full"
-              style={{
-                display: activeTab === 'overview' ? 'block' : 'none',
-              }}
-            >
-              <OverviewTab dateRange={dateRange} />
-            </div>
-          )}
-          {mountedTabs.has('buyback') && (
-            <div
-              className="h-full"
-              style={{ display: activeTab === 'buyback' ? 'block' : 'none' }}
-            >
-              <BuybackTab dateRange={dateRange} />
-            </div>
-          )}
-          {mountedTabs.has('detail') && (
-            <div
-              className="h-full"
-              style={{ display: activeTab === 'detail' ? 'block' : 'none' }}
-            >
-              <DetailTab dateRange={dateRange} />
-            </div>
-          )}
-        </Suspense>
+      <div className="flex-1 overflow-y-auto bg-white pb-24">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto">
+          <Suspense fallback={<TabSkeleton />}>
+            {mountedTabs.has('overview') && (
+              <div
+                style={{
+                  display: activeTab === 'overview' ? 'block' : 'none',
+                }}
+              >
+                <OverviewTab dateRange={dateRange} />
+              </div>
+            )}
+            {mountedTabs.has('buyback') && (
+              <div
+                style={{ display: activeTab === 'buyback' ? 'block' : 'none' }}
+              >
+                <BuybackTab dateRange={dateRange} />
+              </div>
+            )}
+            {mountedTabs.has('detail') && (
+              <div
+                style={{ display: activeTab === 'detail' ? 'block' : 'none' }}
+              >
+                <DetailTab dateRange={dateRange} />
+              </div>
+            )}
+          </Suspense>
+        </div>
       </div>
 
       {/* Export Bar */}
