@@ -194,7 +194,7 @@ export function ReportClient() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto bg-white pb-24">
-        <div className="max-w-2xl lg:max-w-4xl mx-auto">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8 pt-6">
           <Suspense fallback={<TabSkeleton />}>
             {mountedTabs.has('overview') && (
               <div
