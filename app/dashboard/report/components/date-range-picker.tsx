@@ -70,8 +70,8 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
     onChange(range)
   }
 
-  const handleCustomDateChange = (range: { from: Date | undefined; to: Date | undefined }) => {
-    if (range.from && range.to) {
+  const handleCustomDateChange = (range: { from?: Date; to?: Date } | undefined) => {
+    if (range?.from && range?.to) {
       const dateRange: DateRange = {
         from: format(range.from, 'yyyy-MM-dd'),
         to: format(range.to, 'yyyy-MM-dd'),

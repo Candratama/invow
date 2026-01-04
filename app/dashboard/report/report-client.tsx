@@ -228,10 +228,11 @@ export function ReportClient() {
       <div className="flex-shrink-0">
         <ExportBar
           dateRange={dateRange}
+          activeTab={activeTab}
           overviewData={overviewQuery.data}
           buybackData={buybackQuery.data}
           detailData={detailQuery.data}
-          isLoading={isLoading}
+          disabled={isLoading}
         />
       </div>
     </div>

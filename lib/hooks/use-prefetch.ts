@@ -135,8 +135,8 @@ export function usePrefetchReport() {
     startDate.setDate(startDate.getDate() - 30);
 
     const dateRange = {
-      start: startDate.toISOString().split('T')[0],
-      end: endDate.toISOString().split('T')[0],
+      from: startDate.toISOString().split('T')[0],
+      to: endDate.toISOString().split('T')[0],
     };
 
     // Prefetch overview data
