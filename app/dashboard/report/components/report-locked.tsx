@@ -59,7 +59,7 @@ export function ReportLocked() {
 
           {/* Title */}
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Unlock Report & Analitik
+            Unlock Report & Analytics
           </h2>
 
           {/* Description */}
@@ -102,7 +102,7 @@ export function ReportLocked() {
       <UpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
-        feature="Report & Analitik"
+        feature="Report & Analytics"
         featureDescription="Dapatkan insight mendalam tentang performa bisnis dengan laporan dan analitik lengkap."
       />
     </div>
