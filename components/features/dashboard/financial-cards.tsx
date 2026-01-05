@@ -6,7 +6,6 @@ import {
   EyeOff,
   TrendingUp,
   ShoppingCart,
-  DollarSign,
 } from "lucide-react";
 import { FinancialMetrics } from "@/lib/utils/revenue";
 import { formatCurrency } from "@/lib/utils";
@@ -142,57 +141,6 @@ function BuybackExpensesCard({ metrics, isPremium, isVisible }: CardProps) {
   );
 }
 
-function NetProfitCard({ metrics, isPremium, isVisible }: CardProps) {
-  const { profit } = metrics;
-
-  return (
-    <div className="w-[90%] flex-shrink-0 snap-center lg:w-auto lg:min-w-0">
-      <div className="relative bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg p-6 shadow-lg hover:scale-[1.02] transition-transform overflow-hidden">
-        {/* Decorative background circles */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
-
-        {/* Content */}
-        <div className="relative z-10">
-          <DollarSign className="w-8 h-8 mb-3" />
-          <p className="text-sm opacity-90">Net Profit</p>
-
-          {isPremium ? (
-            <>
-              <h3 className="text-3xl font-bold mt-2">
-                {isVisible
-                  ? formatCurrency(profit.monthlyNetProfit)
-                  : formatCurrencyWithDots(profit.monthlyNetProfit)}
-              </h3>
-              <p className="text-sm mt-1 opacity-80">
-                {profit.profitMargin.toFixed(1)}% margin this month
-              </p>
-            </>
-          ) : (
-            <>
-              <h3 className="text-3xl font-bold mt-2">Premium Only</h3>
-              <p className="text-sm mt-1 opacity-80">Upgrade to view profit</p>
-            </>
-          )}
-
-          <div className="border-t border-white/20 pt-3 mt-4">
-            <div className="flex justify-between text-sm">
-              <span className="opacity-80">Total Profit</span>
-              <span>
-                {isPremium
-                  ? isVisible
-                    ? formatCurrency(profit.totalNetProfit)
-                    : formatCurrencyWithDots(profit.totalNetProfit)
-                  : "Premium Only"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function FinancialCards({
   metrics,
   subscriptionStatus,
@@ -208,8 +156,8 @@ export default function FinancialCards({
   if (isLoading) {
     return (
       <div className="mb-8 lg:mb-12">
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible">
-          {[1, 2, 3].map((i) => (
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:grid lg:grid-cols-2 lg:gap-6 lg:overflow-visible">
+          {[1, 2].map((i) => (
             <div key={i} className="min-w-[280px] snap-center lg:min-w-0">
               <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-6 h-48 animate-pulse" />
             </div>
@@ -242,8 +190,8 @@ export default function FinancialCards({
         </button>
       </div>
 
-      {/* Cards container - mobile: horizontal scroll, desktop: 3-column grid */}
-      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible">
+      {/* Cards container - mobile: horizontal scroll, desktop: 2-column grid */}
+      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:grid lg:grid-cols-2 lg:gap-6 lg:overflow-visible">
         <SalesRevenueCard
           metrics={metrics}
           isPremium={isPremium}
@@ -254,17 +202,11 @@ export default function FinancialCards({
           isPremium={isPremium}
           isVisible={isVisible}
         />
-        <NetProfitCard
-          metrics={metrics}
-          isPremium={isPremium}
-          isVisible={isVisible}
-        />
       </div>
 
       {/* Scroll indicators - mobile only */}
       <div className="flex justify-center gap-2 mt-4 lg:hidden">
         <div className="w-2 h-2 rounded-full bg-primary" />
-        <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
         <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
       </div>
     </div>
