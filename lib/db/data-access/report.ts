@@ -317,35 +317,40 @@ export async function getReportBuybackData(
   invoices.forEach((invoice) => {
     const buybackItems = (invoice.invoice_items || []).filter((item: any) => item.is_buyback)
 
+    // Aggregate all buyback items for this invoice
+    let invoiceGram = 0
+    let invoiceTotal = 0
+
     buybackItems.forEach((item: any) => {
       const gram = item.gram || 0
-      const rate = item.buyback_rate || 0
       const total = item.total || 0
 
+      invoiceGram += gram
+      invoiceTotal += total
       totalGram += gram
       totalValue += total
+    })
 
-      // Track unique customers
-      uniqueCustomers.add(invoice.customer_name)
+    // Track unique customers
+    uniqueCustomers.add(invoice.customer_name)
 
-      // Track trend by date
-      const dateKey = invoice.invoice_date
-      const current = trendByDate.get(dateKey) || { gram: 0, value: 0 }
-      trendByDate.set(dateKey, {
-        gram: current.gram + gram,
-        value: current.value + total
-      })
+    // Track trend by date
+    const dateKey = invoice.invoice_date
+    const current = trendByDate.get(dateKey) || { gram: 0, value: 0 }
+    trendByDate.set(dateKey, {
+      gram: current.gram + invoiceGram,
+      value: current.value + invoiceTotal
+    })
 
-      // Add to transactions list
-      transactions.push({
-        id: item.id,
-        invoiceNumber: invoice.invoice_number,
-        date: invoice.invoice_date,
-        customerName: invoice.customer_name,
-        gram,
-        ratePerGram: rate,
-        total
-      })
+    // Add one transaction per invoice (not per item)
+    transactions.push({
+      id: invoice.id,
+      invoiceNumber: invoice.invoice_number,
+      date: invoice.invoice_date,
+      customerName: invoice.customer_name,
+      gram: invoiceGram,
+      ratePerGram: invoiceGram > 0 ? invoiceTotal / invoiceGram : 0,
+      total: invoiceTotal
     })
   })
 
