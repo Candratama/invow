@@ -80,7 +80,7 @@ export function UserMenu() {
             className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <BarChart3 size={18} />
-            <span className="text-sm font-medium">Laporan</span>
+            <span className="text-sm font-medium">Report</span>
           </Link>
           <div className="border-t border-gray-100 my-1" />
           <Link

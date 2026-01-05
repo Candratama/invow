@@ -120,7 +120,7 @@ export function DashboardSidebar() {
         <SidebarLink
           href="/dashboard/report"
           icon={<BarChart3 size={20} />}
-          label="Laporan"
+          label="Report"
           onPrefetch={prefetchReport}
           isActive={isReportActive}
         />

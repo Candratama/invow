@@ -100,7 +100,7 @@ export function ExportBar({
 
       // Header
       doc.setFontSize(20)
-      doc.text('Laporan Invow', 105, yPosition, { align: 'center' })
+      doc.text('Report Invow', 105, yPosition, { align: 'center' })
       yPosition += 10
 
       // Subheader: Period and Tab name
@@ -118,7 +118,7 @@ export function ExportBar({
         { align: 'center' }
       )
       yPosition += 7
-      doc.text(`Laporan: ${tabName}`, 105, yPosition, { align: 'center' })
+      doc.text(`Report: ${tabName}`, 105, yPosition, { align: 'center' })
       yPosition += 15
 
       // Content based on active tab

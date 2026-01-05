@@ -13,7 +13,7 @@ const REPORT_BENEFITS = [
   },
   {
     icon: PieChart,
-    title: 'Laporan Buyback',
+    title: 'Report Buyback',
     description: 'Analisis detail transaksi buyback termasuk gram dan nilai',
   },
   {
@@ -38,7 +38,7 @@ export function ReportLocked() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Laporan
+                Report
               </h1>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium rounded-full">
                 <Lock className="w-3 h-3" />
@@ -59,7 +59,7 @@ export function ReportLocked() {
 
           {/* Title */}
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Unlock Laporan & Analitik
+            Unlock Report & Analitik
           </h2>
 
           {/* Description */}
@@ -102,7 +102,7 @@ export function ReportLocked() {
       <UpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
-        feature="Laporan & Analitik"
+        feature="Report & Analitik"
         featureDescription="Dapatkan insight mendalam tentang performa bisnis dengan laporan dan analitik lengkap."
       />
     </div>

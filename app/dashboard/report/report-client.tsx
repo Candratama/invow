@@ -165,7 +165,7 @@ export function ReportClient() {
                 <span>Back</span>
               </button>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Laporan
+                Report
               </h1>
             </div>
           </div>
