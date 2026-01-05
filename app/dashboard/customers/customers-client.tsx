@@ -42,6 +42,11 @@ export function CustomersClient() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(
+    new Set(['Customer', 'Reseller', 'Distributor'])
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [hasExistingCustomers, setHasExistingCustomers] = useState(false);
 
   const {
@@ -94,16 +99,37 @@ export function CustomersClient() {
 
   const filteredCustomers = useMemo(() => {
     if (!customers) return [];
-    if (!debouncedQuery.trim()) return customers;
 
-    const query = debouncedQuery.toLowerCase();
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(query) ||
-        c.phone.includes(query) ||
-        c.address.toLowerCase().includes(query)
-    );
-  }, [customers, debouncedQuery]);
+    let result = customers;
+
+    // Filter by status
+    result = result.filter((c) => selectedStatuses.has(c.status));
+
+    // Filter by search query
+    if (debouncedQuery.trim()) {
+      const query = debouncedQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.phone.includes(query) ||
+          c.address.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [customers, debouncedQuery, selectedStatuses]);
+
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredCustomers.slice(start, end);
+  }, [filteredCustomers, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedQuery, selectedStatuses]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,6 +204,86 @@ export function CustomersClient() {
   const handleBack = useCallback(() => {
     router.push("/dashboard");
   }, [router]);
+
+  const handleStatusToggle = useCallback((status: string) => {
+    setSelectedStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        if (next.size > 1) {
+          next.delete(status);
+        }
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  }, []);
+
+  const StatusFilter = () => (
+    <div className="grid grid-cols-3 gap-2">
+      {(['Customer', 'Reseller', 'Distributor'] as const).map((status) => (
+        <Button
+          key={status}
+          variant={selectedStatuses.has(status) ? 'default' : 'outline'}
+          size="sm"
+          className="w-full text-xs h-9"
+          onClick={() => handleStatusToggle(status)}
+        >
+          {status}
+        </Button>
+      ))}
+    </div>
+  );
+
+  const Pagination = () => {
+    if (filteredCustomers.length === 0) return null;
+
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, filteredCustomers.length);
+
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {start}-{end} of {filteredCustomers.length}
+        </div>
+        <div className="flex items-center gap-4">
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              &lt;
+            </Button>
+            <span className="px-3 text-sm">
+              {currentPage} / {totalPages || 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              &gt;
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (authLoading || premiumLoading || storeIdLoading) {
     return <CustomersSkeleton />;
@@ -295,15 +401,25 @@ export function CustomersClient() {
         </div>
       </div>
 
+      {/* Status Filter */}
+      <div className="flex-shrink-0 bg-white border-b">
+        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-3">
+          <StatusFilter />
+        </div>
+      </div>
+
       {/* Customer List */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 lg:px-6 py-4">
           <CustomerList
-            customers={filteredCustomers}
+            customers={paginatedCustomers}
             onEdit={handleEdit}
             onDelete={handleDelete}
             isDeleting={deletingId || undefined}
           />
+        </div>
+        <div className="max-w-4xl mx-auto px-4 lg:px-6">
+          <Pagination />
         </div>
       </div>
 
