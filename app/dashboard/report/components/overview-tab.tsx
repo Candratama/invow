@@ -5,7 +5,7 @@ import { SummaryCard } from './summary-card'
 import { LineChart } from '@/components/features/admin/analytics/charts/line-chart'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { DateRange } from '@/lib/types/report'
+import type { DateRange, TopCustomer } from '@/lib/types/report'
 
 interface OverviewTabProps {
   dateRange: DateRange
@@ -36,6 +36,72 @@ function formatCompactCurrency(value: number): string {
   return `${sign}${absValue.toLocaleString('id-ID')}`
 }
 
+interface TopCustomersTableProps {
+  title: string;
+  customers: TopCustomer[];
+}
+
+function TopCustomersTable({ title, customers }: TopCustomersTableProps) {
+  if (!customers || customers.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Belum ada data
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-2 font-medium text-gray-700 w-8">
+                  #
+                </th>
+                <th className="text-left py-2 px-2 font-medium text-gray-700">
+                  Nama
+                </th>
+                <th className="text-center py-2 px-2 font-medium text-gray-700 w-20">
+                  Transaksi
+                </th>
+                <th className="text-right py-2 px-2 font-medium text-gray-700">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.map((customer, index) => (
+                <tr key={customer.id} className="border-b last:border-0">
+                  <td className="py-2 px-2 text-gray-500">{index + 1}</td>
+                  <td className="py-2 px-2 text-gray-900">{customer.name}</td>
+                  <td className="py-2 px-2 text-center text-gray-600">
+                    {customer.invoiceCount}x
+                  </td>
+                  <td className="py-2 px-2 text-right text-gray-900 font-medium">
+                    {formatCurrency(customer.totalValue)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function OverviewTab({ dateRange }: OverviewTabProps) {
   const { data, isLoading, error } = useReportOverview(dateRange)
 
@@ -51,7 +117,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
     return <OverviewTabSkeleton />
   }
 
-  const { summary, revenueChart, topCustomers } = data
+  const { summary, revenueChart, topCustomersByStatus } = data
 
   return (
     <div className="space-y-6">
@@ -99,46 +165,21 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
         </Card>
       )}
 
-      {/* Top Customers Table */}
-      {topCustomers && topCustomers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 5 Customer</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-3 font-medium text-gray-700">
-                      Customer
-                    </th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-700">
-                      Invoice
-                    </th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-700">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topCustomers.slice(0, 5).map((customer) => (
-                    <tr key={customer.id} className="border-b last:border-0">
-                      <td className="py-2 px-3 text-gray-900">{customer.name}</td>
-                      <td className="py-2 px-3 text-gray-600">
-                        {customer.invoiceCount.toLocaleString('id-ID')}
-                      </td>
-                      <td className="py-2 px-3 text-right text-gray-900 font-medium">
-                        {formatCurrency(customer.totalValue)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Top Customers Tables by Status */}
+      <div className="space-y-4">
+        <TopCustomersTable
+          title="Top 5 Customer"
+          customers={topCustomersByStatus.customer}
+        />
+        <TopCustomersTable
+          title="Top 5 Reseller"
+          customers={topCustomersByStatus.reseller}
+        />
+        <TopCustomersTable
+          title="Top 5 Distributor"
+          customers={topCustomersByStatus.distributor}
+        />
+      </div>
     </div>
   )
 }
@@ -166,23 +207,28 @@ function OverviewTabSkeleton() {
         </CardContent>
       </Card>
 
-      {/* Top Customers Table Skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex justify-between">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-5 w-24" />
+      {/* Top Customers Tables Skeleton */}
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((j) => (
+                  <div key={j} className="flex justify-between">
+                    <Skeleton className="h-4 w-8" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

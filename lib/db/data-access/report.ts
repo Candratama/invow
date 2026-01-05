@@ -10,6 +10,7 @@ import type {
   RevenueDataPoint,
   BuybackDataPoint,
   TopCustomer,
+  TopCustomersByStatus,
   BuybackTransaction,
   InvoiceRow
 } from '@/lib/types/report'
@@ -52,7 +53,12 @@ export async function getReportOverviewData(
         buybackInvoices: 0
       },
       revenueChart: [],
-      topCustomers: []
+      topCustomers: [],
+      topCustomersByStatus: {
+        customer: [],
+        reseller: [],
+        distributor: []
+      }
     }
   }
 
@@ -62,6 +68,7 @@ export async function getReportOverviewData(
     .select(`
       id,
       invoice_number,
+      customer_id,
       customer_name,
       total,
       invoice_date,
@@ -88,16 +95,40 @@ export async function getReportOverviewData(
         buybackInvoices: 0
       },
       revenueChart: [],
-      topCustomers: []
+      topCustomers: [],
+      topCustomersByStatus: {
+        customer: [],
+        reseller: [],
+        distributor: []
+      }
     }
   }
+
+  // Fetch customer statuses
+  const customerIds = [...new Set(invoices?.map(inv => inv.customer_id).filter(Boolean) || [])]
+  const { data: customerData } = customerIds.length > 0
+    ? await supabase
+        .from('customers')
+        .select('id, status')
+        .in('id', customerIds)
+    : { data: [] }
+
+  const customerStatusMap = new Map(
+    (customerData || []).map(c => [c.id, c.status])
+  )
 
   // Calculate summary stats
   const uniqueCustomers = new Set<string>()
   let totalRevenue = 0
   let regularInvoicesCount = 0
   let buybackInvoicesCount = 0
-  const customerTotals: Map<string, { name: string; total: number; count: number }> = new Map()
+  const customerTotals: Map<string, {
+    id: string;
+    name: string;
+    total: number;
+    count: number;
+    status: string;
+  }> = new Map()
   const revenueByDate: Map<string, number> = new Map()
 
   invoices.forEach((invoice) => {
@@ -121,13 +152,20 @@ export async function getReportOverviewData(
     uniqueCustomers.add(invoice.customer_name)
 
     // Track customer totals for top customers
-    const existing = customerTotals.get(invoice.customer_name) || {
+    const customerId = invoice.customer_id || invoice.customer_name
+    const status = invoice.customer_id
+      ? (customerStatusMap.get(invoice.customer_id) || 'Customer')
+      : 'Customer'
+
+    const existing = customerTotals.get(customerId) || {
+      id: customerId,
       name: invoice.customer_name,
       total: 0,
-      count: 0
+      count: 0,
+      status
     }
-    customerTotals.set(invoice.customer_name, {
-      name: invoice.customer_name,
+    customerTotals.set(customerId, {
+      ...existing,
       total: existing.total + invoice.total,
       count: existing.count + 1
     })
@@ -163,21 +201,42 @@ export async function getReportOverviewData(
     }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  // Get top 5 customers by total value
-  const topCustomers: TopCustomer[] = Array.from(customerTotals.values())
+  // Get top 5 customers by total value (all)
+  const allCustomers = Array.from(customerTotals.values())
     .sort((a, b) => b.total - a.total)
+
+  const topCustomers: TopCustomer[] = allCustomers
     .slice(0, 5)
-    .map((customer, index) => ({
-      id: `customer-${index}`,
+    .map((customer) => ({
+      id: customer.id,
       name: customer.name,
       invoiceCount: customer.count,
       totalValue: customer.total
     }))
 
+  // Group by status
+  const getTop5ByStatus = (status: string): TopCustomer[] =>
+    allCustomers
+      .filter(c => c.status === status)
+      .slice(0, 5)
+      .map((customer) => ({
+        id: customer.id,
+        name: customer.name,
+        invoiceCount: customer.count,
+        totalValue: customer.total
+      }))
+
+  const topCustomersByStatus = {
+    customer: getTop5ByStatus('Customer'),
+    reseller: getTop5ByStatus('Reseller'),
+    distributor: getTop5ByStatus('Distributor')
+  }
+
   return {
     summary,
     revenueChart,
-    topCustomers
+    topCustomers,
+    topCustomersByStatus
   }
 }
 

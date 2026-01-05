@@ -42,6 +42,12 @@ export interface TopCustomer {
   totalValue: number;
 }
 
+export interface TopCustomersByStatus {
+  customer: TopCustomer[];
+  reseller: TopCustomer[];
+  distributor: TopCustomer[];
+}
+
 export interface BuybackTransaction {
   id: string;
   invoiceNumber: string;
@@ -65,7 +71,8 @@ export interface InvoiceRow {
 export interface ReportOverviewData {
   summary: ReportSummary;
   revenueChart: RevenueDataPoint[];
-  topCustomers: TopCustomer[];
+  topCustomers: TopCustomer[];  // Keep for backward compat
+  topCustomersByStatus: TopCustomersByStatus;
 }
 
 export interface ReportBuybackData {
