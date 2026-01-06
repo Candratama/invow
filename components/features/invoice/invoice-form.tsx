@@ -222,23 +222,8 @@ export function InvoiceForm({
       }
     };
 
-    // Prefetch customers in parallel with preferences (so dropdown is instant)
-    const prefetchCustomers = async () => {
-      if (defaultStore?.id && isPremium) {
-        try {
-          const { getCustomersAction } = await import("@/app/actions/customers");
-          await getCustomersAction(defaultStore.id);
-        } catch (error) {
-          // Silent fail - customers will be fetched when dropdown opens
-          console.warn("Customer prefetch failed:", error);
-        }
-      }
-    };
-
-    // Run both in parallel
     fetchLatestPreferences();
-    prefetchCustomers();
-  }, [defaultStore?.id, isPremium]);
+  }, []);
 
   // Initialize invoice when component mounts
   useEffect(() => {
