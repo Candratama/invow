@@ -89,12 +89,19 @@ export function CustomerSelector({
     fetchCustomers(query);
   }, 300);
 
-  // Initial fetch
+  // Prefetch customers on mount (so data is ready when dropdown opens)
   useEffect(() => {
-    if (isOpen) {
+    if (storeId && !disabled) {
+      fetchCustomers("");
+    }
+  }, [storeId, disabled, fetchCustomers]);
+
+  // Refetch when dropdown opens with search query
+  useEffect(() => {
+    if (isOpen && searchQuery) {
       fetchCustomers(searchQuery);
     }
-  }, [isOpen, fetchCustomers, searchQuery]);
+  }, [isOpen, searchQuery, fetchCustomers]);
 
   // Sync selected customer with parent's selectedCustomerId prop
   useEffect(() => {
