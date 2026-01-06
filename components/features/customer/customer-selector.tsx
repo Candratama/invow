@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search,
   Plus,
@@ -13,7 +13,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useDebouncedCallback } from "@/hooks/use-debounce";
 import type { Customer, CustomerInsert } from "@/lib/db/database.types";
 
 interface CustomerSelectorProps {
@@ -57,51 +56,45 @@ export function CustomerSelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch customers on mount and when search changes
-  const fetchCustomers = useCallback(
-    async (query: string) => {
-      if (!storeId) return;
+  // Fetch all customers once on mount
+  const fetchCustomers = useCallback(async () => {
+    if (!storeId) return;
 
-      setIsLoading(true);
-      try {
-        const { searchCustomersAction, getCustomersAction } = await import(
-          "@/app/actions/customers"
-        );
+    setIsLoading(true);
+    try {
+      const { getCustomersAction } = await import("@/app/actions/customers");
+      const result = await getCustomersAction(storeId);
 
-        const result = query.trim()
-          ? await searchCustomersAction(storeId, query)
-          : await getCustomersAction(storeId);
-
-        if (result.success && result.data) {
-          setCustomers(result.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch customers:", error);
-      } finally {
-        setIsLoading(false);
+      if (result.success && result.data) {
+        setCustomers(result.data);
       }
-    },
-    [storeId]
-  );
+    } catch (error) {
+      console.error("Failed to fetch customers:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [storeId]);
 
-  // Debounced search
-  const debouncedSearch = useDebouncedCallback((query: string) => {
-    fetchCustomers(query);
-  }, 300);
+  // Filter customers locally based on search query (no server round-trip)
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery.trim()) return customers;
+
+    const query = searchQuery.toLowerCase().trim();
+    return customers.filter(
+      (customer) =>
+        customer.name.toLowerCase().includes(query) ||
+        customer.phone?.toLowerCase().includes(query) ||
+        customer.address?.toLowerCase().includes(query) ||
+        customer.status?.toLowerCase().includes(query)
+    );
+  }, [customers, searchQuery]);
 
   // Prefetch customers on mount (so data is ready when dropdown opens)
   useEffect(() => {
     if (storeId && !disabled) {
-      fetchCustomers("");
+      fetchCustomers();
     }
   }, [storeId, disabled, fetchCustomers]);
-
-  // Refetch when dropdown opens with search query
-  useEffect(() => {
-    if (isOpen && searchQuery) {
-      fetchCustomers(searchQuery);
-    }
-  }, [isOpen, searchQuery, fetchCustomers]);
 
   // Sync selected customer with parent's selectedCustomerId prop
   useEffect(() => {
@@ -145,9 +138,7 @@ export function CustomerSelector({
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    debouncedSearch(value);
+    setSearchQuery(e.target.value);
   };
 
   const handleSelectCustomer = (customer: Customer) => {
@@ -172,8 +163,8 @@ export function CustomerSelector({
     setShowAddForm(false);
     setIsOpen(false);
     setSearchQuery("");
-    // Refresh customer list
-    await fetchCustomers("");
+    // Refresh customer list after adding new customer
+    await fetchCustomers();
   };
 
   return (
@@ -267,9 +258,9 @@ export function CustomerSelector({
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
               </div>
-            ) : customers.length > 0 ? (
+            ) : filteredCustomers.length > 0 ? (
               <ul className="py-1">
-                {customers.map((customer) => (
+                {filteredCustomers.map((customer) => (
                   <li key={customer.id}>
                     <button
                       type="button"
