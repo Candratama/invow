@@ -7,6 +7,9 @@ export interface PremiumStatus {
   isPremium: boolean;
   tier: string;
   isLoading: boolean;
+  expiresAt: Date | null;
+  daysUntilExpiry: number | null;
+  isExpiringSoon: boolean;
 }
 
 // Query keys for cache management
@@ -18,13 +21,16 @@ export const premiumStatusKeys = {
 interface PremiumStatusData {
   isPremium: boolean;
   tier: string;
+  expiresAt: Date | null;
+  daysUntilExpiry: number | null;
+  isExpiringSoon: boolean;
 }
 
 /**
  * Hook for checking user's premium subscription status
  * Uses React Query for caching subscription status
- * 
- * @returns PremiumStatus object with isPremium, tier, and isLoading
+ *
+ * @returns PremiumStatus object with isPremium, tier, isLoading, expiresAt, daysUntilExpiry, and isExpiringSoon
  */
 export function usePremiumStatus(initialData?: PremiumStatusData): PremiumStatus {
   const queryClient = useQueryClient();
@@ -41,15 +47,37 @@ export function usePremiumStatus(initialData?: PremiumStatusData): PremiumStatus
       // Import dynamically to avoid server-only module in client
       const { getSubscriptionStatusAction } = await import("@/app/actions/subscription");
       const result = await getSubscriptionStatusAction();
-      
+
       if (result.error || !result.data) {
         // Default to free tier on error
-        return { isPremium: false, tier: "free" };
+        return {
+          isPremium: false,
+          tier: "free",
+          expiresAt: null,
+          daysUntilExpiry: null,
+          isExpiringSoon: false,
+        };
       }
-      
+
+      // Extract expiry date from resetDate for premium users
+      const expiresAt = result.data.tier === 'premium' && result.data.resetDate
+        ? new Date(result.data.resetDate)
+        : null;
+
+      // Calculate days until expiry
+      const daysUntilExpiry = expiresAt
+        ? Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      // Check if expiring soon (within 7 days)
+      const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 7;
+
       return {
         isPremium: result.data.tier === "premium",
         tier: result.data.tier,
+        expiresAt,
+        daysUntilExpiry,
+        isExpiringSoon,
       };
     },
     // Only use initialData if no cache exists
@@ -64,6 +92,9 @@ export function usePremiumStatus(initialData?: PremiumStatusData): PremiumStatus
     isPremium: data?.isPremium ?? false,
     tier: data?.tier ?? "free",
     isLoading,
+    expiresAt: data?.expiresAt ?? null,
+    daysUntilExpiry: data?.daysUntilExpiry ?? null,
+    isExpiringSoon: data?.isExpiringSoon ?? false,
   };
 }
 
