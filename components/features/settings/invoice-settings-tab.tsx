@@ -44,21 +44,21 @@ export const EXPORT_QUALITY_OPTIONS: ExportQualityOption[] = [
     value: 50,
     id: "standard",
     label: "Standard (50KB)",
-    description: "Good for sharing via messaging apps",
+    description: "Cocok untuk berbagi via aplikasi chat",
     tierRequired: "free",
   },
   {
     value: 100,
     id: "high",
     label: "High (100KB)",
-    description: "Better quality for email attachments",
+    description: "Kualitas lebih baik untuk lampiran email",
     tierRequired: "premium",
   },
   {
     value: 150,
     id: "print-ready",
     label: "Print-Ready (150KB)",
-    description: "Best quality for printing",
+    description: "Kualitas terbaik untuk cetak",
     tierRequired: "premium",
   },
 ];
@@ -253,8 +253,8 @@ export function InvoiceSettingsTab({
             <Label className="mb-3 block">Select Invoice Template</Label>
             <p className="text-sm text-muted-foreground mb-4">
               {tier === "free"
-                ? "1 template available. Upgrade to Premium for 8 templates."
-                : "All 8 templates available with Premium."}
+                ? "1 template tersedia. Upgrade ke Premium untuk 8 template."
+                : "Semua 8 template tersedia dengan Premium."}
             </p>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {isLoadingRules ? (
@@ -267,7 +267,7 @@ export function InvoiceSettingsTab({
                 ))
               ) : templatesWithAccess.length === 0 ? (
                 <div className="col-span-full text-center py-8 text-gray-500">
-                  No templates available
+                  Tidak ada template tersedia
                 </div>
               ) : null}
               {!isLoadingRules &&
@@ -380,7 +380,7 @@ export function InvoiceSettingsTab({
                 className="mt-1.5"
               />
               <p className="text-sm text-muted-foreground mt-1">
-                This will be pre-filled when creating new invoices
+                Ini akan terisi otomatis saat membuat invoice baru
               </p>
             </div>
 
@@ -389,7 +389,7 @@ export function InvoiceSettingsTab({
                 <div className="flex-1">
                   <Label htmlFor="taxEnabled">Enable Tax</Label>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Apply tax to invoices by default
+                    Terapkan pajak pada invoice secara default
                   </p>
                 </div>
                 <Switch
@@ -435,10 +435,10 @@ export function InvoiceSettingsTab({
           <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
             <Label className="mb-2 sm:mb-3 block">Export Quality</Label>
             <p className="text-sm text-muted-foreground mb-3 sm:mb-4">
-              Choose the quality of exported invoice images
+              Pilih kualitas gambar invoice yang diekspor
               {tier === "free" && (
                 <span className="block mt-1 text-amber-600">
-                  Upgrade to Premium for high and print-ready quality options.
+                  Upgrade ke Premium untuk opsi kualitas high dan print-ready.
                 </span>
               )}
             </p>

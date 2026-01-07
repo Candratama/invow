@@ -447,7 +447,7 @@ export function BusinessInfoTab({
   if (isLoading) {
     return (
       <div className="flex flex-col h-full items-center justify-center">
-        <p className="text-gray-600">Loading business info...</p>
+        <p className="text-gray-600">Memuat informasi bisnis...</p>
       </div>
     );
   }
@@ -655,10 +655,10 @@ export function BusinessInfoTab({
                             </div>
                             <div>
                               <p className="text-sm lg:text-base text-gray-600 mb-2">
-                                Upload your store logo
+                                Upload logo toko Anda
                               </p>
                               <p className="text-xs lg:text-sm text-gray-500">
-                                Max 5MB • Will be compressed to 100KB
+                                Maks 5MB • Akan dikompres ke 100KB
                               </p>
                             </div>
                           </div>
@@ -721,7 +721,7 @@ export function BusinessInfoTab({
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Default gold color. Upgrade to Premium to customize.
+                        Warna emas default. Upgrade ke Premium untuk kustomisasi.
                       </p>
                     </div>
                   }
@@ -768,7 +768,7 @@ export function BusinessInfoTab({
               <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
                   <p className="text-xs sm:text-sm text-gray-600">
-                    Manage people authorized to sign invoices
+                    Kelola orang yang berwenang menandatangani invoice
                   </p>
                   <Button
                     onClick={handleAddContact}
@@ -783,14 +783,14 @@ export function BusinessInfoTab({
                 {contacts.length === 0 ? (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center">
                     <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-3 sm:mb-4">
-                      No contacts yet
+                      Belum ada kontak
                     </p>
                     <Button
                       onClick={handleAddContact}
                       variant="outline"
                       className="min-h-[44px]"
                     >
-                      Add Your First Contact
+                      Tambah Kontak Pertama
                     </Button>
                   </div>
                 ) : (
@@ -1052,7 +1052,7 @@ export function BusinessInfoTab({
           </div>
           <div className="space-y-2">
             <p className="text-xs text-gray-500 text-center">
-              Draw your signature in the canvas above.
+              Gambar tanda tangan Anda di kanvas di atas.
             </p>
           </div>
           <div className="flex gap-3 pt-2">
