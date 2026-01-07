@@ -115,7 +115,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
 
   // Format reset date
   const formatResetDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("id-ID", {
       month: "long",
       day: "numeric",
       year: "numeric",
@@ -158,7 +158,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
 
   // Handle sign out
   const handleSignOut = async () => {
-    if (confirm("Are you sure you want to sign out?")) {
+    if (confirm("Apakah Anda yakin ingin keluar?")) {
       await signOut();
     }
   };
@@ -191,7 +191,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading subscription details...</div>
+        <div className="text-gray-500">Memuat detail subscription...</div>
       </div>
     );
   }
@@ -204,7 +204,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
         <p className="text-sm text-red-600">
           {error instanceof Error
             ? error.message
-            : "Failed to load subscription"}
+            : "Gagal memuat subscription"}
         </p>
       </div>
     );
@@ -264,8 +264,8 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                     {tierInfo.name} Plan
                   </h3>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    {tierConfig?.priceFormatted || "Free"}{" "}
-                    {subscription.tier !== "free" && "/ 30 days"}
+                    {tierConfig?.priceFormatted || "Gratis"}{" "}
+                    {subscription.tier !== "free" && "/ 30 hari"}
                   </p>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between text-sm lg:text-base">
                   <span className="text-muted-foreground">
-                    Invoices this period
+                    Invoice periode ini
                   </span>
                   <span className="font-medium">
                     {subscription.currentMonthCount} /{" "}
@@ -302,7 +302,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
 
                 {/* Remaining invoices */}
                 <div className="flex items-center justify-between text-sm lg:text-base">
-                  <span className="text-muted-foreground">Remaining</span>
+                  <span className="text-muted-foreground">Tersisa</span>
                   <span
                     className={`font-semibold ${
                       subscription.invoiceLimit === 999999
@@ -315,8 +315,8 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                     }`}
                   >
                     {subscription.invoiceLimit === 999999
-                      ? "Unlimited"
-                      : `${subscription.remainingInvoices} invoices`}
+                      ? "Tidak terbatas"
+                      : `${subscription.remainingInvoices} invoice`}
                   </span>
                 </div>
               </div>
@@ -325,7 +325,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
               {subscription.resetDate && (
                 <div className="pt-3 border-t">
                   <p className="text-sm text-muted-foreground">
-                    {subscription.tier === "free" ? "Resets on" : "Expires on"}{" "}
+                    {subscription.tier === "free" ? "Reset pada" : "Berakhir pada"}{" "}
                     {formatResetDate(new Date(subscription.resetDate))}
                   </p>
                 </div>
@@ -388,10 +388,10 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                       ) : (
                         <>
                           <p className="text-sm font-medium">
-                            Need more invoices?
+                            Butuh lebih banyak invoice?
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Extend your subscription and get additional credits
+                            Perpanjang subscription untuk mendapatkan kredit tambahan
                           </p>
                         </>
                       )}
@@ -461,7 +461,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                             {plan.priceFormatted}
                           </p>
                           <p className="text-xs sm:text-sm text-muted-foreground">
-                            per 30 days
+                            per 30 hari
                           </p>
                         </div>
                         <UpgradeButton
@@ -508,7 +508,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                   className="mt-2 bg-gray-50 cursor-not-allowed min-h-[44px]"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Your account email cannot be changed here
+                  Email akun tidak dapat diubah di sini
                 </p>
               </div>
 
@@ -575,7 +575,7 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Password must be at least 8 characters
+                  Password minimal 8 karakter
                 </p>
               </div>
             </div>
@@ -594,8 +594,8 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                     Sign Out
                   </h3>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Sign out of your account. You&apos;ll need to sign in again
-                    to access your data.
+                    Keluar dari akun Anda. Anda perlu masuk kembali untuk
+                    mengakses data Anda.
                   </p>
                 </div>
                 <Button
