@@ -10,6 +10,7 @@ import {
   Lock,
   CreditCard,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { getSubscriptionStatusAction } from "@/app/actions/subscription";
 import { getSubscriptionPlansAction } from "@/app/actions/admin-pricing";
@@ -216,6 +217,31 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
   // Find current tier config from plans data
   const tierConfig = plans?.find((p) => p.tier === subscription.tier);
 
+  // Calculate days until expiry for premium users
+  const daysUntilExpiry = subscription.resetDate
+    ? Math.ceil(
+        (new Date(subscription.resetDate).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : null;
+
+  // Determine if user is in renewal grace period (H-7 or less)
+  const isInGracePeriod =
+    subscription.tier === "premium" &&
+    daysUntilExpiry !== null &&
+    daysUntilExpiry <= 7;
+
+  // Get urgency level for styling
+  const getUrgencyLevel = () => {
+    if (daysUntilExpiry === null) return null;
+    if (daysUntilExpiry <= 1) return "urgent";
+    if (daysUntilExpiry <= 3) return "warning";
+    if (daysUntilExpiry <= 7) return "info";
+    return null;
+  };
+
+  const urgencyLevel = getUrgencyLevel();
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto py-3 px-3 sm:py-4 sm:px-4 space-y-4 sm:space-y-6 lg:py-8">
@@ -305,27 +331,95 @@ export function AccountTab({ onClose, initialSubscription }: AccountTabProps) {
                 </div>
               )}
 
-              {/* Buy Credit Button - Show for premium users */}
+              {/* Renewal/Buy Credit Section - Show for premium users */}
               {subscription.tier === "premium" && (
-                <div className="pt-3 border-t">
+                <div
+                  className={`pt-3 border-t ${
+                    isInGracePeriod
+                      ? urgencyLevel === "urgent"
+                        ? "bg-red-50 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-4 sm:pb-6 rounded-b-lg"
+                        : urgencyLevel === "warning"
+                        ? "bg-amber-50 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-4 sm:pb-6 rounded-b-lg"
+                        : "bg-blue-50 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-4 sm:pb-6 rounded-b-lg"
+                      : ""
+                  }`}
+                >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium">Need more invoices?</p>
-                      <p className="text-xs text-muted-foreground">
-                        Extend your subscription and get additional credits
-                      </p>
+                      {isInGracePeriod ? (
+                        <>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock
+                              className={`h-4 w-4 ${
+                                urgencyLevel === "urgent"
+                                  ? "text-red-600"
+                                  : urgencyLevel === "warning"
+                                  ? "text-amber-600"
+                                  : "text-blue-600"
+                              }`}
+                            />
+                            <p
+                              className={`text-sm font-semibold ${
+                                urgencyLevel === "urgent"
+                                  ? "text-red-700"
+                                  : urgencyLevel === "warning"
+                                  ? "text-amber-700"
+                                  : "text-blue-700"
+                              }`}
+                            >
+                              {daysUntilExpiry === 1
+                                ? "Subscription berakhir besok!"
+                                : `Subscription berakhir dalam ${daysUntilExpiry} hari`}
+                            </p>
+                          </div>
+                          <p
+                            className={`text-xs ${
+                              urgencyLevel === "urgent"
+                                ? "text-red-600"
+                                : urgencyLevel === "warning"
+                                ? "text-amber-600"
+                                : "text-blue-600"
+                            }`}
+                          >
+                            Perpanjang sekarang untuk terus menggunakan fitur
+                            premium
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium">
+                            Need more invoices?
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Extend your subscription and get additional credits
+                          </p>
+                        </>
+                      )}
                     </div>
                     <Button
                       onClick={handleBuyCredit}
                       disabled={isBuyingCredit}
-                      variant="outline"
+                      variant={isInGracePeriod ? "default" : "outline"}
                       size="sm"
-                      className="w-auto sm:h-auto min-w-[10px] px-8"
+                      className={`w-auto sm:h-auto min-w-[10px] px-8 ${
+                        isInGracePeriod
+                          ? urgencyLevel === "urgent"
+                            ? "bg-red-600 hover:bg-red-700"
+                            : urgencyLevel === "warning"
+                            ? "bg-amber-600 hover:bg-amber-700"
+                            : "bg-blue-600 hover:bg-blue-700"
+                          : ""
+                      }`}
                     >
                       {isBuyingCredit ? (
                         <>
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           <span>Processing...</span>
+                        </>
+                      ) : isInGracePeriod ? (
+                        <>
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>Perpanjang Sekarang</span>
                         </>
                       ) : (
                         <>
