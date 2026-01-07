@@ -36,6 +36,8 @@ import { Button } from "@/components/ui/button";
 import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
+import { ExpiryBanner } from "@/components/features/subscription/expiry-banner";
+import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
 import { deleteInvoiceAction } from "@/app/actions/invoices";
@@ -175,6 +177,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
   const { user, loading: authLoading } = useAuth();
   const userEmail = user?.email || "";
+
+  // Get premium status for expiry banner
+  const { isPremium, daysUntilExpiry } = usePremiumStatus();
 
   const { initializeNewInvoice, loadCompleted } = useInvoiceStore();
   const { afterInvoiceMutation } = useInvalidateRelatedQueries();
@@ -464,6 +469,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               !!storeSettings?.whatsapp
             }
           />
+
+          {/* Subscription Expiry Banner for Premium Users */}
+          {isPremium && <ExpiryBanner daysUntilExpiry={daysUntilExpiry} />}
 
           <FinancialCards
             metrics={financialMetrics}
