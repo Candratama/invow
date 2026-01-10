@@ -151,24 +151,26 @@ export async function getReportOverviewData(
     // Track unique customers
     uniqueCustomers.add(invoice.customer_name)
 
-    // Track customer totals for top customers
-    const customerId = invoice.customer_id || invoice.customer_name
-    const status = invoice.customer_id
-      ? (customerStatusMap.get(invoice.customer_id) || 'Customer')
-      : 'Customer'
+    // Track customer totals for top customers (only regular invoices, exclude buyback)
+    if (!hasBuybackItems) {
+      const customerId = invoice.customer_id || invoice.customer_name
+      const status = invoice.customer_id
+        ? (customerStatusMap.get(invoice.customer_id) || 'Customer')
+        : 'Customer'
 
-    const existing = customerTotals.get(customerId) || {
-      id: customerId,
-      name: invoice.customer_name,
-      total: 0,
-      count: 0,
-      status
+      const existing = customerTotals.get(customerId) || {
+        id: customerId,
+        name: invoice.customer_name,
+        total: 0,
+        count: 0,
+        status
+      }
+      customerTotals.set(customerId, {
+        ...existing,
+        total: existing.total + invoice.total,
+        count: existing.count + 1
+      })
     }
-    customerTotals.set(customerId, {
-      ...existing,
-      total: existing.total + invoice.total,
-      count: existing.count + 1
-    })
 
     // Track revenue by date
     const dateKey = invoice.invoice_date
