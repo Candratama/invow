@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import PaymentNotification from "@/components/features/payment/notification";
+import PaymentWarningModal from "@/components/features/payment/payment-warning-modal";
 import { usePaymentNotification } from "@/lib/hooks/use-payment-notification";
 import { useAuth } from "@/lib/auth/auth-context";
 import { createPaymentInvoiceAction } from "@/app/actions/payments";
@@ -25,6 +26,7 @@ export default function UpgradeButton({
   requireAuth = true,
 }: UpgradeButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { notificationState, showFailure, closeNotification } =
@@ -35,34 +37,46 @@ export default function UpgradeButton({
     if (typeof window !== "undefined" && !authLoading) {
       const params = new URLSearchParams(window.location.search);
       const autoUpgrade = params.get("autoUpgrade");
-      if (autoUpgrade === tier && !isLoading) {
-        // Remove the parameter and trigger upgrade
+      if (autoUpgrade === tier && !isLoading && !showWarningModal) {
+        // Remove the parameter and show warning modal
         params.delete("autoUpgrade");
         const newUrl = `${window.location.pathname}${
           params.toString() ? "?" + params.toString() : ""
         }`;
         window.history.replaceState({}, "", newUrl);
-        handleUpgrade();
+        handleUpgradeClick();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tier, authLoading]);
 
-  const handleUpgrade = async () => {
+  /**
+   * Handle initial upgrade button click
+   * Shows warning modal for authenticated users, redirects to signup for unauthenticated
+   */
+  const handleUpgradeClick = () => {
+    // Check if user is authenticated
+    if (requireAuth && !user) {
+      // User not logged in, redirect to signup with return URL that includes autoUpgrade
+      const returnUrl = `/dashboard/settings?autoUpgrade=${tier}`;
+      router.push(
+        `/dashboard/signup?returnUrl=${encodeURIComponent(returnUrl)}`
+      );
+      return;
+    }
+
+    // Show warning modal before proceeding
+    setShowWarningModal(true);
+  };
+
+  /**
+   * Handle confirmation from warning modal
+   * Proceeds with actual payment creation and redirect to Mayar
+   */
+  const handleConfirmPayment = async () => {
     setIsLoading(true);
 
     try {
-      // Check if user is authenticated using useAuth() hook
-      if (requireAuth && !user) {
-        // User not logged in, redirect to signup with return URL that includes autoUpgrade
-        const returnUrl = `/dashboard/settings?autoUpgrade=${tier}`;
-        router.push(
-          `/dashboard/signup?returnUrl=${encodeURIComponent(returnUrl)}`
-        );
-        setIsLoading(false);
-        return;
-      }
-
       // Call the Server Action instead of API route
       const result = await createPaymentInvoiceAction(tier as "premium");
 
@@ -81,6 +95,7 @@ export default function UpgradeButton({
         err instanceof Error ? err.message : "An unexpected error occurred";
       showFailure(errorMessage);
       setIsLoading(false);
+      setShowWarningModal(false);
     }
   };
 
@@ -89,7 +104,7 @@ export default function UpgradeButton({
       <Button
         variant={variant}
         className={className}
-        onClick={handleUpgrade}
+        onClick={handleUpgradeClick}
         disabled={isLoading || authLoading}
       >
         {isLoading || authLoading ? (
@@ -102,13 +117,21 @@ export default function UpgradeButton({
         )}
       </Button>
 
+      {/* Warning Modal before redirect to Mayar */}
+      <PaymentWarningModal
+        isOpen={showWarningModal}
+        onClose={() => setShowWarningModal(false)}
+        onConfirm={handleConfirmPayment}
+        isLoading={isLoading}
+      />
+
       <PaymentNotification
         isOpen={notificationState.isOpen}
         status={notificationState.status}
         message={notificationState.message}
         onClose={closeNotification}
-        onRetry={handleUpgrade}
-        onUpgrade={handleUpgrade}
+        onRetry={handleUpgradeClick}
+        onUpgrade={handleUpgradeClick}
       />
     </>
   );
