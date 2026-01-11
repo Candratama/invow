@@ -149,6 +149,9 @@ export class UserPreferencesService {
 
   /**
    * Update user preferences
+   *
+   * @note Uses .single() safely here because there's a UNIQUE
+   * constraint on user_id and no JOINs in the query.
    */
   async updatePreferences(
     updates: UserPreferencesUpdate,

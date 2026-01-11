@@ -105,9 +105,13 @@ export class StoresService {
   }
 
   /**
-   * Get default store for the authenticated user
-   * Priority: 1) User's default_store_id from preferences, 2) First active store
-   * Includes primary contact information if available
+   * Get user's default store with store contacts
+   *
+   * @returns Store with nested store_contacts relation
+   *
+   * @note Uses .maybeSingle() instead of .single() to handle
+   * PostgREST nested objects from JOINs. .single() can fail with
+   * "Cannot coerce to JSON object" when relations are present.
    */
   async getDefaultStore(): Promise<{
     data: Store | null;
