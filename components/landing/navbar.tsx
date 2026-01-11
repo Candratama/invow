@@ -33,10 +33,11 @@ export function Navbar() {
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-gold-500/30 border border-gold-200">
             <Image
               src="/icons/web-app-manifest-512x512.png"
-              alt="Invow Logo"
+              alt="Invow - Platform Invoice Generator Indonesia"
               width={24}
               height={24}
               className="w-6 h-6"
+              priority
             />
           </div>
           <span className="text-2xl font-bold text-stone-900 tracking-tight group-hover:text-gold-600 transition-colors">

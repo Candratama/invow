@@ -6,6 +6,10 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import {
+  OrganizationSchema,
+  SoftwareApplicationSchema,
+} from "@/components/schema";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,8 +22,33 @@ const windsong = WindSong({
 });
 
 export const metadata: Metadata = {
-  title: "Invow - Invoice Generator",
-  description: "Generate professional invoices on the go",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://invow.app"
+  ),
+  title: {
+    default: "Invow - Bikin Invoice Profesional dalam 30 Detik | Gratis",
+    template: "%s | Invow",
+  },
+  description:
+    "Platform invoice generator #1 di Indonesia. Buat invoice profesional dari HP dalam 30 detik. Hemat 10+ jam per minggu. Auto backup cloud. Gratis tanpa ribet! Coba sekarang.",
+  keywords: [
+    "invoice generator",
+    "invoice generator indonesia",
+    "buat invoice online",
+    "invoice gratis",
+    "software invoice",
+    "aplikasi invoice",
+    "invoice mobile",
+    "invoice profesional",
+    "faktur online",
+    "nota pembayaran digital",
+    "invoice UMKM",
+    "invoice template",
+    "buat invoice dari hp",
+  ],
+  authors: [{ name: "Invow Team" }],
+  creator: "Invow",
+  publisher: "Invow",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -27,6 +56,40 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "/",
+    siteName: "Invow",
+    title: "Invow - Bikin Invoice Profesional dalam 30 Detik",
+    description:
+      "Platform invoice generator #1 di Indonesia. Buat invoice dari HP dalam 30 detik. Gratis!",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Invow - Invoice Generator Indonesia",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Invow - Invoice Generator Indonesia",
+    description: "Buat invoice profesional dalam 30 detik dari HP. Gratis!",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   icons: {
     icon: [
@@ -53,7 +116,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <head>
         {process.env.NODE_ENV === "development" && (
           <Script
@@ -75,6 +138,8 @@ export default function RootLayout({
         />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/icons/site.webmanifest" />
+        <OrganizationSchema />
+        <SoftwareApplicationSchema />
       </head>
       <body
         className={`${inter.variable} ${windsong.variable}`}

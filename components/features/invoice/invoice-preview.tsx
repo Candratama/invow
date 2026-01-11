@@ -331,10 +331,20 @@ export function InvoicePreview({
                 <div style={{ width: "18%", textAlign: "right" }}>Subtotal</div>
               </div>
               {items.map((item, index) => {
+                // For buyback items, calculate display values based on gram and buyback_rate
+                // For regular items, use price and subtotal
+                const displayPrice = item.is_buyback
+                  ? (item.buyback_rate || 0)
+                  : (item.price || 0);
+
+                const displaySubtotal = item.is_buyback
+                  ? (item.total || 0)
+                  : (item.subtotal || 0);
+
                 const { symbol: priceSymbol, amount: priceAmount } =
-                  splitCurrency(item.price || 0);
+                  splitCurrency(displayPrice);
                 const { symbol: subtotalSymbol, amount: subtotalAmount } =
-                  splitCurrency(item.subtotal || 0);
+                  splitCurrency(displaySubtotal);
 
                 return (
                   <div
@@ -364,7 +374,9 @@ export function InvoicePreview({
                       {item.description}
                     </div>
                     <div style={{ width: "12%", textAlign: "center" }}>
-                      {item.quantity}
+                      {item.is_buyback
+                        ? `${item.gram}g × ${item.quantity || 1}`
+                        : item.quantity}
                     </div>
                     <div
                       style={{
@@ -378,7 +390,7 @@ export function InvoicePreview({
                     >
                       <span>{priceSymbol}</span>
                       <span style={{ flex: 1, textAlign: "right" }}>
-                        {priceAmount}
+                        {priceAmount}{item.is_buyback ? "/g" : ""}
                       </span>
                     </div>
                     <div
@@ -751,9 +763,15 @@ export function InvoicePreview({
                           <p className="text-sm font-medium truncate">
                             {item.description}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            {item.quantity} × {formatCurrency(item.price || 0)}
-                          </p>
+                          {item.is_buyback ? (
+                            <p className="text-xs text-gray-500">
+                              {item.gram}g × {item.quantity || 1} pcs = {((item.gram || 0) * (item.quantity || 1)).toFixed(3)}g × {formatCurrency(item.buyback_rate || 0)}/gram
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-500">
+                              {item.quantity} × {formatCurrency(item.price || 0)}
+                            </p>
+                          )}
                         </div>
                         <p className="text-sm font-semibold whitespace-nowrap">
                           {formatCurrency(item.subtotal || 0)}

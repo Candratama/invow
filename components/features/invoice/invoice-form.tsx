@@ -1105,16 +1105,8 @@ export function InvoiceForm({
             id="note"
             value={currentInvoice.note || ""}
             onChange={(e) => {
-              // Get user's input
-              const newValue = e.target.value;
-
-              // Extract only user's note (before summary marker)
-              const summaryMarker = "• Total Kepingan:";
-              const markerIndex = newValue.indexOf(summaryMarker);
-              const userNote = markerIndex >= 0 ? newValue.substring(0, markerIndex).trimEnd() : newValue;
-
-              // Update with user note only, useEffect will add summary back
-              handleFormChange("note", userNote);
+              // Update note directly - useEffect will manage summary generation
+              handleFormChange("note", e.target.value);
             }}
             placeholder="Add any additional notes or instructions..."
             rows={6}
