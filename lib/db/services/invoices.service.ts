@@ -406,7 +406,7 @@ export class InvoicesService {
           .eq("store_id", data.store_id)
           .ilike("name", data.customer_name.trim())
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (matchingCustomer?.phone) {
           data.customer_phone = matchingCustomer.phone;
