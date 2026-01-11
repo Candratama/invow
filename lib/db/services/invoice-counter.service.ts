@@ -73,7 +73,7 @@ export class InvoiceCounterService {
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       let newCount = 1;
 
