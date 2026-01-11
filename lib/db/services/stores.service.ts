@@ -144,7 +144,7 @@ export class StoresService {
           `)
           .eq("id", preferences.default_store_id)
           .eq("is_active", true)
-          .single();
+          .maybeSingle();
 
         if (defaultStore) {
           return { data: defaultStore, error: null };
@@ -168,7 +168,7 @@ export class StoresService {
         .eq("is_active", true)
         .order("created_at", { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         // If no store found, return null (not an error)
