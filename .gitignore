@@ -61,3 +61,5 @@ tmp/
 *-secrets.json
 
 debug-templates
+
+.idea

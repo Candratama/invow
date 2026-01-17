@@ -86,6 +86,19 @@ export function ModernInvoiceTemplate({
   const lightBrandColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
   const mediumBrandColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`;
 
+  // Calculate store name font size based on length to keep it on one line
+  const getStoreNameFontSize = (name: string) => {
+    const length = name.length;
+    if (length <= 15) return "28pt";
+    if (length <= 20) return "24pt";
+    if (length <= 25) return "20pt";
+    if (length <= 30) return "18pt";
+    return "16pt";
+  };
+
+  const storeName = storeSettings?.name || "Your Store";
+  const storeNameFontSize = getStoreNameFontSize(storeName);
+
   return (
     <div
       style={
@@ -155,14 +168,15 @@ export function ModernInvoiceTemplate({
               <div>
                 <div
                   style={{
-                    fontSize: "28pt",
+                    fontSize: storeNameFontSize,
                     fontWeight: "700",
                     marginBottom: "-8px",
                     letterSpacing: "-0.5px",
                     alignItems: "end",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {storeSettings?.name || "Your Store"}
+                  {storeName}
                 </div>
 
                 {storeSettings?.storeDescription && (
@@ -309,49 +323,6 @@ export function ModernInvoiceTemplate({
               </div>
             </div>
 
-            {/* Store Address Card */}
-            <div
-              style={{
-                flex: 1,
-                backgroundColor: lightBrandColor,
-                padding: "14px 24px 24px 24px",
-                borderRadius: "12px",
-                borderLeft: `4px solid ${brandColor}`,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "9pt",
-                  fontWeight: "700",
-                  color: brandColor,
-                  textTransform: "uppercase",
-                  letterSpacing: "1px",
-                  marginBottom: "12px",
-                }}
-              >
-                From
-              </div>
-
-              <div
-                style={{
-                  fontSize: "10pt",
-                  color: "#6b7280",
-                  lineHeight: "1.6",
-                }}
-              >
-                {storeSettings?.address && (
-                  <div style={{ whiteSpace: "pre-wrap" }}>
-                    {storeSettings.address}
-                  </div>
-                )}
-                {storeSettings?.whatsapp && (
-                  <div style={{ marginTop: "8px" }}>
-                    {storeSettings.whatsapp}
-                  </div>
-                )}
-                {storeSettings?.email && <div>{storeSettings.email}</div>}
-              </div>
-            </div>
           </div>
 
           {/* Items Table */}
