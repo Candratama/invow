@@ -12,6 +12,7 @@ import {
   BarChart3,
   Tags,
   Palette,
+  Bug,
 } from "lucide-react";
 import {
   Sidebar,
@@ -71,6 +72,11 @@ const navItems = [
     title: "Templates",
     href: "/admin/templates",
     icon: Palette,
+  },
+  {
+    title: "Debug Templates",
+    href: "/admin/debug-templates",
+    icon: Bug,
   },
 ];
 
