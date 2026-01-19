@@ -308,34 +308,49 @@ export interface Database {
           id: string
           invoice_id: string
           description: string
-          quantity: number
-          price: number
-          subtotal: number
+          quantity: number | null
+          price: number | null
+          subtotal: number | null
           position: number
           created_at: string
           updated_at: string
+          // Buyback fields
+          is_buyback: boolean
+          gram: number | null
+          buyback_rate: number | null
+          total: number | null
         }
         Insert: {
           id?: string
           invoice_id: string
           description: string
-          quantity: number
-          price: number
-          subtotal: number
+          quantity?: number | null
+          price?: number | null
+          subtotal?: number | null
           position?: number
           created_at?: string
           updated_at?: string
+          // Buyback fields
+          is_buyback?: boolean
+          gram?: number | null
+          buyback_rate?: number | null
+          total?: number | null
         }
         Update: {
           id?: string
           invoice_id?: string
           description?: string
-          quantity?: number
-          price?: number
-          subtotal?: number
+          quantity?: number | null
+          price?: number | null
+          subtotal?: number | null
           position?: number
           created_at?: string
           updated_at?: string
+          // Buyback fields
+          is_buyback?: boolean
+          gram?: number | null
+          buyback_rate?: number | null
+          total?: number | null
         }
       }
       user_settings_deprecated: {

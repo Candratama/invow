@@ -326,6 +326,16 @@ export function InvoiceForm({
     }
   }, [currentInvoice, form]);
 
+  // Auto-detect buyback mode when loading invoice from history
+  useEffect(() => {
+    if (currentInvoice?.items && currentInvoice.items.length > 0) {
+      const hasBuybackItems = currentInvoice.items.some(item => item.is_buyback);
+      if (hasBuybackItems && !isBuybackMode) {
+        setIsBuybackMode(true);
+      }
+    }
+  }, [currentInvoice?.items, isBuybackMode]);
+
   // Item form
   const itemForm = useForm<ItemFormData>({
     resolver: zodResolver(itemSchema),
@@ -461,7 +471,6 @@ export function InvoiceForm({
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentInvoice?.items, isBuybackMode]);
 
   const handleAddItem = (data: ItemFormData) => {
@@ -519,7 +528,8 @@ export function InvoiceForm({
     }
     itemForm.reset({
       description: item.description,
-      quantity: item.quantity ?? undefined,
+      // For buyback items, use quantity or default to 1 if not set (for legacy data)
+      quantity: item.quantity ?? 1,
       price: item.price ?? undefined,
       gram: item.gram ?? undefined,
       is_buyback: item.is_buyback,
@@ -689,7 +699,7 @@ export function InvoiceForm({
                     `Failed to save customer: ${customerResult.error}`
                   );
                 }
-              } catch (error) {
+              } catch {
                 // Silent fail - continue with invoice creation
               }
             }
@@ -716,7 +726,11 @@ export function InvoiceForm({
 
           const items = (currentInvoice.items || []).map((item, index) => {
             // Base fields that all items have
-            const baseItem: any = {
+            const baseItem: {
+              id: string;
+              description: string;
+              position: number;
+            } = {
               id: item.id,
               description: item.description,
               position: index,
@@ -728,6 +742,7 @@ export function InvoiceForm({
                 ...baseItem,
                 is_buyback: true,
                 gram: item.gram,
+                quantity: item.quantity || 1,
                 buyback_rate: item.buyback_rate,
                 total: item.total,
               };
