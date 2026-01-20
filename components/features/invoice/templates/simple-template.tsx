@@ -342,7 +342,13 @@ export function SimpleInvoiceTemplate({
                   {index + 1}
                 </div>
                 <div
-                  style={{ width: isBuyback ? "32%" : "40%", fontWeight: "500", textAlign: "left" }}
+                  style={{
+                    width: isBuyback ? "32%" : "40%",
+                    fontWeight: "500",
+                    textAlign: "left",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                  }}
                 >
                   {item.description}
                 </div>

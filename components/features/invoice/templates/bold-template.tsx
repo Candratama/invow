@@ -334,6 +334,8 @@ export function BoldInvoiceTemplate({
                       width: "44%",
                       fontWeight: "700",
                       textAlign: "left",
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
                     }}
                   >
                     {item.description}

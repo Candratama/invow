@@ -414,6 +414,8 @@ export function ModernInvoiceTemplate({
                       textAlign: "left",
                       fontWeight: "600",
                       color: "#1f2937",
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
                     }}
                   >
                     {item.description}

@@ -345,6 +345,8 @@ export function ClassicInvoiceTemplate({
                     textAlign: "left",
                     whiteSpace: "pre-wrap",
                     wordSpacing: "normal",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
                   }}
                 >
                   {item.description}

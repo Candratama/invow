@@ -388,6 +388,8 @@ export function CorporateInvoiceTemplate({
                     width: "44%",
                     fontWeight: "600",
                     textAlign: "left",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
                   }}
                 >
                   {item.description}

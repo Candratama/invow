@@ -373,6 +373,8 @@ export function CompactInvoiceTemplate({
                     width: "40%",
                     fontWeight: "600",
                     textAlign: "left",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
                   }}
                 >
                   {item.description}

@@ -337,6 +337,8 @@ export function ElegantInvoiceTemplate({
                     fontWeight: "500",
                     color: "#2d2d2d",
                     textAlign: "left",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
                   }}
                 >
                   {item.description}
