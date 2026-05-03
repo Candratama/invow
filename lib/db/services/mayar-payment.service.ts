@@ -232,6 +232,7 @@ export class MayarPaymentService {
     invoiceId: string,
   ): Promise<{ data: Record<string, unknown> | null; error: Error | null }> {
     try {
+      // Read env at call time so vitest beforeEach can override the module-level constants.
       const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
       const apiUrl = process.env.MAYAR_API_URL ?? MAYAR_API_URL;
       if (!apiKey) {

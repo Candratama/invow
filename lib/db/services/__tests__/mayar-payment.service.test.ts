@@ -16,7 +16,7 @@ describe('MayarPaymentService.getInvoiceById', () => {
   });
 
   it('returns invoice payload on 200', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
+    const fetchSpy = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
           statusCode: 200,
@@ -26,10 +26,20 @@ describe('MayarPaymentService.getInvoiceById', () => {
         { status: 200 },
       ),
     );
+    global.fetch = fetchSpy;
     const svc = new MayarPaymentService({} as never);
     const { data, error } = await svc.getInvoiceById('inv-1');
     expect(error).toBeNull();
     expect(data).toMatchObject({ id: 'inv-1', status: 'paid' });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/invoice/inv-1'),
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-key',
+        }),
+      }),
+    );
   });
 
   it('returns error on 429', async () => {
@@ -49,5 +59,15 @@ describe('MayarPaymentService.getInvoiceById', () => {
     const svc = new MayarPaymentService({} as never);
     const { error } = await svc.getInvoiceById('inv-missing');
     expect(error?.message).toContain('404');
+  });
+
+  it('returns error when MAYAR_API_KEY is not configured', async () => {
+    delete process.env.MAYAR_API_KEY;
+    global.fetch = vi.fn();
+    const svc = new MayarPaymentService({} as never);
+    const { data, error } = await svc.getInvoiceById('inv-x');
+    expect(data).toBeNull();
+    expect(error?.message).toContain('MAYAR_API_KEY');
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
