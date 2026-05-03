@@ -79,8 +79,35 @@ export class MayarPaymentService {
     error: Error | null;
   }> {
     try {
-      if (!MAYAR_API_KEY) {
+      // Read env at call time so vitest beforeEach can override the module-level constants.
+      const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
+      if (!apiKey) {
         throw new Error("MAYAR_API_KEY is not configured");
+      }
+
+      // Idempotency: reuse a pending payment for the same (user, tier) created
+      // within 5 minutes. Prevents double-click / rapid retry from creating
+      // duplicate Mayar invoices.
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data: existing } = await this.supabase
+        .from("payment_transactions")
+        .select("id, mayar_invoice_id, payment_url, amount")
+        .eq("user_id", userId)
+        .eq("tier", tier)
+        .eq("status", "pending")
+        .gte("created_at", fiveMinAgo)
+        .maybeSingle();
+
+      if (existing && existing.mayar_invoice_id && existing.payment_url) {
+        safeLog.payment("Reusing pending invoice", { paymentId: existing.id });
+        return {
+          data: {
+            invoiceId: existing.mayar_invoice_id as string,
+            paymentUrl: existing.payment_url as string,
+            amount: existing.amount as number,
+          },
+          error: null,
+        };
       }
 
       // Fetch price from database
@@ -194,6 +221,7 @@ export class MayarPaymentService {
         .from("payment_transactions")
         .update({
           mayar_invoice_id: transactionId,
+          payment_url: paymentUrl,
         })
         .eq("id", paymentRecord.id);
 

@@ -212,3 +212,61 @@ describe('MayarPaymentService.verifyAndProcessPayment (refactored)', () => {
     expect(upgradeSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('MayarPaymentService.createInvoice idempotency', () => {
+  beforeEach(() => {
+    process.env.MAYAR_API_KEY = 'test-key';
+    process.env.MAYAR_API_URL = 'https://api.mayar.id/hl/v1';
+  });
+
+  it('returns existing pending invoice instead of creating a new one', async () => {
+    const callMayar = vi.fn();
+    global.fetch = callMayar;
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'subscription_plans') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  single: async () => ({ data: { price: 99000 }, error: null }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'payment_transactions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    gte: () => ({
+                      maybeSingle: async () => ({
+                        data: {
+                          id: 'pending-1',
+                          mayar_invoice_id: 'inv-existing',
+                          payment_url: 'https://pay.mayar/existing',
+                          amount: 99000,
+                        },
+                        error: null,
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) };
+      },
+      auth: { getUser: async () => ({ data: { user: { id: 'u1', email: 'test@example.com' } } }) },
+    } as unknown as SupabaseClient;
+
+    const svc = new MayarPaymentService(supabase);
+    const result = await svc.createInvoice('u1', 'premium');
+    expect(result.error).toBeNull();
+    expect(result.data?.invoiceId).toBe('inv-existing');
+    expect(callMayar).not.toHaveBeenCalled();
+  });
+});
