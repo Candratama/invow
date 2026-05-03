@@ -379,9 +379,15 @@ export class MayarPaymentService {
       // Direct invoice fetch
       const { data: invoice, error: fetchErr } =
         await this.getInvoiceById(invoiceId);
+
+      if (fetchErr || !invoice) {
+        return { error: fetchErr ?? new Error("Empty invoice payload") };
+      }
+
       const nowIso = new Date().toISOString();
 
-      // Always bump poll counters so cron throttling can decide later
+      // Bump poll counters only after a successful Mayar response, so a flapping
+      // upstream doesn't burn the cron throttle budget on rows we never confirmed.
       await this.supabase
         .from("payment_transactions")
         .update({
@@ -389,10 +395,6 @@ export class MayarPaymentService {
           poll_count: (payment.poll_count ?? 0) + 1,
         })
         .eq("id", payment.id);
-
-      if (fetchErr || !invoice) {
-        return { error: fetchErr ?? new Error("Empty invoice payload") };
-      }
 
       const status = String(invoice.status ?? "").toLowerCase();
       const paidStates = new Set(["paid", "completed", "settled"]);
@@ -420,16 +422,34 @@ export class MayarPaymentService {
         .select()
         .maybeSingle();
 
-      // If another worker already flipped it, treat as success
-      const finalRow = completed ?? payment;
       if (!completed) {
-        safeLog.info("Payment already completed by another worker");
+        // Another worker (cron or redirect) already flipped this row and ran
+        // upgradeToTier. Skip the upgrade to avoid double-extending the
+        // subscription end date or stacking invoice_limit credits.
+        safeLog.info("Payment already completed by another worker; skipping upgrade");
+        const { data: existingSubscription } = await this.supabase
+          .from("user_subscriptions")
+          .select("tier, subscription_end_date")
+          .eq("user_id", userId)
+          .single();
+        if (!existingSubscription) {
+          return { error: new Error("Subscription not found after race") };
+        }
+        return {
+          data: {
+            subscription: {
+              tier: existingSubscription.tier,
+              expiresAt: existingSubscription.subscription_end_date || "",
+            },
+          },
+        };
       }
 
+      // This worker won the CAS — perform the upgrade exactly once.
       const { SubscriptionService } = await import("./subscription.service");
       const subscriptionService = new SubscriptionService(this.supabase);
       const { success, error: upgradeError } =
-        await subscriptionService.upgradeToTier(userId, finalRow.tier);
+        await subscriptionService.upgradeToTier(userId, completed.tier);
       if (upgradeError || !success) {
         return {
           error: new Error(
@@ -446,6 +466,10 @@ export class MayarPaymentService {
       if (!updatedSubscription) {
         return { error: new Error("Failed to retrieve updated subscription") };
       }
+      safeLog.payment("Verification success", {
+        invoiceId,
+        tier: updatedSubscription.tier,
+      });
       return {
         data: {
           subscription: {
@@ -462,8 +486,12 @@ export class MayarPaymentService {
   }
 
   /**
-   * Query Mayar transactions by invoice ID with caching and deduplication
-   * Fetches transactions from Mayar API and filters by invoice ID
+   * @deprecated Replaced by `getInvoiceById` for the redirect-first verification flow.
+   * Slated for removal once the cron path is observed stable for ≥1 week.
+   * Do not call from new code.
+   *
+   * Query Mayar transactions by invoice ID with caching and deduplication.
+   * Fetches transactions from Mayar API and filters by invoice ID.
    * @param invoiceId - Mayar invoice ID to search for
    * @returns Array of matching transactions
    */

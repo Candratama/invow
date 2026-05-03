@@ -135,4 +135,80 @@ describe('MayarPaymentService.verifyAndProcessPayment (refactored)', () => {
     const result = await svc.verifyAndProcessPayment('u1', 'inv-1');
     expect(result.error?.message).toContain('pending');
   });
+
+  it('does not double-upgrade when CAS race is lost', async () => {
+    // Mayar reports paid
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: { id: 'inv-1', status: 'paid', transactionId: 'txn-1' } }),
+        { status: 200 },
+      ),
+    );
+
+    const upgradeSpy = vi.fn();
+    // Mock the SubscriptionService dynamic import path so we can detect calls
+    vi.doMock('@/lib/db/services/subscription.service', () => ({
+      SubscriptionService: class {
+        async upgradeToTier(...args: unknown[]) {
+          upgradeSpy(...args);
+          return { success: true };
+        }
+      },
+    }));
+
+    // Build a stub where the conditional update returns null (race lost)
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'payment_transactions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  maybeSingle: async () => ({
+                    data: {
+                      id: 'p1',
+                      user_id: 'u1',
+                      mayar_invoice_id: 'inv-1',
+                      tier: 'premium',
+                      status: 'pending',
+                      poll_count: 0,
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+            update: () => ({
+              eq: (..._: unknown[]) => ({
+                eq: () => ({
+                  select: () => ({
+                    maybeSingle: async () => ({ data: null, error: null }), // race lost
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'user_subscriptions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({
+                  data: { tier: 'premium', subscription_end_date: '2027-01-01' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) };
+      },
+    } as unknown as SupabaseClient;
+
+    const svc = new MayarPaymentService(supabase);
+    const result = await svc.verifyAndProcessPayment('u1', 'inv-1');
+    expect(result.error).toBeUndefined();
+    expect(result.data?.subscription.tier).toBe('premium');
+    expect(upgradeSpy).not.toHaveBeenCalled();
+  });
 });
