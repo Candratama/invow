@@ -7,7 +7,7 @@
 
 import { NextResponse } from "next/server";
 
-const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id";
+const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id/hl/v1";
 const MAYAR_API_KEY = process.env.MAYAR_API_KEY;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 

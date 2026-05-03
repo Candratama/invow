@@ -12,7 +12,7 @@ interface CreateInvoiceResponse {
   amount: number;
 }
 
-const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id";
+const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id/hl/v1";
 const MAYAR_API_KEY = process.env.MAYAR_API_KEY;
 
 export class MayarPaymentService {
@@ -642,17 +642,20 @@ export class MayarPaymentService {
     method: string,
     body?: unknown,
   ): Promise<Record<string, unknown>> {
+    // Read env at call time so vitest beforeEach can override the module-level constants.
+    const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
+    const apiUrl = process.env.MAYAR_API_URL ?? MAYAR_API_URL;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
-        const url = `${MAYAR_API_URL}${endpoint}`;
+        const url = `${apiUrl}${endpoint}`;
 
         const response = await fetch(url, {
           method,
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${MAYAR_API_KEY}`,
+            Authorization: `Bearer ${apiKey}`,
           },
           body: body ? JSON.stringify(body) : undefined,
         });
