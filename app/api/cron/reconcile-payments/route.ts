@@ -3,10 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { MayarPaymentService } from "@/lib/db/services/mayar-payment.service";
 import { safeLog } from "@/lib/utils/safe-logger";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 // Vercel Hobby max execution: 10s. 2 rows × 2000ms = 4s — leaves ~6s headroom for Mayar latency.
 // Triggered externally (cron-job.org) every 5 min since Hobby cron is limited to 1/day.
+// runtime/dynamic exports omitted — Next.js 16 cacheComponents bans them.
+// Route is implicitly dynamic because it reads request headers (Authorization).
 export const maxDuration = 10;
 
 const BATCH_SIZE = 2;
