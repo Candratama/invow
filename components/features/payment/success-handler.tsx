@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import PaymentNotification from "@/components/features/payment/notification";
+import { PaymentStatusPoller } from "@/components/features/payment/payment-status-poller";
 import { usePaymentNotification } from "@/lib/hooks/use-payment-notification";
 import { usePaymentVerificationStore } from "@/lib/stores/payment-verification-store";
 
@@ -28,7 +29,7 @@ export default function PaymentSuccessHandler({
   const searchParams = useSearchParams();
   const { notificationState, showSuccess, showFailure, closeNotification } =
     usePaymentNotification();
-  
+
   // Use Zustand store for payment verification state
   const {
     startVerification,
@@ -37,6 +38,9 @@ export default function PaymentSuccessHandler({
     isVerifying,
     isVerified,
   } = usePaymentVerificationStore();
+
+  // Track payment ID currently being polled because it returned `pending`
+  const [pendingPaymentId, setPendingPaymentId] = useState<string | null>(null);
 
   /**
    * Verify payment with backend API
@@ -87,28 +91,32 @@ export default function PaymentSuccessHandler({
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (response.ok && data.status === "paid") {
         // Success: Mark as verified and show success message
         completeVerification(paymentId);
-        
-        const successMessage = data.message || 
+
+        const successMessage = data.message ||
           "Payment verified successfully! Your subscription has been upgraded.";
-        
+
         showSuccess(successMessage);
-        
+
         // Trigger callback to refresh subscription data
         if (onPaymentSuccess) {
           onPaymentSuccess();
         }
+      } else if (data.status === "pending") {
+        // Payment not yet confirmed by Mayar — start polling
+        showSuccess("Verifying payment, please wait...");
+        setPendingPaymentId(paymentId);
       } else {
         // API returned error
-        let errorMessage = data.error || "Payment verification failed. Please try again.";
-        
+        let errorMessage = data.message || "Payment verification failed. Please try again.";
+
         // Special handling for rate limiting
         if (errorMessage.includes("429") || errorMessage.includes("rate limit")) {
           errorMessage = "Too many verification attempts. Please wait a moment and refresh the page to try again.";
         }
-        
+
         failVerification(paymentId, errorMessage);
         showFailure(errorMessage);
       }
@@ -197,13 +205,36 @@ export default function PaymentSuccessHandler({
   }, [searchParams]);
 
   return (
-    <PaymentNotification
-      isOpen={notificationState.isOpen}
-      status={notificationState.status}
-      message={notificationState.message}
-      onClose={closeNotification}
-      autoDismiss={notificationState.status === "success"}
-      autoDismissDelay={5000}
-    />
+    <>
+      <PaymentNotification
+        isOpen={notificationState.isOpen}
+        status={notificationState.status}
+        message={notificationState.message}
+        onClose={closeNotification}
+        autoDismiss={notificationState.status === "success"}
+        autoDismissDelay={5000}
+      />
+      {pendingPaymentId && (
+        <PaymentStatusPoller
+          paymentId={pendingPaymentId}
+          onPaid={() => {
+            completeVerification(pendingPaymentId);
+            showSuccess(
+              "Payment verified successfully! Your subscription has been upgraded."
+            );
+            if (onPaymentSuccess) {
+              onPaymentSuccess();
+            }
+            setPendingPaymentId(null);
+          }}
+          onTimeout={() => {
+            showFailure(
+              "Pembayaran sedang diproses. Silakan refresh halaman dalam beberapa menit untuk cek status."
+            );
+            setPendingPaymentId(null);
+          }}
+        />
+      )}
+    </>
   );
 }
