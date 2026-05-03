@@ -1,6 +1,9 @@
 /**
  * Payment Verification API Endpoint
  * Verifies payment status with Mayar API after redirect
+ *
+ * Returns structured status: 'paid'|'pending'|'error'
+ * HTTP status codes: 200 (paid), 202 (pending), 400/401/429/500 (error states)
  */
 
 import { NextResponse } from "next/server";
@@ -10,6 +13,9 @@ import { MayarPaymentService } from "@/lib/db/services/mayar-payment.service";
 /**
  * POST /api/payments/verify
  * Verify payment after user is redirected from Mayar
+ *
+ * Request: { paymentId: string }
+ * Response: { status: 'paid'|'pending'|'error', message?, subscription? }
  */
 export async function POST(request: Request) {
   try {
@@ -22,64 +28,51 @@ export async function POST(request: Request) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { status: "error", message: "Unauthorized" },
         { status: 401 },
       );
     }
 
     // 2. Parse and validate request body
-    const body = await request.json();
-    const { paymentId } = body;
+    const body = await request.json().catch(() => ({}));
+    const paymentId = typeof body?.paymentId === "string" ? body.paymentId.trim() : "";
 
     if (!paymentId) {
       return NextResponse.json(
-        { success: false, error: "Missing payment ID" },
-        { status: 400 },
-      );
-    }
-
-    if (typeof paymentId !== "string" || paymentId.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Invalid payment ID format" },
+        { status: "error", message: "Missing paymentId" },
         { status: 400 },
       );
     }
 
     // 3. Verify payment with Mayar API using our payment record ID
-    const mayarPaymentService = new MayarPaymentService(supabase);
-    const { data, error } = await mayarPaymentService.verifyAndProcessPaymentByRecordId(
+    const svc = new MayarPaymentService(supabase);
+    const { data, error } = await svc.verifyAndProcessPaymentByRecordId(
       user.id,
-      paymentId.trim(),
+      paymentId,
     );
 
     if (error) {
-      console.error("Payment verification failed:", error);
-      
-      // Check if it's a rate limit error
-      const isRateLimitError = error.message.includes("429") || 
-                               error.message.includes("rate limit");
-      
-      const userMessage = isRateLimitError
-        ? "Too many verification attempts. Please wait a moment and try again."
-        : error.message;
-      
+      const msg = error.message || "Verification failed";
+      const isPending = /pending|not yet|wait a moment/i.test(msg);
+      const isRateLimited = /429|rate limit/i.test(msg);
+      const httpStatus = isRateLimited ? 429 : isPending ? 202 : 400;
       return NextResponse.json(
-        { success: false, error: userMessage },
-        { status: isRateLimitError ? 429 : 400 },
+        {
+          status: isPending ? "pending" : "error",
+          message: msg,
+        },
+        { status: httpStatus },
       );
     }
 
     // 4. Return success response
     return NextResponse.json({
-      success: true,
-      message:
-        "Payment verified successfully! Your subscription has been upgraded.",
+      status: "paid",
       subscription: data?.subscription,
     });
-  } catch (error) {
-    console.error("Unexpected error in verify endpoint:", error);
+  } catch (e) {
     return NextResponse.json(
-      { success: false, error: "An unexpected error occurred" },
+      { status: "error", message: "Unexpected error" },
       { status: 500 },
     );
   }
