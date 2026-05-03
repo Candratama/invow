@@ -37,6 +37,7 @@ import { useInvoiceStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Invoice } from "@/lib/types";
 import { ExpiryBanner } from "@/components/features/subscription/expiry-banner";
+import { DomainMigrationBanner } from "@/components/features/onboarding/domain-migration-banner";
 import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 import { parseLocalDate } from "@/lib/utils";
 import { generateJPEGFromInvoice } from "@/lib/utils/invoice-generator";
@@ -469,6 +470,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               !!storeSettings?.whatsapp
             }
           />
+
+          <DomainMigrationBanner />
 
           {/* Subscription Expiry Banner for Premium Users */}
           {isPremium && <ExpiryBanner daysUntilExpiry={daysUntilExpiry} />}
