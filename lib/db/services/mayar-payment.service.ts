@@ -224,6 +224,45 @@ export class MayarPaymentService {
   }
 
   /**
+   * Fetch single invoice from Mayar by invoice ID.
+   * Returns the raw Mayar invoice payload (status, amount, customer, etc).
+   * Avoids the deprecated "fetch all transactions and filter" path.
+   */
+  async getInvoiceById(
+    invoiceId: string,
+  ): Promise<{ data: Record<string, unknown> | null; error: Error | null }> {
+    try {
+      const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
+      const apiUrl = process.env.MAYAR_API_URL ?? MAYAR_API_URL;
+      if (!apiKey) {
+        throw new Error("MAYAR_API_KEY is not configured");
+      }
+      const url = `${apiUrl}/invoice/${invoiceId}`;
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        return {
+          data: null,
+          error: new Error(`Mayar invoice fetch failed (${resp.status}): ${body}`),
+        };
+      }
+      const json = (await resp.json()) as { data?: Record<string, unknown> };
+      return { data: json.data ?? null, error: null };
+    } catch (e) {
+      return {
+        data: null,
+        error: e instanceof Error ? e : new Error("Unknown Mayar fetch error"),
+      };
+    }
+  }
+
+  /**
    * Verify payment with Mayar API and process subscription update using payment record ID
    * This is called after user is redirected from Mayar payment page
    * @param userId - User ID
