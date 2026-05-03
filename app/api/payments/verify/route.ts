@@ -71,6 +71,7 @@ export async function POST(request: Request) {
       subscription: data?.subscription,
     });
   } catch (e) {
+    console.error("[/api/payments/verify] Unexpected error:", e);
     return NextResponse.json(
       { status: "error", message: "Unexpected error" },
       { status: 500 },
