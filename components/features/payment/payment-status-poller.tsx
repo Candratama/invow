@@ -25,6 +25,15 @@ export function PaymentStatusPoller({
   onError,
 }: PaymentStatusPollerProps) {
   const stoppedRef = useRef(false);
+  const onPaidRef = useRef(onPaid);
+  const onTimeoutRef = useRef(onTimeout);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onPaidRef.current = onPaid;
+    onTimeoutRef.current = onTimeout;
+    onErrorRef.current = onError;
+  }, [onPaid, onTimeout, onError]);
 
   useEffect(() => {
     stoppedRef.current = false;
@@ -39,22 +48,25 @@ export function PaymentStatusPoller({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ paymentId }),
         });
+        if (stoppedRef.current) return;
         const json = await res.json().catch(() => ({}));
+        if (stoppedRef.current) return;
         if (json?.status === "paid") {
           stoppedRef.current = true;
-          onPaid();
+          onPaidRef.current();
           return;
         }
         if (json?.status === "error") {
-          onError?.(json?.message ?? "Verification error");
+          onErrorRef.current?.(json?.message ?? "Verification error");
         }
       } catch {
         // Network blip — let the next tick retry
       }
 
+      if (stoppedRef.current) return;
       if (Date.now() - startedAt >= maxMs) {
         stoppedRef.current = true;
-        onTimeout?.();
+        onTimeoutRef.current?.();
         return;
       }
       timer = setTimeout(tick, intervalMs);
@@ -65,7 +77,7 @@ export function PaymentStatusPoller({
       stoppedRef.current = true;
       clearTimeout(timer);
     };
-  }, [paymentId, intervalMs, maxMs, onPaid, onTimeout, onError]);
+  }, [paymentId, intervalMs, maxMs]);
 
   return null;
 }

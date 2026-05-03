@@ -105,8 +105,8 @@ export default function PaymentSuccessHandler({
           onPaymentSuccess();
         }
       } else if (data.status === "pending") {
-        // Payment not yet confirmed by Mayar — start polling
-        showSuccess("Verifying payment, please wait...");
+        // Keep the existing "Verifying payment..." notification visible and
+        // delegate to the poller. The poller resolves it on success or timeout.
         setPendingPaymentId(paymentId);
       } else {
         // API returned error
