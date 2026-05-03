@@ -5,8 +5,10 @@ import { safeLog } from "@/lib/utils/safe-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Vercel maxDuration: 60s (Pro tier). 10 rows × 3500ms = 35s — leaves ~25s headroom for Mayar latency.
+export const maxDuration = 60;
 
-const BATCH_SIZE = 15;
+const BATCH_SIZE = 10;
 const POLL_GAP_MS = parseInt(process.env.CRON_POLL_GAP_MS ?? "3500", 10);
 
 export async function GET(req: Request) {
@@ -32,10 +34,10 @@ export async function GET(req: Request) {
 
   if (error) {
     safeLog.error("Cron sweep query failed", { message: error.message });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 
-  let paid = 0;
+  let processed = 0;
   for (const row of pending ?? []) {
     if (!row.mayar_invoice_id) continue;
     const svc = new MayarPaymentService(admin);
@@ -44,11 +46,11 @@ export async function GET(req: Request) {
       row.mayar_invoice_id as string,
       { source: "cron" },
     );
-    if (result.data) paid += 1;
+    if (result.data) processed += 1;
     if (POLL_GAP_MS > 0) {
       await new Promise((r) => setTimeout(r, POLL_GAP_MS));
     }
   }
 
-  return NextResponse.json({ swept: pending?.length ?? 0, paid });
+  return NextResponse.json({ swept: pending?.length ?? 0, processed });
 }
