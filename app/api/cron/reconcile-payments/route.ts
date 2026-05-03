@@ -5,11 +5,12 @@ import { safeLog } from "@/lib/utils/safe-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Vercel maxDuration: 60s (Pro tier). 10 rows × 3500ms = 35s — leaves ~25s headroom for Mayar latency.
-export const maxDuration = 60;
+// Vercel Hobby max execution: 10s. 2 rows × 2000ms = 4s — leaves ~6s headroom for Mayar latency.
+// Triggered externally (cron-job.org) every 5 min since Hobby cron is limited to 1/day.
+export const maxDuration = 10;
 
-const BATCH_SIZE = 10;
-const POLL_GAP_MS = parseInt(process.env.CRON_POLL_GAP_MS ?? "3500", 10);
+const BATCH_SIZE = 2;
+const POLL_GAP_MS = parseInt(process.env.CRON_POLL_GAP_MS ?? "2000", 10);
 
 export async function GET(req: Request) {
   if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
