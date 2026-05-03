@@ -12,7 +12,7 @@ interface CreateInvoiceResponse {
   amount: number;
 }
 
-const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id";
+const MAYAR_API_URL = process.env.MAYAR_API_URL || "https://api.mayar.id/hl/v1";
 const MAYAR_API_KEY = process.env.MAYAR_API_KEY;
 
 export class MayarPaymentService {
@@ -79,8 +79,35 @@ export class MayarPaymentService {
     error: Error | null;
   }> {
     try {
-      if (!MAYAR_API_KEY) {
+      // Read env at call time so vitest beforeEach can override the module-level constants.
+      const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
+      if (!apiKey) {
         throw new Error("MAYAR_API_KEY is not configured");
+      }
+
+      // Idempotency: reuse a pending payment for the same (user, tier) created
+      // within 5 minutes. Prevents double-click / rapid retry from creating
+      // duplicate Mayar invoices.
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data: existing } = await this.supabase
+        .from("payment_transactions")
+        .select("id, mayar_invoice_id, payment_url, amount")
+        .eq("user_id", userId)
+        .eq("tier", tier)
+        .eq("status", "pending")
+        .gte("created_at", fiveMinAgo)
+        .maybeSingle();
+
+      if (existing && existing.mayar_invoice_id && existing.payment_url) {
+        safeLog.payment("Reusing pending invoice", { paymentId: existing.id });
+        return {
+          data: {
+            invoiceId: existing.mayar_invoice_id as string,
+            paymentUrl: existing.payment_url as string,
+            amount: existing.amount as number,
+          },
+          error: null,
+        };
       }
 
       // Fetch price from database
@@ -194,6 +221,7 @@ export class MayarPaymentService {
         .from("payment_transactions")
         .update({
           mayar_invoice_id: transactionId,
+          payment_url: paymentUrl,
         })
         .eq("id", paymentRecord.id);
 
@@ -219,6 +247,46 @@ export class MayarPaymentService {
       return {
         data: null,
         error: error instanceof Error ? error : new Error("Unknown error"),
+      };
+    }
+  }
+
+  /**
+   * Fetch single invoice from Mayar by invoice ID.
+   * Returns the raw Mayar invoice payload (status, amount, customer, etc).
+   * Avoids the deprecated "fetch all transactions and filter" path.
+   */
+  async getInvoiceById(
+    invoiceId: string,
+  ): Promise<{ data: Record<string, unknown> | null; error: Error | null }> {
+    try {
+      // Read env at call time so vitest beforeEach can override the module-level constants.
+      const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
+      const apiUrl = process.env.MAYAR_API_URL ?? MAYAR_API_URL;
+      if (!apiKey) {
+        throw new Error("MAYAR_API_KEY is not configured");
+      }
+      const url = `${apiUrl}/invoice/${invoiceId}`;
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        return {
+          data: null,
+          error: new Error(`Mayar invoice fetch failed (${resp.status}): ${body}`),
+        };
+      }
+      const json = (await resp.json()) as { data?: Record<string, unknown> };
+      return { data: json.data ?? null, error: null };
+    } catch (e) {
+      return {
+        data: null,
+        error: e instanceof Error ? e : new Error("Unknown Mayar fetch error"),
       };
     }
   }
@@ -292,19 +360,16 @@ export class MayarPaymentService {
   async verifyAndProcessPayment(
     userId: string,
     invoiceId: string,
+    options?: { source?: "redirect" | "cron" },
   ): Promise<{
-    data?: {
-      subscription: {
-        tier: string;
-        expiresAt: string;
-      };
-    };
+    data?: { subscription: { tier: string; expiresAt: string } };
     error?: Error;
   }> {
+    const source = options?.source ?? "redirect";
     try {
-      safeLog.payment('Verification started', { invoiceId });
+      safeLog.payment("Verification started", { invoiceId });
+      safeLog.info(`Verification source: ${source}`);
 
-      // 1. Find payment record in database by invoice ID and user ID
       const { data: payment, error: findError } = await this.supabase
         .from("payment_transactions")
         .select("*")
@@ -313,103 +378,107 @@ export class MayarPaymentService {
         .maybeSingle();
 
       if (findError) {
-        console.error("[Payment Verification] Database error:", findError);
         return { error: new Error("Failed to query payment record") };
       }
-
       if (!payment) {
-        safeLog.error('Payment not found for invoice');
         return { error: new Error("Payment record not found") };
       }
 
-      // 2. Check if payment is already processed (idempotency)
+      // Idempotent: already completed → return current subscription
       if (payment.status === "completed") {
-        safeLog.info('Payment already processed');
-
-        // Return current subscription details
         const { data: subscription } = await this.supabase
           .from("user_subscriptions")
           .select("tier, subscription_end_date")
           .eq("user_id", userId)
           .single();
-
-        if (subscription) {
-          return {
-            data: {
-              subscription: {
-                tier: subscription.tier,
-                expiresAt: subscription.subscription_end_date || "",
-              },
-            },
-          };
+        if (!subscription) {
+          return { error: new Error("Subscription not found") };
         }
-
-        return { error: new Error("Subscription not found") };
-      }
-
-      // 3. Verify payment status with Mayar API
-      safeLog.info('Querying Mayar API for invoice');
-
-      const transactions = await this.getMayarTransactionByInvoiceId(invoiceId);
-
-      if (!transactions || transactions.length === 0) {
-        safeLog.error('Transaction not found in Mayar');
         return {
-          error: new Error(
-            "Transaction not found in Mayar. Please wait a moment and try again.",
-          ),
+          data: {
+            subscription: {
+              tier: subscription.tier,
+              expiresAt: subscription.subscription_end_date || "",
+            },
+          },
         };
       }
 
-      const transaction = transactions[0] as Record<string, unknown>;
+      // Direct invoice fetch
+      const { data: invoice, error: fetchErr } =
+        await this.getInvoiceById(invoiceId);
 
-      // 4. Validate payment status is "paid"
-      if (transaction.status !== "paid") {
-        safeLog.error(`Payment status is ${transaction.status}, not paid`);
-        return {
-          error: new Error(
-            `Payment is ${transaction.status}. Please complete the payment first.`,
-          ),
-        };
+      if (fetchErr || !invoice) {
+        return { error: fetchErr ?? new Error("Empty invoice payload") };
       }
 
-      safeLog.payment('Payment verified as paid', { invoiceId, status: 'paid' });
+      const nowIso = new Date().toISOString();
 
-      // 5. Update payment record with transaction details
-      const { error: updateError } = await this.supabase
+      // Bump poll counters only after a successful Mayar response, so a flapping
+      // upstream doesn't burn the cron throttle budget on rows we never confirmed.
+      await this.supabase
         .from("payment_transactions")
         .update({
-          status: "completed",
-          mayar_transaction_id: transaction.paymentLinkTransactionId as string,
-          payment_method: transaction.paymentMethod as string,
-          completed_at: new Date().toISOString(),
-          verified_at: new Date().toISOString(),
+          last_polled_at: nowIso,
+          poll_count: (payment.poll_count ?? 0) + 1,
         })
         .eq("id", payment.id);
 
-      if (updateError) {
-        console.error(
-          "[Payment Verification] Failed to update payment record:",
-          updateError,
-        );
+      const status = String(invoice.status ?? "").toLowerCase();
+      const paidStates = new Set(["paid", "completed", "settled"]);
+      if (!paidStates.has(status)) {
         return {
           error: new Error(
-            "Failed to update payment record. Please contact support.",
+            `Payment is ${status || "pending"}. Please complete the payment first.`,
           ),
         };
       }
 
-      // 6. Upgrade user subscription
+      // Race-safe completion: only update if still pending
+      const { data: completed } = await this.supabase
+        .from("payment_transactions")
+        .update({
+          status: "completed",
+          mayar_transaction_id: invoice.transactionId as string,
+          payment_method: invoice.paymentMethod as string,
+          completed_at: nowIso,
+          verified_at: nowIso,
+          verified_via: source,
+        })
+        .eq("id", payment.id)
+        .eq("status", "pending")
+        .select()
+        .maybeSingle();
+
+      if (!completed) {
+        // Another worker (cron or redirect) already flipped this row and ran
+        // upgradeToTier. Skip the upgrade to avoid double-extending the
+        // subscription end date or stacking invoice_limit credits.
+        safeLog.info("Payment already completed by another worker; skipping upgrade");
+        const { data: existingSubscription } = await this.supabase
+          .from("user_subscriptions")
+          .select("tier, subscription_end_date")
+          .eq("user_id", userId)
+          .single();
+        if (!existingSubscription) {
+          return { error: new Error("Subscription not found after race") };
+        }
+        return {
+          data: {
+            subscription: {
+              tier: existingSubscription.tier,
+              expiresAt: existingSubscription.subscription_end_date || "",
+            },
+          },
+        };
+      }
+
+      // This worker won the CAS — perform the upgrade exactly once.
       const { SubscriptionService } = await import("./subscription.service");
       const subscriptionService = new SubscriptionService(this.supabase);
       const { success, error: upgradeError } =
-        await subscriptionService.upgradeToTier(userId, payment.tier);
-
+        await subscriptionService.upgradeToTier(userId, completed.tier);
       if (upgradeError || !success) {
-        console.error(
-          "[Payment Verification] Failed to upgrade subscription:",
-          upgradeError,
-        );
         return {
           error: new Error(
             "Payment verified but subscription upgrade failed. Please contact support.",
@@ -417,23 +486,18 @@ export class MayarPaymentService {
         };
       }
 
-      // 7. Get updated subscription details
       const { data: updatedSubscription } = await this.supabase
         .from("user_subscriptions")
         .select("tier, subscription_end_date")
         .eq("user_id", userId)
         .single();
-
       if (!updatedSubscription) {
         return { error: new Error("Failed to retrieve updated subscription") };
       }
-
-      safeLog.payment('Verification success', { 
-        invoiceId, 
+      safeLog.payment("Verification success", {
+        invoiceId,
         tier: updatedSubscription.tier,
-        status: 'completed'
       });
-
       return {
         data: {
           subscription: {
@@ -443,19 +507,19 @@ export class MayarPaymentService {
         },
       };
     } catch (error) {
-      console.error("[Payment Verification] Unexpected error:", error);
       return {
-        error:
-          error instanceof Error
-            ? error
-            : new Error("An unexpected error occurred"),
+        error: error instanceof Error ? error : new Error("Unexpected error"),
       };
     }
   }
 
   /**
-   * Query Mayar transactions by invoice ID with caching and deduplication
-   * Fetches transactions from Mayar API and filters by invoice ID
+   * @deprecated Replaced by `getInvoiceById` for the redirect-first verification flow.
+   * Slated for removal once the cron path is observed stable for ≥1 week.
+   * Do not call from new code.
+   *
+   * Query Mayar transactions by invoice ID with caching and deduplication.
+   * Fetches transactions from Mayar API and filters by invoice ID.
    * @param invoiceId - Mayar invoice ID to search for
    * @returns Array of matching transactions
    */
@@ -578,17 +642,20 @@ export class MayarPaymentService {
     method: string,
     body?: unknown,
   ): Promise<Record<string, unknown>> {
+    // Read env at call time so vitest beforeEach can override the module-level constants.
+    const apiKey = process.env.MAYAR_API_KEY ?? MAYAR_API_KEY;
+    const apiUrl = process.env.MAYAR_API_URL ?? MAYAR_API_URL;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
-        const url = `${MAYAR_API_URL}${endpoint}`;
+        const url = `${apiUrl}${endpoint}`;
 
         const response = await fetch(url, {
           method,
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${MAYAR_API_KEY}`,
+            Authorization: `Bearer ${apiKey}`,
           },
           body: body ? JSON.stringify(body) : undefined,
         });
