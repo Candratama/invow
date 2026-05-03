@@ -332,19 +332,16 @@ export class MayarPaymentService {
   async verifyAndProcessPayment(
     userId: string,
     invoiceId: string,
+    options?: { source?: "redirect" | "cron" },
   ): Promise<{
-    data?: {
-      subscription: {
-        tier: string;
-        expiresAt: string;
-      };
-    };
+    data?: { subscription: { tier: string; expiresAt: string } };
     error?: Error;
   }> {
+    const source = options?.source ?? "redirect";
     try {
-      safeLog.payment('Verification started', { invoiceId });
+      safeLog.payment("Verification started", { invoiceId });
+      safeLog.info(`Verification source: ${source}`);
 
-      // 1. Find payment record in database by invoice ID and user ID
       const { data: payment, error: findError } = await this.supabase
         .from("payment_transactions")
         .select("*")
@@ -353,103 +350,87 @@ export class MayarPaymentService {
         .maybeSingle();
 
       if (findError) {
-        console.error("[Payment Verification] Database error:", findError);
         return { error: new Error("Failed to query payment record") };
       }
-
       if (!payment) {
-        safeLog.error('Payment not found for invoice');
         return { error: new Error("Payment record not found") };
       }
 
-      // 2. Check if payment is already processed (idempotency)
+      // Idempotent: already completed → return current subscription
       if (payment.status === "completed") {
-        safeLog.info('Payment already processed');
-
-        // Return current subscription details
         const { data: subscription } = await this.supabase
           .from("user_subscriptions")
           .select("tier, subscription_end_date")
           .eq("user_id", userId)
           .single();
-
-        if (subscription) {
-          return {
-            data: {
-              subscription: {
-                tier: subscription.tier,
-                expiresAt: subscription.subscription_end_date || "",
-              },
-            },
-          };
+        if (!subscription) {
+          return { error: new Error("Subscription not found") };
         }
-
-        return { error: new Error("Subscription not found") };
-      }
-
-      // 3. Verify payment status with Mayar API
-      safeLog.info('Querying Mayar API for invoice');
-
-      const transactions = await this.getMayarTransactionByInvoiceId(invoiceId);
-
-      if (!transactions || transactions.length === 0) {
-        safeLog.error('Transaction not found in Mayar');
         return {
-          error: new Error(
-            "Transaction not found in Mayar. Please wait a moment and try again.",
-          ),
+          data: {
+            subscription: {
+              tier: subscription.tier,
+              expiresAt: subscription.subscription_end_date || "",
+            },
+          },
         };
       }
 
-      const transaction = transactions[0] as Record<string, unknown>;
+      // Direct invoice fetch
+      const { data: invoice, error: fetchErr } =
+        await this.getInvoiceById(invoiceId);
+      const nowIso = new Date().toISOString();
 
-      // 4. Validate payment status is "paid"
-      if (transaction.status !== "paid") {
-        safeLog.error(`Payment status is ${transaction.status}, not paid`);
-        return {
-          error: new Error(
-            `Payment is ${transaction.status}. Please complete the payment first.`,
-          ),
-        };
-      }
-
-      safeLog.payment('Payment verified as paid', { invoiceId, status: 'paid' });
-
-      // 5. Update payment record with transaction details
-      const { error: updateError } = await this.supabase
+      // Always bump poll counters so cron throttling can decide later
+      await this.supabase
         .from("payment_transactions")
         .update({
-          status: "completed",
-          mayar_transaction_id: transaction.paymentLinkTransactionId as string,
-          payment_method: transaction.paymentMethod as string,
-          completed_at: new Date().toISOString(),
-          verified_at: new Date().toISOString(),
+          last_polled_at: nowIso,
+          poll_count: (payment.poll_count ?? 0) + 1,
         })
         .eq("id", payment.id);
 
-      if (updateError) {
-        console.error(
-          "[Payment Verification] Failed to update payment record:",
-          updateError,
-        );
+      if (fetchErr || !invoice) {
+        return { error: fetchErr ?? new Error("Empty invoice payload") };
+      }
+
+      const status = String(invoice.status ?? "").toLowerCase();
+      const paidStates = new Set(["paid", "completed", "settled"]);
+      if (!paidStates.has(status)) {
         return {
           error: new Error(
-            "Failed to update payment record. Please contact support.",
+            `Payment is ${status || "pending"}. Please complete the payment first.`,
           ),
         };
       }
 
-      // 6. Upgrade user subscription
+      // Race-safe completion: only update if still pending
+      const { data: completed } = await this.supabase
+        .from("payment_transactions")
+        .update({
+          status: "completed",
+          mayar_transaction_id: invoice.transactionId as string,
+          payment_method: invoice.paymentMethod as string,
+          completed_at: nowIso,
+          verified_at: nowIso,
+          verified_via: source,
+        })
+        .eq("id", payment.id)
+        .eq("status", "pending")
+        .select()
+        .maybeSingle();
+
+      // If another worker already flipped it, treat as success
+      const finalRow = completed ?? payment;
+      if (!completed) {
+        safeLog.info("Payment already completed by another worker");
+      }
+
       const { SubscriptionService } = await import("./subscription.service");
       const subscriptionService = new SubscriptionService(this.supabase);
       const { success, error: upgradeError } =
-        await subscriptionService.upgradeToTier(userId, payment.tier);
-
+        await subscriptionService.upgradeToTier(userId, finalRow.tier);
       if (upgradeError || !success) {
-        console.error(
-          "[Payment Verification] Failed to upgrade subscription:",
-          upgradeError,
-        );
         return {
           error: new Error(
             "Payment verified but subscription upgrade failed. Please contact support.",
@@ -457,23 +438,14 @@ export class MayarPaymentService {
         };
       }
 
-      // 7. Get updated subscription details
       const { data: updatedSubscription } = await this.supabase
         .from("user_subscriptions")
         .select("tier, subscription_end_date")
         .eq("user_id", userId)
         .single();
-
       if (!updatedSubscription) {
         return { error: new Error("Failed to retrieve updated subscription") };
       }
-
-      safeLog.payment('Verification success', { 
-        invoiceId, 
-        tier: updatedSubscription.tier,
-        status: 'completed'
-      });
-
       return {
         data: {
           subscription: {
@@ -483,12 +455,8 @@ export class MayarPaymentService {
         },
       };
     } catch (error) {
-      console.error("[Payment Verification] Unexpected error:", error);
       return {
-        error:
-          error instanceof Error
-            ? error
-            : new Error("An unexpected error occurred"),
+        error: error instanceof Error ? error : new Error("Unexpected error"),
       };
     }
   }
