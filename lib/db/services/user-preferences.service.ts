@@ -14,6 +14,18 @@ import type { InvoiceTemplateId } from "@/components/features/invoice/templates"
 export class UserPreferencesService {
   constructor(private supabase: SupabaseClient) {}
 
+  /** Per-instance memoized authenticated user id. */
+  private _cachedUserId?: string;
+  private async _getUserId(): Promise<string> {
+    if (this._cachedUserId) return this._cachedUserId;
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
+    this._cachedUserId = user.id;
+    return user.id;
+  }
+
   /**
    * Get user preferences for the authenticated user
    */
@@ -22,18 +34,12 @@ export class UserPreferencesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("user_preferences")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (error) {
@@ -61,18 +67,12 @@ export class UserPreferencesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("user_preferences")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (error) {
@@ -81,7 +81,7 @@ export class UserPreferencesService {
           // Default template is "simple" for free users (Requirements: free tier default)
           const defaults: UserPreferences = {
             id: "",
-            user_id: user.id,
+            user_id: userId,
             preferred_language: "en",
             timezone: "UTC",
             date_format: "YYYY-MM-DD",
@@ -116,20 +116,14 @@ export class UserPreferencesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("user_preferences")
         .upsert(
           {
             ...preferences,
-            user_id: user.id,
+            user_id: userId,
           },
           { onConflict: "user_id" },
         )
@@ -160,18 +154,12 @@ export class UserPreferencesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("user_preferences")
         .update(updates)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
 
@@ -225,18 +213,12 @@ export class UserPreferencesService {
         );
       }
 
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("user_preferences")
         .update({ export_quality_kb: quality })
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
 
@@ -271,13 +253,7 @@ export class UserPreferencesService {
         }
       }
 
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Set tax_percentage to null when disabled
       const updateData: UserPreferencesUpdate = {
@@ -288,7 +264,7 @@ export class UserPreferencesService {
       const { data, error } = await this.supabase
         .from("user_preferences")
         .update(updateData)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
 
@@ -351,18 +327,12 @@ export class UserPreferencesService {
         );
       }
 
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("user_preferences")
         .update({ selected_template: template })
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
 

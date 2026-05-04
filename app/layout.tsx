@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import {
   OrganizationSchema,
   SoftwareApplicationSchema,
@@ -173,6 +174,7 @@ export default function RootLayout({
             }}
           />
           <SpeedInsights />
+          <ServiceWorkerRegistrar />
         </QueryProvider>
       </body>
     </html>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Settings, Users, Menu, FileText, X, BarChart3 } from "lucide-react";
 import Link from "next/link";
@@ -9,6 +10,8 @@ export function UserMenu() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const lastPrefetchRef = useRef<Record<string, number>>({});
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -42,6 +45,55 @@ export function UserMenu() {
     };
   }, [isOpen]);
 
+  // Lazy-fire React Query prefetches when user hovers a nav target so the
+  // destination page already has data warm by the time the click lands.
+  const prefetch = useCallback(
+    (target: "customers" | "report" | "settings") => {
+      const now = Date.now();
+      if (now - (lastPrefetchRef.current[target] ?? 0) < 1500) return;
+      lastPrefetchRef.current[target] = now;
+
+      if (target === "customers") {
+        // Warm storeId — customers list depends on it for queryKey.
+        void queryClient.prefetchQuery({
+          queryKey: ["store", "data"],
+          queryFn: async () => {
+            const { getStoreAction } = await import("@/app/actions/store");
+            const result = await getStoreAction();
+            return result.success && result.data ? result.data : null;
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      } else if (target === "report") {
+        // Warm the subscription status so report's gating resolves instantly
+        void queryClient.prefetchQuery({
+          queryKey: ["premium-status", "status"],
+          queryFn: async () => {
+            const { getSubscriptionStatusAction } = await import(
+              "@/app/actions/subscription"
+            );
+            const result = await getSubscriptionStatusAction();
+            return result;
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      } else if (target === "settings") {
+        void queryClient.prefetchQuery({
+          queryKey: ["settings", "data"],
+          queryFn: async () => {
+            const { getSettingsDataAction } = await import(
+              "@/app/actions/settings"
+            );
+            const result = await getSettingsDataAction();
+            return result;
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      }
+    },
+    [queryClient]
+  );
+
   if (!user) return null;
 
   return (
@@ -69,6 +121,9 @@ export function UserMenu() {
           <Link
             href="/dashboard/customers"
             onClick={() => setIsOpen(false)}
+            onMouseEnter={() => prefetch("customers")}
+            onFocus={() => prefetch("customers")}
+            onTouchStart={() => prefetch("customers")}
             className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <Users size={18} />
@@ -77,6 +132,9 @@ export function UserMenu() {
           <Link
             href="/dashboard/report"
             onClick={() => setIsOpen(false)}
+            onMouseEnter={() => prefetch("report")}
+            onFocus={() => prefetch("report")}
+            onTouchStart={() => prefetch("report")}
             className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <BarChart3 size={18} />
@@ -86,6 +144,9 @@ export function UserMenu() {
           <Link
             href="/dashboard/settings"
             onClick={() => setIsOpen(false)}
+            onMouseEnter={() => prefetch("settings")}
+            onFocus={() => prefetch("settings")}
+            onTouchStart={() => prefetch("settings")}
             className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <Settings size={18} />

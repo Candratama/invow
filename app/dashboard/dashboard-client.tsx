@@ -3,6 +3,7 @@
 import { useState, useTransition, lazy, useEffect, useCallback } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader, RefetchIndicator } from "@/components/dashboard";
 
 /**
@@ -165,6 +166,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
   const { user, loading: authLoading } = useAuth();
   const userEmail = user?.email || "";
+  const queryClient = useQueryClient();
 
   // Get premium status for expiry banner
   const { isPremium, daysUntilExpiry } = usePremiumStatus();
@@ -354,21 +356,43 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     invoiceId: string
   ) => {
     e.stopPropagation();
-    if (confirm("Delete this invoice?")) {
-      startTransition(async () => {
-        const result = await deleteInvoiceAction(invoiceId);
-        if (result.success) {
-          afterInvoiceMutation(defaultStore?.id);
-          toast.success("Invoice deleted", {
-            description: "The invoice has been removed from your records",
-          });
-        } else {
-          toast.error("Failed to delete", {
-            description: result.error || "Please try again",
-          });
-        }
+    if (!confirm("Delete this invoice?")) return;
+
+    // Optimistic update: remove from cached invoice lists immediately so
+    // the row disappears within a frame instead of waiting for the
+    // round-trip. Snapshots are restored if the server rejects the delete.
+    const snapshots = queryClient
+      .getQueriesData<{ invoices?: Array<{ id: string }> } | undefined>({
+        queryKey: ["dashboard", "invoices"],
+      })
+      .map(([key, value]) => {
+        queryClient.setQueryData(key, (old: unknown) => {
+          if (!old || typeof old !== "object") return old;
+          const list = (old as { invoices?: Array<{ id: string }> }).invoices;
+          if (!Array.isArray(list)) return old;
+          return {
+            ...(old as object),
+            invoices: list.filter((inv) => inv.id !== invoiceId),
+          };
+        });
+        return [key, value] as const;
       });
-    }
+
+    startTransition(async () => {
+      const result = await deleteInvoiceAction(invoiceId);
+      if (result.success) {
+        afterInvoiceMutation(defaultStore?.id);
+        toast.success("Invoice deleted", {
+          description: "The invoice has been removed from your records",
+        });
+      } else {
+        // Rollback optimistic update
+        snapshots.forEach(([key, value]) => queryClient.setQueryData(key, value));
+        toast.error("Failed to delete", {
+          description: result.error || "Please try again",
+        });
+      }
+    });
   };
 
   const handleInvoiceComplete = () => {
