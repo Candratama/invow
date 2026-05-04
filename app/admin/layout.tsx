@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AuthProvider } from "@/lib/auth/auth-context";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/features/admin/admin-sidebar";
 import { AdminHeader } from "@/components/features/admin/admin-header";
@@ -9,16 +10,18 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <SidebarProvider>
-      <Suspense fallback={null}>
-        <AdminSidebar />
-      </Suspense>
-      <SidebarInset>
+    <AuthProvider>
+      <SidebarProvider>
         <Suspense fallback={null}>
-          <AdminHeader />
+          <AdminSidebar />
         </Suspense>
-        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+        <SidebarInset>
+          <Suspense fallback={null}>
+            <AdminHeader />
+          </Suspense>
+          <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </AuthProvider>
   );
 }

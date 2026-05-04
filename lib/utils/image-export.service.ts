@@ -1,7 +1,5 @@
 "use client";
 
-import html2canvas from "html2canvas";
-
 /**
  * Image Export Service
  * Handles exporting HTML elements as JPEG images with quality-based compression
@@ -43,6 +41,9 @@ export async function exportAsJPEG(
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
+
+    // Lazy-load html2canvas only when actually exporting (saves ~400KB on first load)
+    const { default: html2canvas } = await import("html2canvas");
 
     // Convert HTML element to canvas with optimized settings
     const canvas = await html2canvas(element, {

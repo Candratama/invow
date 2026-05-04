@@ -3,7 +3,6 @@ import Script from "next/script";
 import { Inter, WindSong } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth/auth-context";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import {
@@ -147,20 +146,18 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-inter)" }}
       >
         <QueryProvider>
-          <AuthProvider>
-            <div className="min-h-screen bg-background">{children}</div>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                classNames: {
-                  success: "text-primary",
-                  error: "text-red-600",
-                  icon: "text-primary",
-                },
-              }}
-            />
-            <SpeedInsights />
-          </AuthProvider>
+          <div className="min-h-screen bg-background">{children}</div>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              classNames: {
+                success: "text-primary",
+                error: "text-red-600",
+                icon: "text-primary",
+              },
+            }}
+          />
+          <SpeedInsights />
         </QueryProvider>
       </body>
     </html>

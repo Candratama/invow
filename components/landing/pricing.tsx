@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getPricingPlansAction, type PricingPlan } from "@/app/actions/pricing";
 import { formatPrice, formatPeriod } from "@/lib/utils/pricing";
-import { useAuth } from "@/lib/auth/auth-context";
 import { createPaymentInvoiceAction } from "@/app/actions/payments";
 import { toast } from "sonner";
 
@@ -16,7 +15,6 @@ export function Pricing() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
-  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -44,8 +42,15 @@ export function Pricing() {
     setUpgradingTier(tier);
 
     try {
+      // Lazy-load supabase only when user clicks upgrade (keeps landing bundle light)
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       // If user not logged in, redirect to signup with autoUpgrade param
-      if (!user) {
+      if (!session?.user) {
         const returnUrl = `/dashboard/settings?autoUpgrade=${tier}`;
         router.push(
           `/dashboard/signup?returnUrl=${encodeURIComponent(returnUrl)}`
@@ -233,7 +238,7 @@ export function Pricing() {
               ) : (
                 <button
                   onClick={() => handleUpgrade(plan.tier)}
-                  disabled={upgradingTier === plan.tier || authLoading}
+                  disabled={upgradingTier === plan.tier}
                   className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-wait ${
                     plan.is_popular
                       ? "bg-gold-500 text-white hover:bg-gold-600 shadow-lg shadow-gold-500/25"
