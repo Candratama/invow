@@ -13,14 +13,19 @@ export function DomainMigrationBanner() {
   const [hostname, setHostname] = useState<string | null>(null);
 
   useEffect(() => {
-    setHostname(window.location.hostname);
-    setDismissed(localStorage.getItem(STORAGE_KEY) === "1");
+    const host = window.location.hostname;
+    setHostname(host);
+    // On old domain we force-show regardless of any prior dismiss.
+    setDismissed(
+      host === OLD_DOMAIN ? false : localStorage.getItem(STORAGE_KEY) === "1",
+    );
   }, []);
 
-  if (dismissed || hostname === null) return null;
+  if (hostname === null) return null;
   if (Date.now() >= SUNSET_DATE.getTime()) return null;
 
   const onOldDomain = hostname === OLD_DOMAIN;
+  if (!onOldDomain && dismissed) return null;
   const daysLeft = Math.max(
     0,
     Math.ceil((SUNSET_DATE.getTime() - Date.now()) / 86400000),
