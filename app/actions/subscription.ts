@@ -1,5 +1,6 @@
 'use server'
 
+import { getCurrentUserId } from '@/lib/auth/server-user'
 import { createClient } from '@/lib/supabase/server'
 import { SubscriptionService } from '@/lib/db/services/subscription.service'
 import { TierService } from '@/lib/db/services/tier.service'
@@ -7,15 +8,14 @@ import { MonthlyReportService } from '@/lib/db/services/monthly-report.service'
 import { revalidatePath } from 'next/cache'
 
 export async function upgradeSubscriptionAction(tier: string) {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
     return { success: false, error: 'Unauthorized' }
   }
 
+  const supabase = await createClient()
   const service = new SubscriptionService(supabase)
-  const result = await service.upgradeToTier(user.id, tier)
+  const result = await service.upgradeToTier(userId, tier)
 
   if (result.success) {
     revalidatePath('/dashboard')
@@ -26,62 +26,56 @@ export async function upgradeSubscriptionAction(tier: string) {
 }
 
 export async function getSubscriptionStatusAction() {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
     return { data: null, error: 'Unauthorized' }
   }
 
+  const supabase = await createClient()
   const service = new SubscriptionService(supabase)
-  return await service.getSubscriptionStatus(user.id)
+  return await service.getSubscriptionStatus(userId)
 }
 
 export async function isPremiumAction() {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
     return { data: false, error: 'Unauthorized' }
   }
 
+  const supabase = await createClient()
   const service = new TierService(supabase)
-  return await service.isPremium(user.id)
+  return await service.isPremium(userId)
 }
 
-
 export async function getAvailableReportMonthsAction() {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
     return { data: null, error: 'Unauthorized' }
   }
 
+  const supabase = await createClient()
   const service = new MonthlyReportService(supabase)
-  return await service.getAvailableReportMonths(user.id)
+  return await service.getAvailableReportMonths(userId)
 }
 
 export async function getMonthlyReportAction(monthYear?: string) {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
     return { data: null, error: 'Unauthorized' }
   }
 
+  const supabase = await createClient()
   const service = new MonthlyReportService(supabase)
-  return await service.generateMonthlyReport(user.id, monthYear)
+  return await service.generateMonthlyReport(userId, monthYear)
 }
 
 export async function getMonthlyReportForPDFAction(monthYear?: string) {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
     return { data: null, error: 'Unauthorized' }
   }
 
+  const supabase = await createClient()
   const service = new MonthlyReportService(supabase)
-  return await service.generateReportForPDF(user.id, monthYear)
+  return await service.generateReportForPDF(userId, monthYear)
 }

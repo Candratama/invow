@@ -69,7 +69,11 @@ export async function proxy(request: NextRequest) {
         }
       }
 
-      return response;
+      // Forward authenticated user id so downstream server actions / data-access
+      // can skip a redundant supabase.auth.getUser() round-trip.
+      const forwardHeaders = new Headers(request.headers);
+      forwardHeaders.set("x-user-id", user.id);
+      return NextResponse.next({ request: { headers: forwardHeaders } });
     } catch (error) {
       console.error("Auth check error:", error);
       // On error, redirect to login for safety

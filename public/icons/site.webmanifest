@@ -1,0 +1,44 @@
+{
+  "name": "Invow - Invoice Generator",
+  "short_name": "Invow",
+  "description": "Bikin invoice profesional dalam 30 detik dari HP",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafaf9",
+  "theme_color": "#D3AF37",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/icons/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Buat Invoice",
+      "short_name": "New",
+      "url": "/dashboard?action=new",
+      "icons": [
+        {
+          "src": "/icons/web-app-manifest-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

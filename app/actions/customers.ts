@@ -1,5 +1,6 @@
 'use server'
 
+import { getCurrentUserId } from '@/lib/auth/server-user'
 import { createClient } from '@/lib/supabase/server'
 import { CustomersService } from '@/lib/db/services/customers.service'
 import { SubscriptionService } from '@/lib/db/services/subscription.service'
@@ -68,15 +69,15 @@ export async function validatePremiumAccess(userId: string): Promise<{
  */
 export async function getCustomersAction(storeId: string): Promise<ActionResult<Customer[]>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -86,7 +87,7 @@ export async function getCustomersAction(storeId: string): Promise<ActionResult<
       .from('stores')
       .select('id')
       .eq('id', storeId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {
@@ -122,15 +123,15 @@ export async function searchCustomersAction(
   query: string
 ): Promise<ActionResult<Customer[]>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -140,7 +141,7 @@ export async function searchCustomersAction(
       .from('stores')
       .select('id')
       .eq('id', storeId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {

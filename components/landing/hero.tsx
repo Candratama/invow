@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { HERO_CONTENT } from "./constants";
@@ -10,24 +7,19 @@ export function Hero() {
     <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Badge - Golden Ratio: sm (0.764rem) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-gold-200 bg-gold-50 text-gold-700 shadow-sm"
+          <div
+            className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-gold-200 bg-gold-50 text-gold-700 shadow-sm animate-fade-up"
+            style={{ animationDelay: "0ms" }}
           >
             <span className="flex h-2 w-2 rounded-full bg-gold-500 animate-pulse"></span>
             <span className="text-sm font-bold tracking-wide">
               {HERO_CONTENT.badge}
             </span>
-          </motion.div>
+          </div>
 
-          {/* Headline - Golden Ratio: 4xl → 5xl → 6xl */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+          <div
+            className="animate-fade-up"
+            style={{ animationDelay: "100ms" }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 text-stone-900 leading-[1.1]">
               {HERO_CONTENT.title} <br />
@@ -47,14 +39,11 @@ export function Hero() {
                 </svg>
               </span>
             </h1>
-          </motion.div>
+          </div>
 
-          {/* Description - Golden Ratio: lg (1.236rem) */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg text-stone-600 mb-10 max-w-2xl mx-auto font-medium"
+          <p
+            className="text-lg text-stone-600 mb-10 max-w-2xl mx-auto font-medium animate-fade-up"
+            style={{ animationDelay: "200ms" }}
           >
             {HERO_CONTENT.description}{" "}
             <Link
@@ -71,14 +60,11 @@ export function Hero() {
               cek harga
             </Link>
             .
-          </motion.p>
+          </p>
 
-          {/* CTA Button - Golden Ratio: base (1rem) font */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex items-center justify-center"
+          <div
+            className="flex items-center justify-center animate-fade-up"
+            style={{ animationDelay: "300ms" }}
           >
             <Link
               href="/dashboard"
@@ -90,7 +76,7 @@ export function Hero() {
                 size={20}
               />
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

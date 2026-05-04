@@ -239,6 +239,82 @@
     }
 }
 
+/* iOS-style native feel */
+@layer base {
+    html {
+        /* Safe area aware viewport */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+
+    /* Disable double-tap zoom */
+    a,
+    button,
+    [role="button"],
+    input,
+    select,
+    textarea,
+    label {
+        touch-action: manipulation;
+    }
+
+    /* Native momentum scrolling on iOS */
+    .overflow-auto,
+    .overflow-y-auto,
+    .overflow-x-auto,
+    .overflow-scroll {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/* View Transitions API: cross-fade page transitions when supported */
+@layer base {
+    @view-transition {
+        navigation: auto;
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 180ms;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+}
+
+/* Performance hints for large content blocks */
+@layer utilities {
+    .content-auto {
+        content-visibility: auto;
+        contain-intrinsic-size: 1px 500px;
+    }
+
+    .gpu {
+        transform: translateZ(0);
+        will-change: transform;
+    }
+
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .safe-top {
+        padding-top: env(safe-area-inset-top);
+    }
+}
+
 /* Thumb zone debugging (remove in production) */
 @layer utilities {
     .debug-thumb-zones .thumb-green {

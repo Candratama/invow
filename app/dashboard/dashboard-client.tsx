@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition, lazy, useEffect, useCallback } from "react";
-import { Plus, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { PageHeader, RefetchIndicator } from "@/components/dashboard";
 
 /**
  * Static empty state UI - minimal client-side component.
@@ -46,6 +47,7 @@ import { calculateFinancialMetrics } from "@/lib/utils/revenue";
 import {
   useRevenueData,
   useInvoiceList,
+  useDashboardMetrics,
   type DashboardData,
 } from "@/lib/hooks/use-dashboard-data";
 import { useInvalidateRelatedQueries } from "@/lib/hooks/use-invalidate-related";
@@ -143,22 +145,7 @@ function PreviewView({
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
-          </button>
-          <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
-            Preview
-          </h1>
-          <div className="w-16" />
-        </div>
-      </header>
+      <PageHeader title="Preview" onBack={onBack} />
       <InvoicePreview
         invoice={currentInvoice as Invoice}
         storeSettings={storeSettings ?? null}
@@ -199,6 +186,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     error: invoiceError,
   } = useInvoiceList(currentPage, initialData || undefined);
 
+  // Heavy metrics blob fetched lazily so first paint isn't blocked.
+  const { data: metricsData } = useDashboardMetrics();
+
   // Show error toast when error occurs but cached data exists - Requirements: 3.4
   useEffect(() => {
     if (revenueError && revenueData) {
@@ -232,7 +222,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   };
 
   // Transform all invoices with items from database format to Invoice type for metrics calculation
-  const allInvoicesWithItems = (revenueData?.allInvoices ||
+  const allInvoicesWithItems = (metricsData?.allInvoices ||
     []) as InvoiceWithItems[];
   const transformedInvoices: Invoice[] = allInvoicesWithItems.map((inv) => ({
     id: inv.id,
@@ -390,22 +380,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   if (view === "form") {
     return (
       <div className="fixed inset-0 z-50 bg-gray-50 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-200">
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 lg:px-6 lg:py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <button
-              onClick={() => setView("home")}
-              className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </button>
-            <h1 className="text-lg lg:text-xl font-semibold text-gray-900">
-              New Invoice
-            </h1>
-            <div className="w-16" />
-          </div>
-        </header>
+        <PageHeader title="New Invoice" onBack={() => setView("home")} />
         <InvoiceForm
           onComplete={handleInvoiceComplete}
           subscriptionStatus={subscriptionStatus}
@@ -436,18 +411,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     <>
       <PaymentSuccessHandler />
 
-      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
-      {isBackgroundRefetching && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-primary/20 overflow-hidden">
-          <div
-            className="h-full w-1/3 bg-primary animate-pulse"
-            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
-          />
-        </div>
-      )}
+      {isBackgroundRefetching && <RefetchIndicator />}
 
       <main className="pb-24 px-4 lg:px-6 lg:pb-8">
-        <div className="max-w-md lg:max-w-6xl mx-auto pt-8 ">
+        <div className="max-w-4xl mx-auto pt-8">
           <div className="text-center mb-8 lg:mb-12">
             <p className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
               Welcome back,

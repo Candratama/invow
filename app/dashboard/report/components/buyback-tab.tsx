@@ -1,13 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useReportBuyback } from '@/lib/hooks/use-report-data'
 import { SummaryCard } from './summary-card'
-import { BarChart } from '@/components/features/admin/analytics/charts/bar-chart'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { DateRange } from '@/lib/types/report'
+
+const BarChart = lazy(() =>
+  import('@/components/features/admin/analytics/charts/bar-chart').then((mod) => ({
+    default: mod.BarChart,
+  }))
+)
 
 interface BuybackTabProps {
   dateRange: DateRange
@@ -120,14 +125,15 @@ export function BuybackTab({ dateRange }: BuybackTabProps) {
                 </div>
               </div>
 
-              {/* Bar Chart */}
-              <BarChart
-                data={chartData}
-                color="#D4AF37"
-                formatValue={chartMode === 'gram' ? formatGram : formatCompactCurrency}
-                formatTooltipValue={chartMode === 'gram' ? formatGram : formatCurrency}
-                height={200}
-              />
+              <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+                <BarChart
+                  data={chartData}
+                  color="#D4AF37"
+                  formatValue={chartMode === 'gram' ? formatGram : formatCompactCurrency}
+                  formatTooltipValue={chartMode === 'gram' ? formatGram : formatCurrency}
+                  height={200}
+                />
+              </Suspense>
             </div>
           </CardContent>
         </Card>

@@ -1,37 +1,43 @@
 "use server";
 
+import { getCurrentUserId } from "@/lib/auth/server-user";
 import { createClient } from "@/lib/supabase/server";
-import { getInvoicesPaginatedWithTierLimit, getAllInvoicesWithItems } from "@/lib/db/data-access/invoices";
+import {
+  getInvoicesPaginatedWithTierLimit,
+  getAllInvoicesWithItems,
+} from "@/lib/db/data-access/invoices";
 import { getSubscriptionStatus } from "@/lib/db/data-access/subscription";
 import { getStoreSettings } from "@/lib/db/data-access/store";
 import { getRevenueMetrics } from "@/lib/db/data-access/revenue";
 import { UserPreferencesService } from "@/lib/db/services/user-preferences.service";
 
+/**
+ * Lightweight dashboard payload — everything required for first paint.
+ * Excludes the heavy `allInvoicesWithItems` blob, which is fetched lazily
+ * via getDashboardMetricsAction so the dashboard can render without waiting
+ * on a potentially multi-megabyte payload.
+ */
 export async function getDashboardDataAction(page: number = 1) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userId = await getCurrentUserId();
 
-    if (!user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
+    const supabase = await createClient();
     const preferencesService = new UserPreferencesService(supabase);
 
-    const [invoicesResult, allInvoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult] =
+    const [invoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult] =
       await Promise.all([
         getInvoicesPaginatedWithTierLimit(page, 10, "synced"),
-        getAllInvoicesWithItems("synced"), // Fetch all invoices with items for metrics calculation
-        getRevenueMetrics(user.id),
-        getSubscriptionStatus(user.id),
-        getStoreSettings(user.id),
+        getRevenueMetrics(userId),
+        getSubscriptionStatus(userId),
+        getStoreSettings(userId),
         preferencesService.getUserPreferences(),
       ]);
 
     const invoices = invoicesResult.data?.invoices || [];
-    const allInvoices = allInvoicesResult.data || []; // All invoices with items for metrics
     const revenueMetrics = revenueResult.data || null;
     const hasMoreHistory = invoicesResult.data?.hasMoreHistory || false;
     const historyLimitMessage = invoicesResult.data?.historyLimitMessage;
@@ -43,7 +49,6 @@ export async function getDashboardDataAction(page: number = 1) {
       : null;
     const totalPages = invoicesResult.data?.totalPages || 1;
 
-    // Get primary contact, or use first contact if only one exists
     const contacts = storeResult.data?.store_contacts || [];
     const primaryContact =
       contacts.find((contact) => contact.is_primary) ||
@@ -71,7 +76,6 @@ export async function getDashboardDataAction(page: number = 1) {
       : null;
     const defaultStore = storeResult.data ? { id: storeResult.data.id } : null;
 
-    // Extract user preferences for invoice settings
     const userPreferences = preferencesResult.data
       ? {
           selectedTemplate: preferencesResult.data.selected_template || "simple",
@@ -88,7 +92,6 @@ export async function getDashboardDataAction(page: number = 1) {
       success: true,
       data: {
         invoices,
-        allInvoices, // Add all invoices with items for metrics calculation
         revenueMetrics,
         subscriptionStatus,
         storeSettings,
@@ -102,5 +105,27 @@ export async function getDashboardDataAction(page: number = 1) {
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     return { success: false, error: "Failed to fetch dashboard data" };
+  }
+}
+
+/**
+ * Heavy aggregation payload — full invoice list with items used for
+ * client-side metrics calculation. Loaded lazily after first paint.
+ */
+export async function getDashboardMetricsAction() {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const result = await getAllInvoicesWithItems("synced");
+    return {
+      success: true,
+      data: { allInvoices: result.data || [] },
+    };
+  } catch (error) {
+    console.error("Error fetching dashboard metrics:", error);
+    return { success: false, error: "Failed to fetch metrics" };
   }
 }

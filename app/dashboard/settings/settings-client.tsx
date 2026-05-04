@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageHeader, RefetchIndicator } from "@/components/dashboard";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 import {
   Dialog,
@@ -245,43 +245,16 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
 
   return (
     <>
-      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
-      {isBackgroundRefetching && (
-        <div className="fixed top-0 left-0 right-0 z-[60] h-1 bg-primary/20 overflow-hidden">
-          <div
-            className="h-full w-1/3 bg-primary animate-pulse"
-            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
-          />
-        </div>
-      )}
+      {isBackgroundRefetching && <RefetchIndicator />}
 
       <div className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden">
         <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
 
-        {/* Header */}
-        <div className="bg-white border-b z-30 shadow-sm flex-shrink-0">
-          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleBack}
-                  className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
-                  aria-label="Go back"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back</span>
-                </button>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                  Settings
-                </h1>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PageHeader title="Settings" onBack={handleBack} />
 
         {/* Tab Navigation */}
-        <div className="bg-white border-b z-20 shadow-sm flex-shrink-0">
-          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8 lg:pt-2">
+        <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+          <div className="max-w-4xl mx-auto px-4 lg:px-6">
             <div className="flex justify-start gap-1">
               {TABS.map((tab) => (
                 <button
