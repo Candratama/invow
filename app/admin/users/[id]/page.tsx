@@ -40,8 +40,13 @@ function UserDetailSkeleton() {
   );
 }
 
-async function UserDetailData({ userId }: { userId: string }) {
-  const result = await getUserDetail(userId);
+async function UserDetailData({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const result = await getUserDetail(id);
 
   if (!result.success || !result.data) {
     notFound();
@@ -50,12 +55,10 @@ async function UserDetailData({ userId }: { userId: string }) {
   return <UserDetailContent user={result.data} />;
 }
 
-export default async function UserDetailPage({ params }: UserDetailPageProps) {
-  const { id } = await params;
-
+export default function UserDetailPage({ params }: UserDetailPageProps) {
   return (
     <Suspense fallback={<UserDetailSkeleton />}>
-      <UserDetailData userId={id} />
+      <UserDetailData params={params} />
     </Suspense>
   );
 }
