@@ -70,14 +70,16 @@ export function DomainMigrationBanner() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleDismiss}
-          aria-label="Tutup pengumuman"
-          className="flex-shrink-0 p-1 hover:opacity-70"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {!onOldDomain && (
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Tutup pengumuman"
+            className="flex-shrink-0 p-1 hover:opacity-70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );
