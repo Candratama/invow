@@ -10,6 +10,7 @@ import { getSubscriptionStatus } from "@/lib/db/data-access/subscription";
 import { getStoreSettings } from "@/lib/db/data-access/store";
 import { getRevenueMetrics } from "@/lib/db/data-access/revenue";
 import { UserPreferencesService } from "@/lib/db/services/user-preferences.service";
+import { TierService } from "@/lib/db/services/tier.service";
 
 /**
  * Lightweight dashboard payload — everything required for first paint.
@@ -27,14 +28,16 @@ export async function getDashboardDataAction(page: number = 1) {
 
     const supabase = await createClient();
     const preferencesService = new UserPreferencesService(supabase);
+    const tierService = new TierService(supabase);
 
-    const [invoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult] =
+    const [invoicesResult, revenueResult, subscriptionResult, storeResult, preferencesResult, premiumResult] =
       await Promise.all([
         getInvoicesPaginatedWithTierLimit(page, 10, "synced"),
         getRevenueMetrics(userId),
         getSubscriptionStatus(userId),
         getStoreSettings(userId),
         preferencesService.getUserPreferences(),
+        tierService.isPremium(userId),
       ]);
 
     const invoices = invoicesResult.data?.invoices || [];
@@ -88,6 +91,22 @@ export async function getDashboardDataAction(page: number = 1) {
           taxPercentage: 0,
         };
 
+    const isPremium = premiumResult.data ?? false;
+    const expiresAt =
+      subscriptionResult.data?.tier === "premium" && subscriptionResult.data?.resetDate
+        ? subscriptionResult.data.resetDate.toISOString()
+        : null;
+    const daysUntilExpiry = expiresAt
+      ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+    const premiumStatus = {
+      isPremium,
+      tier: subscriptionResult.data?.tier ?? "free",
+      expiresAt,
+      daysUntilExpiry,
+      isExpiringSoon: daysUntilExpiry !== null && daysUntilExpiry <= 7,
+    };
+
     return {
       success: true,
       data: {
@@ -100,6 +119,7 @@ export async function getDashboardDataAction(page: number = 1) {
         hasMoreHistory,
         historyLimitMessage,
         userPreferences,
+        premiumStatus,
       },
     };
   } catch (error) {

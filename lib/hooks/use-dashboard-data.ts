@@ -43,6 +43,13 @@ export interface DashboardData {
   invoices: unknown[];
   /** @deprecated Heavy field — use useDashboardMetrics() lazy hook instead. */
   allInvoices?: unknown[];
+  premiumStatus?: {
+    isPremium: boolean;
+    tier: string;
+    expiresAt: string | null;
+    daysUntilExpiry: number | null;
+    isExpiringSoon: boolean;
+  };
   revenueMetrics: {
     totalRevenue: number;
     monthlyRevenue: number;
@@ -138,6 +145,7 @@ export function useRevenueData(initialData?: DashboardData) {
     storeSettings: unknown;
     defaultStore: { id: string } | null;
     userPreferences: DashboardData["userPreferences"];
+    premiumStatus?: DashboardData["premiumStatus"];
   }>({
     queryKey: dashboardKeys.revenue(),
     queryFn: async () => {
@@ -154,6 +162,7 @@ export function useRevenueData(initialData?: DashboardData) {
         storeSettings: result.data?.storeSettings || null,
         defaultStore: result.data?.defaultStore || null,
         userPreferences: result.data?.userPreferences,
+        premiumStatus: result.data?.premiumStatus,
       };
     },
     initialData: initialDataRef.current,

@@ -138,6 +138,20 @@ export default function RootLayout({
         />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/icons/site.webmanifest" />
+        {/* Preconnect to Supabase so first auth/data round-trip skips TLS handshake cost */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <>
+            <link
+              rel="preconnect"
+              href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+              crossOrigin="anonymous"
+            />
+            <link
+              rel="dns-prefetch"
+              href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+            />
+          </>
+        )}
         <OrganizationSchema />
         <SoftwareApplicationSchema />
       </head>

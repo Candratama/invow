@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
+import { dashboardKeys } from "./use-dashboard-data";
 
 export interface PremiumStatus {
   isPremium: boolean;
@@ -26,6 +27,16 @@ interface PremiumStatusData {
   isExpiringSoon: boolean;
 }
 
+interface DashboardCachedShape {
+  premiumStatus?: {
+    isPremium: boolean;
+    tier: string;
+    expiresAt: string | null;
+    daysUntilExpiry: number | null;
+    isExpiringSoon: boolean;
+  };
+}
+
 /**
  * Hook for checking user's premium subscription status
  * Uses React Query for caching subscription status
@@ -34,12 +45,32 @@ interface PremiumStatusData {
  */
 export function usePremiumStatus(initialData?: PremiumStatusData): PremiumStatus {
   const queryClient = useQueryClient();
-  
+
   // Check if we already have cached data - don't overwrite with initialData
   const existingData = queryClient.getQueryData<PremiumStatusData>(premiumStatusKeys.status());
-  
+
+  // Reuse premium status piggy-backed on the dashboard payload so /dashboard
+  // doesn't trigger a second auth round-trip on first paint.
+  const dashboardCached = queryClient.getQueryData<DashboardCachedShape>(
+    dashboardKeys.revenue()
+  );
+  const piggybackedPremium: PremiumStatusData | undefined =
+    dashboardCached?.premiumStatus
+      ? {
+          isPremium: dashboardCached.premiumStatus.isPremium,
+          tier: dashboardCached.premiumStatus.tier,
+          expiresAt: dashboardCached.premiumStatus.expiresAt
+            ? new Date(dashboardCached.premiumStatus.expiresAt)
+            : null,
+          daysUntilExpiry: dashboardCached.premiumStatus.daysUntilExpiry,
+          isExpiringSoon: dashboardCached.premiumStatus.isExpiringSoon,
+        }
+      : undefined;
+
   // Only use initialData on first mount when no cache exists
-  const initialDataRef = useRef(existingData ? undefined : initialData);
+  const initialDataRef = useRef(
+    existingData ? undefined : initialData ?? piggybackedPremium
+  );
   
   const { data, isLoading } = useQuery({
     queryKey: premiumStatusKeys.status(),
