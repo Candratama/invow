@@ -33,7 +33,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       queryClient,
       persister,
       maxAge: 24 * 60 * 60 * 1000,
-      buster: process.env.NEXT_PUBLIC_BUILD_ID || "v2",
+      buster: process.env.NEXT_PUBLIC_BUILD_ID || "v3-premium-fix",
       dehydrateOptions: {
         // Never persist premium / subscription state — must always reflect
         // current server truth (e.g., right after user upgrades). Same for

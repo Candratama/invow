@@ -111,12 +111,14 @@ export function usePremiumStatus(initialData?: PremiumStatusData): PremiumStatus
         isExpiringSoon,
       };
     },
-    // Only use initialData if no cache exists
+    // Only use initialData if no cache exists. Anything we seed from
+    // dashboard piggyback may be stale right after an upgrade, so we keep
+    // the cached value visible but always re-verify on mount.
     initialData: initialDataRef.current,
-    staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    staleTime: 60 * 1000, // 1 minute — premium status is high-stakes
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: "always", // Always re-verify against server truth
+    refetchOnWindowFocus: false,
   });
 
   return {

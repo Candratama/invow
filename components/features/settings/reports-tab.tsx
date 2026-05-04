@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeatureGate } from "@/components/ui/feature-gate";
+import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 import {
   getAvailableReportMonthsAction,
   getMonthlyReportAction,
-  isPremiumAction,
 } from "@/app/actions/subscription";
 import type { MonthlyReportSummary } from "@/lib/db/services/monthly-report.service";
 
@@ -32,28 +32,33 @@ interface ReportsTabProps {
  */
 export function ReportsTab({ onClose }: ReportsTabProps) {
   const [isPending, startTransition] = useTransition();
-  const [isPremium, setIsPremium] = useState(false);
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumStatus();
   const [isLoading, setIsLoading] = useState(true);
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [report, setReport] = useState<MonthlyReportSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch premium status and available months on mount
+  // Fetch available months when premium status resolves to true.
+  // Driving this off the React Query premium hook means the tab unlocks
+  // automatically right after a successful upgrade — no remount required.
   useEffect(() => {
-    const fetchData = async () => {
+    if (isPremiumLoading) return;
+    if (!isPremium) {
+      setIsLoading(false);
+      setAvailableMonths([]);
+      setSelectedMonth(null);
+      return;
+    }
+
+    const fetchMonths = async () => {
       setIsLoading(true);
       try {
-        const premiumResult = await isPremiumAction();
-        setIsPremium(premiumResult.data || false);
-
-        if (premiumResult.data) {
-          const monthsResult = await getAvailableReportMonthsAction();
-          if (monthsResult.data) {
-            setAvailableMonths(monthsResult.data);
-            if (monthsResult.data.length > 0) {
-              setSelectedMonth(monthsResult.data[0]);
-            }
+        const monthsResult = await getAvailableReportMonthsAction();
+        if (monthsResult.data) {
+          setAvailableMonths(monthsResult.data);
+          if (monthsResult.data.length > 0) {
+            setSelectedMonth(monthsResult.data[0]);
           }
         }
       } catch (err) {
@@ -63,8 +68,8 @@ export function ReportsTab({ onClose }: ReportsTabProps) {
       }
     };
 
-    fetchData();
-  }, []);
+    fetchMonths();
+  }, [isPremium, isPremiumLoading]);
 
   // Fetch report when month changes
   useEffect(() => {
