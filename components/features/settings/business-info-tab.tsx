@@ -25,6 +25,7 @@ import {
   getStoreAndContactsAction,
 } from "@/app/actions/store";
 import { useInvalidateRelatedQueries } from "@/lib/hooks/use-invalidate-related";
+import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 
 import { FeatureGate } from "@/components/ui/feature-gate";
 
@@ -91,7 +92,12 @@ export function BusinessInfoTab({
   const [isLoading, setIsLoading] = useState(!initialStore);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_store, setStore] = useState(initialStore);
-  const isPremium = initialIsPremium;
+  // Read fresh premium status from React Query so the gate flips the
+  // moment a tier change is reflected on the server. Fall back to the
+  // initialIsPremium prop while the hook is still hydrating.
+  const { isPremium: livePremium, isLoading: premiumLoading } =
+    usePremiumStatus();
+  const isPremium = premiumLoading ? initialIsPremium : livePremium;
 
   // Cross-query invalidation for settings mutations
   const { afterSettingsMutation } = useInvalidateRelatedQueries();
