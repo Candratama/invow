@@ -33,7 +33,19 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       queryClient,
       persister,
       maxAge: 24 * 60 * 60 * 1000,
-      buster: process.env.NEXT_PUBLIC_BUILD_ID || "v1",
+      buster: process.env.NEXT_PUBLIC_BUILD_ID || "v2",
+      dehydrateOptions: {
+        // Never persist premium / subscription state — must always reflect
+        // current server truth (e.g., right after user upgrades). Same for
+        // payment lookup and access-control gates.
+        shouldDehydrateQuery: (query) => {
+          const key = query.queryKey?.[0];
+          if (typeof key !== "string") return true;
+          if (key === "premium-status") return false;
+          if (key === "subscription") return false;
+          return true;
+        },
+      },
     });
     return () => {
       unsubscribe();

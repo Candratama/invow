@@ -3,6 +3,7 @@
 import { Suspense, useState, useCallback, useEffect, lazy } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useQueryClient } from "@tanstack/react-query";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Button } from "@/components/ui/button";
 import { PageHeader, RefetchIndicator } from "@/components/dashboard";
@@ -141,9 +142,20 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     }
   }, [user, authLoading, router]);
 
+  const queryClient = useQueryClient();
   const handlePaymentSuccess = useCallback(() => {
+    // Bust every cached query that might gate access on tier so the upgrade
+    // takes effect immediately (no stale "Locked" screen on /customers or
+    // /report after returning from Mayar checkout).
+    queryClient.invalidateQueries({ queryKey: ["premium-status"] });
+    queryClient.invalidateQueries({ queryKey: ["subscription"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["customers"] });
+    queryClient.invalidateQueries({ queryKey: ["report"] });
+    queryClient.invalidateQueries({ queryKey: ["settings"] });
+    queryClient.invalidateQueries({ queryKey: ["store"] });
     router.refresh();
-  }, [router]);
+  }, [queryClient, router]);
 
   const handleBack = useCallback(() => {
     if (isDirty) {
