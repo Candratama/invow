@@ -65,8 +65,13 @@ function InvoiceDetailSkeleton() {
   );
 }
 
-async function InvoiceDetailData({ invoiceId }: { invoiceId: string }) {
-  const result = await getAdminInvoiceDetail(invoiceId);
+async function InvoiceDetailData({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const result = await getAdminInvoiceDetail(id);
 
   if (!result.success || !result.data) {
     notFound();
@@ -101,14 +106,10 @@ async function InvoiceDetailData({ invoiceId }: { invoiceId: string }) {
   );
 }
 
-export default async function InvoiceDetailPage({
-  params,
-}: InvoiceDetailPageProps) {
-  const { id } = await params;
-
+export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
   return (
     <Suspense fallback={<InvoiceDetailSkeleton />}>
-      <InvoiceDetailData invoiceId={id} />
+      <InvoiceDetailData params={params} />
     </Suspense>
   );
 }

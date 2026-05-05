@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Users, Zap, Clock, FileText, Shield } from "lucide-react";
+import { Lock, Users, Zap, Clock, FileText, Shield, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 
@@ -38,6 +39,19 @@ export function CustomersLocked({
   hasExistingCustomers = false,
 }: CustomersLockedProps) {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleRefreshStatus = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["premium-status"] }),
+      queryClient.invalidateQueries({ queryKey: ["subscription"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
+    // Give the refetch a beat to land before allowing another refresh
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -116,6 +130,21 @@ export function CustomersLocked({
             <Zap className="w-4 h-4" />
             Upgrade to Premium
           </Button>
+
+          {/* Already-upgraded escape hatch */}
+          <div className="mt-4 text-sm text-gray-500">
+            Sudah upgrade?{" "}
+            <button
+              onClick={handleRefreshStatus}
+              disabled={isRefreshing}
+              className="text-primary font-medium hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh status
+            </button>
+          </div>
         </div>
       </div>
 

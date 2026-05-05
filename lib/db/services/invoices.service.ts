@@ -31,6 +31,23 @@ export class InvoicesService {
   constructor(private supabase: SupabaseClient) {}
 
   /**
+   * Per-instance cache of the authenticated user id. The first call hits
+   * supabase.auth.getUser(); every subsequent call within the same service
+   * instance reuses the value, removing redundant Supabase auth round-trips
+   * when multiple methods are invoked back-to-back.
+   */
+  private _cachedUserId?: string;
+  private async _getUserId(): Promise<string> {
+    if (this._cachedUserId) return this._cachedUserId;
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
+    this._cachedUserId = user.id;
+    return user.id;
+  }
+
+  /**
    * Get all invoices for the authenticated user
    * @param status - Optional filter by status
    * @param limit - Optional limit number of results
@@ -44,18 +61,12 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       let query = this.supabase
         .from("invoices")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("invoice_date", { ascending: false });
 
       if (status) {
@@ -92,13 +103,7 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       let query = this.supabase
         .from("invoices")
@@ -108,7 +113,7 @@ export class InvoicesService {
           invoice_items (*)
         `
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (status) {
@@ -161,13 +166,7 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Calculate offset
       const offset = (page - 1) * pageSize;
@@ -182,7 +181,7 @@ export class InvoicesService {
         `,
           { count: "exact" }
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false }); // DESC order - newest created first
 
       if (status) {
@@ -246,17 +245,11 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Get user's tier and history limit
       const tierService = new TierService(this.supabase);
-      const { data: historyLimit } = await tierService.getHistoryLimit(user.id);
+      const { data: historyLimit } = await tierService.getHistoryLimit(userId);
 
       // Calculate offset
       const offset = (page - 1) * pageSize;
@@ -271,7 +264,7 @@ export class InvoicesService {
         `,
           { count: "exact" }
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false }); // DESC order - newest first
 
       if (status) {
@@ -357,13 +350,7 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("invoices")
@@ -375,7 +362,7 @@ export class InvoicesService {
         `,
         )
         .eq("id", invoiceId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (error) {
@@ -527,19 +514,13 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("invoices")
         .update(invoice)
         .eq("id", invoiceId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
 
@@ -570,13 +551,7 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Start transaction-like operation
       // 1. Update invoice
@@ -584,7 +559,7 @@ export class InvoicesService {
         .from("invoices")
         .update(invoice)
         .eq("id", invoiceId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .select()
         .single();
 
@@ -658,13 +633,7 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Get default store_id if not provided
       let storeId = invoice.store_id;
@@ -685,7 +654,7 @@ export class InvoicesService {
       // Prepare invoice data
       const invoiceData = {
         ...invoice,
-        user_id: user.id,
+        user_id: userId,
         store_id: storeId,
       };
 
@@ -803,19 +772,13 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { error } = await this.supabase
         .from("invoices")
         .delete()
         .eq("id", invoiceId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (error) throw new Error(error.message);
 
@@ -840,17 +803,11 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const invoicesWithUserId = invoices.map((inv) => ({
         ...inv,
-        user_id: user.id,
+        user_id: userId,
       }));
 
       const { data, error } = await this.supabase
@@ -878,13 +835,7 @@ export class InvoicesService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Format date for invoice number pattern (DDMMYY)
       const [year, month, day] = invoiceDate.split('-');

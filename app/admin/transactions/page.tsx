@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { TransactionsClient } from "./transactions-client";
 
 export default function TransactionsPage() {
-  return <TransactionsClient initialData={null} />;
+  return (
+    <Suspense fallback={null}>
+      <TransactionsClient initialData={null} />
+    </Suspense>
+  );
 }

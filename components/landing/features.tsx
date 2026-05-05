@@ -1,7 +1,4 @@
-"use client";
-
 import { FEATURES, WHY_US_POINTS } from "./constants";
-import { motion } from "motion/react";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
@@ -27,18 +24,10 @@ export function Features() {
         {/* Features Grid - Golden Ratio: xl (1.618rem) for titles, base (1rem) for descriptions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
           {FEATURES.map((feature, index) => (
-            <motion.div
+            <div
               key={feature.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              whileHover={{ y: -10 }}
-              viewport={{ once: true }}
-              transition={{
-                default: { duration: 0.2 },
-                opacity: { duration: 0.5, delay: index * 0.1 },
-                y: { duration: 0.2 },
-              }}
-              className="group relative p-8 rounded-3xl bg-white border border-stone-100 shadow-xl shadow-stone-200/50 hover:shadow-2xl hover:shadow-gold-500/10 hover:border-gold-200 transition-all duration-200"
+              className="group relative p-8 rounded-3xl bg-white border border-stone-100 shadow-xl shadow-stone-200/50 hover:shadow-2xl hover:shadow-gold-500/10 hover:border-gold-200 hover:-translate-y-2.5 transition-all duration-200 animate-fade-up"
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="w-14 h-14 bg-gold-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-gold-500 group-hover:rotate-6 transition-all duration-200">
                 <feature.icon
@@ -54,7 +43,7 @@ export function Features() {
               <p className="text-base text-stone-600 leading-relaxed">
                 {feature.description}
               </p>
-            </motion.div>
+            </div>
           ))}
         </div>
 
@@ -81,13 +70,10 @@ export function Features() {
 
               <div className="space-y-4">
                 {WHY_US_POINTS.map((point, i) => (
-                  <motion.div
+                  <div
                     key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="flex gap-4 items-start"
+                    className="flex gap-4 items-start animate-slide-right"
+                    style={{ animationDelay: `${i * 100}ms` }}
                   >
                     <div className="mt-1 bg-gold-500/20 p-1 rounded-full">
                       <CheckCircle2 size={20} className="text-gold-400" />
@@ -95,18 +81,13 @@ export function Features() {
                     <span className="text-stone-200 font-medium text-base">
                       {point}
                     </span>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
 
             <div className="relative">
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/10"
-              >
+              <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/10 animate-pop-in">
                 <div className="text-center">
                   {/* Golden Ratio: 2xl for subheading, 4xl for highlight */}
                   <h3 className="text-2xl font-bold mb-2">Dari Ribet Jadi</h3>
@@ -127,7 +108,7 @@ export function Features() {
                     Gratis selamanya, gak ada yang disembunyiin!
                   </p>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>

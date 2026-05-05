@@ -11,11 +11,45 @@ export const dashboardKeys = {
     [...dashboardKeys.all, "invoices", page || 1] as const,
   data: (page?: number) =>
     [...dashboardKeys.all, "data", page || 1] as const,
+  metrics: () => [...dashboardKeys.all, "metrics"] as const,
 };
+
+/**
+ * Lazy-fetched full invoice list for client-side metrics calculation.
+ * Heavy query (all invoices + items), kept out of the critical path so
+ * dashboard first paint doesn't wait on it.
+ */
+export function useDashboardMetrics() {
+  return useQuery<{ allInvoices: unknown[] }>({
+    queryKey: dashboardKeys.metrics(),
+    queryFn: async () => {
+      const { getDashboardMetricsAction } = await import(
+        "@/app/actions/dashboard"
+      );
+      const result = await getDashboardMetricsAction();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to fetch metrics");
+      }
+      return result.data as { allInvoices: unknown[] };
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}
 
 export interface DashboardData {
   invoices: unknown[];
-  allInvoices?: unknown[]; // All invoices with items for metrics calculation
+  /** @deprecated Heavy field — use useDashboardMetrics() lazy hook instead. */
+  allInvoices?: unknown[];
+  premiumStatus?: {
+    isPremium: boolean;
+    tier: string;
+    expiresAt: string | null;
+    daysUntilExpiry: number | null;
+    isExpiringSoon: boolean;
+  };
   revenueMetrics: {
     totalRevenue: number;
     monthlyRevenue: number;
@@ -80,10 +114,9 @@ export function useDashboardData(
  */
 export function useRevenueData(initialData?: DashboardData) {
   const queryClient = useQueryClient();
-  
+
   // Check if we already have cached data - don't overwrite with initialData
   const existingData = queryClient.getQueryData<{
-    allInvoices: unknown[];
     revenueMetrics: DashboardData["revenueMetrics"];
     subscriptionStatus: DashboardData["subscriptionStatus"];
     storeSettings: unknown;
@@ -97,7 +130,6 @@ export function useRevenueData(initialData?: DashboardData) {
       ? undefined
       : initialData
       ? {
-          allInvoices: initialData.allInvoices || [],
           revenueMetrics: initialData.revenueMetrics,
           subscriptionStatus: initialData.subscriptionStatus,
           storeSettings: initialData.storeSettings,
@@ -108,12 +140,12 @@ export function useRevenueData(initialData?: DashboardData) {
   );
 
   return useQuery<{
-    allInvoices: unknown[];
     revenueMetrics: DashboardData["revenueMetrics"];
     subscriptionStatus: DashboardData["subscriptionStatus"];
     storeSettings: unknown;
     defaultStore: { id: string } | null;
     userPreferences: DashboardData["userPreferences"];
+    premiumStatus?: DashboardData["premiumStatus"];
   }>({
     queryKey: dashboardKeys.revenue(),
     queryFn: async () => {
@@ -125,12 +157,12 @@ export function useRevenueData(initialData?: DashboardData) {
         throw new Error(result.error || "Failed to fetch revenue data");
       }
       return {
-        allInvoices: result.data?.allInvoices || [],
         revenueMetrics: result.data?.revenueMetrics || null,
         subscriptionStatus: result.data?.subscriptionStatus || null,
         storeSettings: result.data?.storeSettings || null,
         defaultStore: result.data?.defaultStore || null,
         userPreferences: result.data?.userPreferences,
+        premiumStatus: result.data?.premiumStatus,
       };
     },
     initialData: initialDataRef.current,
@@ -207,8 +239,9 @@ export function useInvalidateDashboard() {
   const queryClient = useQueryClient();
 
   return () => {
-    // Invalidate both revenue and invoices
+    // Invalidate revenue, invoices, and metrics
     queryClient.invalidateQueries({ queryKey: dashboardKeys.revenue() });
     queryClient.invalidateQueries({ queryKey: dashboardKeys.invoices() });
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.metrics() });
   };
 }

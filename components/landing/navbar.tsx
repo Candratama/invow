@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { NAV_LINKS, SITE_NAME } from "./constants";
-import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -85,36 +84,35 @@ export function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-b border-stone-200 overflow-hidden shadow-xl"
-          >
-            <div className="px-6 py-8 flex flex-col gap-6">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-lg font-medium text-stone-600 hover:text-gold-600 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
-              <Link
-                href="/dashboard"
-                className="w-full text-center py-3 bg-gold-500 text-white font-bold rounded-xl hover:bg-gold-600 transition-colors shadow-lg shadow-gold-500/20"
+      <div
+        className={`md:hidden bg-white border-b border-stone-200 overflow-hidden shadow-xl grid transition-all duration-200 ease-out ${
+          isMobileMenuOpen
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="px-6 py-8 flex flex-col gap-6">
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-lg font-medium text-stone-600 hover:text-gold-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Coba Sekarang
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {link.name}
+              </a>
+            ))}
+            <Link
+              href="/dashboard"
+              className="w-full text-center py-3 bg-gold-500 text-white font-bold rounded-xl hover:bg-gold-600 transition-colors shadow-lg shadow-gold-500/20"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Coba Sekarang
+            </Link>
+          </div>
+        </div>
+      </div>
     </nav>
   );
 }

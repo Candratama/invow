@@ -28,6 +28,7 @@ import { getTemplateAccessRulesAction } from "@/app/actions/template-access";
 import UpgradeModal from "@/components/features/subscription/upgrade-modal";
 import Image from "next/image";
 import { useInvalidateRelatedQueries } from "@/lib/hooks/use-invalidate-related";
+import { usePremiumStatus } from "@/lib/hooks/use-premium-status";
 
 // Export quality configuration with tier-based access
 // Maps to TIER_FEATURES.exportQualities: ['standard'] for free, ['standard', 'high', 'print-ready'] for premium
@@ -109,6 +110,16 @@ export function InvoiceSettingsTab({
   const [accessRules, setAccessRules] = useState<TemplateAccessRule[]>([]);
   const [isLoadingRules, setIsLoadingRules] = useState(true);
   const { afterSettingsMutation } = useInvalidateRelatedQueries();
+  // Resolve the live premium tier so template lock states unlock the moment
+  // a successful upgrade is reflected on the server. The userTier prop only
+  // serves as a hydration fallback while the hook is still loading.
+  const { isPremium: livePremium, isLoading: premiumLoading } =
+    usePremiumStatus();
+  const resolvedTier = premiumLoading
+    ? userTier
+    : livePremium
+      ? "premium"
+      : "free";
 
   // Fetch template access rules from database
   useEffect(() => {
@@ -124,7 +135,7 @@ export function InvoiceSettingsTab({
   }, []);
 
   // Get templates with access information based on user tier and email
-  const tier = (userTier === "premium" ? "premium" : "free") as TemplateTier;
+  const tier = (resolvedTier === "premium" ? "premium" : "free") as TemplateTier;
   const allTemplates = getAllTemplatesWithAccess(tier);
 
   // Filter templates based on access rules from database (only after loaded)

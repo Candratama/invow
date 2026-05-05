@@ -1,11 +1,18 @@
 'use client'
 
+import { lazy, Suspense } from 'react'
 import { useReportOverview } from '@/lib/hooks/use-report-data'
 import { SummaryCard } from './summary-card'
-import { LineChart } from '@/components/features/admin/analytics/charts/line-chart'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { DateRange, TopCustomer } from '@/lib/types/report'
+
+// Recharts is heavy (~190KB). Lazy so summary cards render before chart bundle loads.
+const LineChart = lazy(() =>
+  import('@/components/features/admin/analytics/charts/line-chart').then((mod) => ({
+    default: mod.LineChart,
+  }))
+)
 
 interface OverviewTabProps {
   dateRange: DateRange
@@ -153,14 +160,16 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
       {revenueChart && revenueChart.length > 0 && (
         <Card>
           <CardContent className="p-3 pt-4">
-            <LineChart
-              data={revenueChart}
-              title="Trend Pendapatan"
-              color="#D4AF37"
-              formatValue={formatCompactCurrency}
-              formatTooltipValue={formatCurrency}
-              height={200}
-            />
+            <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+              <LineChart
+                data={revenueChart}
+                title="Trend Pendapatan"
+                color="#D4AF37"
+                formatValue={formatCompactCurrency}
+                formatTooltipValue={formatCurrency}
+                height={200}
+              />
+            </Suspense>
           </CardContent>
         </Card>
       )}

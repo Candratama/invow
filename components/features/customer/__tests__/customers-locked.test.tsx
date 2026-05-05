@@ -6,8 +6,25 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  render as rtlRender,
+  screen,
+  fireEvent,
+} from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
 import { CustomersLocked } from "../customers-locked";
+
+// CustomersLocked uses useQueryClient for the "Refresh status" escape hatch.
+// Wrap every render in a fresh QueryClientProvider so the hook resolves.
+function render(ui: ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return rtlRender(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+  );
+}
 
 // Mock the UpgradeModal component
 vi.mock("@/components/features/subscription/upgrade-modal", () => ({

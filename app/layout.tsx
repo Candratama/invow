@@ -3,9 +3,9 @@ import Script from "next/script";
 import { Inter, WindSong } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth/auth-context";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import {
   OrganizationSchema,
   SoftwareApplicationSchema,
@@ -105,8 +105,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
   themeColor: "#10b981",
 };
 
@@ -138,6 +139,20 @@ export default function RootLayout({
         />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/icons/site.webmanifest" />
+        {/* Preconnect to Supabase so first auth/data round-trip skips TLS handshake cost */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <>
+            <link
+              rel="preconnect"
+              href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+              crossOrigin="anonymous"
+            />
+            <link
+              rel="dns-prefetch"
+              href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+            />
+          </>
+        )}
         <OrganizationSchema />
         <SoftwareApplicationSchema />
       </head>
@@ -147,20 +162,19 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-inter)" }}
       >
         <QueryProvider>
-          <AuthProvider>
-            <div className="min-h-screen bg-background">{children}</div>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                classNames: {
-                  success: "text-primary",
-                  error: "text-red-600",
-                  icon: "text-primary",
-                },
-              }}
-            />
-            <SpeedInsights />
-          </AuthProvider>
+          <div className="min-h-screen bg-background">{children}</div>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              classNames: {
+                success: "text-primary",
+                error: "text-red-600",
+                icon: "text-primary",
+              },
+            }}
+          />
+          <SpeedInsights />
+          <ServiceWorkerRegistrar />
         </QueryProvider>
       </body>
     </html>

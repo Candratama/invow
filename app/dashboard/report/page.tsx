@@ -1,5 +1,10 @@
+import { Suspense } from 'react'
 import { ReportClient } from './report-client'
 
 export default function ReportPage() {
-  return <ReportClient />
+  return (
+    <Suspense fallback={null}>
+      <ReportClient />
+    </Suspense>
+  )
 }

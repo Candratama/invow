@@ -1,5 +1,6 @@
 'use server'
 
+import { getCurrentUserId } from '@/lib/auth/server-user'
 import { createClient } from '@/lib/supabase/server'
 import { UserPreferencesService } from '@/lib/db/services/user-preferences.service'
 import { revalidatePath, updateTag } from 'next/cache'
@@ -8,13 +9,12 @@ import type { InvoiceTemplateId } from '@/components/features/invoice/templates'
 
 export async function getPreferencesAction() {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized', data: null }
     }
 
+    const supabase = await createClient()
     const service = new UserPreferencesService(supabase)
     const result = await service.getUserPreferences()
 
@@ -45,13 +45,12 @@ export async function updatePreferencesAction(updates: {
   buyback_price_per_gram?: number | null
 }) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
     const service = new UserPreferencesService(supabase)
     const result = await service.updatePreferences(updates)
 
@@ -76,13 +75,12 @@ export async function updatePreferencesAction(updates: {
 
 export async function updateExportQualityAction(quality: 50 | 100 | 150) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
     const service = new UserPreferencesService(supabase)
     const result = await service.updateExportQuality(quality)
 
@@ -110,13 +108,12 @@ export async function updateTaxSettingsAction(
   percentage?: number
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
     const service = new UserPreferencesService(supabase)
     const result = await service.updateTaxSettings(enabled, percentage)
 
@@ -141,13 +138,12 @@ export async function updateTaxSettingsAction(
 
 export async function updateSelectedTemplateAction(template: InvoiceTemplateId) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
     const service = new UserPreferencesService(supabase)
     const result = await service.updateSelectedTemplate(template)
 

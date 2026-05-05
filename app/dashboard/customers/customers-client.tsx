@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
-  ArrowLeft,
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader, PageContainer, RefetchIndicator } from "@/components/dashboard";
 import { CustomerList, CustomerForm } from "@/components/features/customer";
 import { CustomersLocked } from "@/components/features/customer/customers-locked";
 import { CustomersSkeleton } from "@/components/skeletons/customers-skeleton";
@@ -305,27 +305,9 @@ export function CustomersClient() {
 
   if (customersError && !customers) {
     return (
-      <div className="flex flex-col h-full bg-gray-50">
-        {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b shadow-sm">
-          <div className="max-w-4xl mx-auto px-4 lg:px-6">
-            <div className="flex items-center h-16">
-              <button
-                onClick={handleBack}
-                className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2 lg:hidden"
-                aria-label="Go back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Customers
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        {/* Error Content */}
-        <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex flex-col">
+        <PageHeader title="Customers" hideBackOnDesktop onBack={handleBack} />
+        <PageContainer className="flex items-center justify-center py-16">
           <div className="max-w-md w-full bg-white rounded-lg shadow-sm p-6 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="text-red-600" size={32} />
@@ -343,51 +325,31 @@ export function CustomersClient() {
               Try Again
             </Button>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
-      {isBackgroundRefetching && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-primary/20 overflow-hidden">
-          <div
-            className="h-full w-1/3 bg-primary animate-pulse"
-            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
-          />
-        </div>
-      )}
+    <div className="flex flex-col">
+      {isBackgroundRefetching && <RefetchIndicator />}
 
-      {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleBack}
-                className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2 lg:hidden"
-                aria-label="Go back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Customers
-              </h1>
-            </div>
-            <Button onClick={handleAddNew} className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Customer</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Customers"
+        hideBackOnDesktop
+        onBack={handleBack}
+        actions={
+          <Button onClick={handleAddNew} className="gap-2">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Customer</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        }
+      />
 
       {/* Search Bar */}
-      <div className="flex-shrink-0 bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-3">
+      <div className="bg-white border-b border-gray-200">
+        <PageContainer className="py-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -398,30 +360,28 @@ export function CustomersClient() {
               className="pl-10"
             />
           </div>
-        </div>
+        </PageContainer>
       </div>
 
       {/* Status Filter */}
-      <div className="flex-shrink-0 bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-3">
+      <div className="bg-white border-b border-gray-200">
+        <PageContainer className="py-3">
           <StatusFilter />
-        </div>
+        </PageContainer>
       </div>
 
       {/* Customer List */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-4">
-          <CustomerList
-            customers={paginatedCustomers}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isDeleting={deletingId || undefined}
-          />
-        </div>
-        <div className="max-w-4xl mx-auto px-4 lg:px-6">
-          <Pagination />
-        </div>
-      </div>
+      <PageContainer className="py-4">
+        <CustomerList
+          customers={paginatedCustomers}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isDeleting={deletingId || undefined}
+        />
+      </PageContainer>
+      <PageContainer>
+        <Pagination />
+      </PageContainer>
 
       {/* Customer Form Dialog */}
       {storeId && (

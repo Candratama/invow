@@ -71,6 +71,22 @@ export class StoresService {
   constructor(private supabase: SupabaseClient) {}
 
   /**
+   * Per-instance memoized authenticated user id. Saves redundant
+   * supabase.auth.getUser() round-trips when multiple service methods
+   * are invoked on the same instance.
+   */
+  private _cachedUserId?: string;
+  private async _getUserId(): Promise<string> {
+    if (this._cachedUserId) return this._cachedUserId;
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
+    this._cachedUserId = user.id;
+    return user.id;
+  }
+
+  /**
    * Get all stores for the authenticated user
    */
   async getStores(): Promise<{
@@ -78,18 +94,12 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("stores")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("is_active", true)
         .order("created_at", { ascending: true });
 
@@ -118,19 +128,13 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Try to get user's preferred default store
       const { data: preferences } = await this.supabase
         .from("user_preferences")
         .select("default_store_id")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (preferences?.default_store_id) {
@@ -168,7 +172,7 @@ export class StoresService {
             is_primary
           )
         `)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("is_active", true)
         .order("created_at", { ascending: true })
         .limit(1)
@@ -224,19 +228,13 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       const { data, error } = await this.supabase
         .from("stores")
         .insert({
           ...store,
-          user_id: user.id,
+          user_id: userId,
         })
         .select()
         .single();
@@ -263,13 +261,7 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Verify store belongs to user before updating
       const { data: store } = await this.supabase
@@ -282,7 +274,7 @@ export class StoresService {
         throw new Error("Store not found");
       }
 
-      if (store.user_id !== user.id) {
+      if (store.user_id !== userId) {
         throw new Error("Unauthorized: Store does not belong to authenticated user");
       }
 
@@ -319,13 +311,7 @@ export class StoresService {
     error: Error | null;
   }> {
     try {
-      const {
-        data: { user },
-      } = await this.supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const userId = await this._getUserId();
 
       // Verify store belongs to user
       const { data: store } = await this.supabase
@@ -338,7 +324,7 @@ export class StoresService {
         throw new Error("Store not found");
       }
 
-      if (store.user_id !== user.id) {
+      if (store.user_id !== userId) {
         throw new Error("Unauthorized: Store does not belong to authenticated user");
       }
 

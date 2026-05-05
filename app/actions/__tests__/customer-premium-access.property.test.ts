@@ -119,8 +119,18 @@ describe('Property 2: Server actions enforce premium access', () => {
           expect(match).not.toBeNull()
           const functionBody = match![0]
           
-          // Find positions of auth check and premium check
-          const authCheckPos = functionBody.indexOf('getUser')
+          // Find positions of auth check and premium check.
+          // Auth check may be `supabase.auth.getUser()` (legacy) or
+          // `getCurrentUserId()` (cached helper that reads from middleware
+          // header / falls back to supabase.auth.getUser).
+          const legacyAuthPos = functionBody.indexOf('getUser')
+          const cachedAuthPos = functionBody.indexOf('getCurrentUserId')
+          const authCheckPos =
+            legacyAuthPos === -1
+              ? cachedAuthPos
+              : cachedAuthPos === -1
+                ? legacyAuthPos
+                : Math.min(legacyAuthPos, cachedAuthPos)
           const premiumCheckPos = functionBody.indexOf('validatePremiumAccess')
           
           // Property: Auth check should come before premium check

@@ -5,23 +5,37 @@ import { isAdmin } from "@/lib/db/services/admin.service";
 
 /**
  * Proxy with auth protection
- * 
+ *
  * Purpose:
  * - Refresh Supabase session cookies
  * - Protect authenticated routes (/dashboard, /admin)
- * 
+ * - Sanitize the trusted `x-user-id` header on every request so client
+ *   code can never forge an identity by sending the header itself.
+ *
  * Auth Strategy:
- * 1. Public routes: No auth check
- * 2. Dashboard routes: Require authentication
- * 3. Admin routes: Require authentication + admin role
+ * 1. Public routes: No auth check (header still stripped).
+ * 2. Dashboard routes: Require authentication, then set x-user-id.
+ * 3. Admin routes: Require authentication + admin role, then set x-user-id.
  */
+const TRUSTED_USER_HEADER = "x-user-id";
+
+function sanitizedRequestHeaders(request: NextRequest): Headers {
+  const sanitized = new Headers(request.headers);
+  // Always drop any client-supplied value before our own logic decides
+  // whether to set it. Downstream `getCurrentUserId()` only trusts a
+  // value originating from this proxy.
+  sanitized.delete(TRUSTED_USER_HEADER);
+  return sanitized;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Refresh session cookies
   const response = await updateSession(request);
 
-  // Public routes - no auth needed
+  // Public routes — no auth check, but still strip any client-forged
+  // `x-user-id` so it cannot reach downstream handlers.
   const publicRoutes = [
     "/",
     "/dashboard/login",
@@ -32,12 +46,20 @@ export async function proxy(request: NextRequest) {
   ];
 
   const isPublicRoute =
-    publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/")) ||
+    publicRoutes.some(
+      (route) => pathname === route || pathname.startsWith(route + "/")
+    ) ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/");
 
   if (isPublicRoute) {
-    return response;
+    // If the upstream cookie refresh produced a custom NextResponse we keep it.
+    // Otherwise emit a fresh next() with sanitized headers so a forged
+    // x-user-id cannot survive into a public handler.
+    if (response.headers.has("location")) return response;
+    return NextResponse.next({
+      request: { headers: sanitizedRequestHeaders(request) },
+    });
   }
 
   // Protected routes - check auth
@@ -69,7 +91,13 @@ export async function proxy(request: NextRequest) {
         }
       }
 
-      return response;
+      // Forward authenticated user id so downstream server actions /
+      // data-access can skip a redundant supabase.auth.getUser() round-trip.
+      // We start from sanitized headers so a client-supplied x-user-id
+      // cannot reach this point.
+      const forwardHeaders = sanitizedRequestHeaders(request);
+      forwardHeaders.set(TRUSTED_USER_HEADER, user.id);
+      return NextResponse.next({ request: { headers: forwardHeaders } });
     } catch (error) {
       console.error("Auth check error:", error);
       // On error, redirect to login for safety
@@ -83,13 +111,12 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - api routes (handled separately)
+     * Match all request paths except static assets. We INCLUDE /api/ here
+     * so this proxy can sanitize `x-user-id` on those requests too —
+     * otherwise a client could call /api/foo with a forged x-user-id
+     * header and any future API handler that read the trusted header
+     * would impersonate another user.
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

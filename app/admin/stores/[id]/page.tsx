@@ -59,8 +59,13 @@ function StoreDetailSkeleton() {
   );
 }
 
-async function StoreDetailData({ storeId }: { storeId: string }) {
-  const result = await getAdminStoreDetail(storeId);
+async function StoreDetailData({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const result = await getAdminStoreDetail(id);
 
   if (!result.success || !result.data) {
     notFound();
@@ -96,14 +101,10 @@ async function StoreDetailData({ storeId }: { storeId: string }) {
   );
 }
 
-export default async function StoreDetailPage({
-  params,
-}: StoreDetailPageProps) {
-  const { id } = await params;
-
+export default function StoreDetailPage({ params }: StoreDetailPageProps) {
   return (
     <Suspense fallback={<StoreDetailSkeleton />}>
-      <StoreDetailData storeId={id} />
+      <StoreDetailData params={params} />
     </Suspense>
   );
 }

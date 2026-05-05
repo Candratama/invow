@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { SubscriptionsClient } from "./subscriptions-client";
 
 export default function SubscriptionsPage() {
-  return <SubscriptionsClient initialData={null} />;
+  return (
+    <Suspense fallback={null}>
+      <SubscriptionsClient initialData={null} />
+    </Suspense>
+  );
 }

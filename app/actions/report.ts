@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUserId } from '@/lib/auth/server-user'
 import {
   getReportOverviewData,
   getReportBuybackData,
@@ -10,14 +10,12 @@ import type { DateRange } from '@/lib/types/report'
 
 export async function getReportOverviewAction(dateRange: DateRange) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const data = await getReportOverviewData(user.id, dateRange)
+    const data = await getReportOverviewData(userId, dateRange)
     return { success: true, data }
   } catch (error) {
     console.error('Error fetching report overview:', error)
@@ -27,14 +25,12 @@ export async function getReportOverviewAction(dateRange: DateRange) {
 
 export async function getReportBuybackAction(dateRange: DateRange) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const data = await getReportBuybackData(user.id, dateRange)
+    const data = await getReportBuybackData(userId, dateRange)
     return { success: true, data }
   } catch (error) {
     console.error('Error fetching buyback report:', error)
@@ -50,14 +46,12 @@ export async function getReportDetailAction(
   search: string = ''
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const data = await getReportDetailData(user.id, dateRange, page, pageSize, typeFilter, search)
+    const data = await getReportDetailData(userId, dateRange, page, pageSize, typeFilter, search)
     return { success: true, data }
   } catch (error) {
     console.error('Error fetching report detail:', error)

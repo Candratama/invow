@@ -1,5 +1,6 @@
 'use server'
 
+import { getCurrentUserId } from '@/lib/auth/server-user'
 import { createClient } from '@/lib/supabase/server'
 import { CustomersService } from '@/lib/db/services/customers.service'
 import { SubscriptionService } from '@/lib/db/services/subscription.service'
@@ -68,15 +69,15 @@ export async function validatePremiumAccess(userId: string): Promise<{
  */
 export async function getCustomersAction(storeId: string): Promise<ActionResult<Customer[]>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -86,7 +87,7 @@ export async function getCustomersAction(storeId: string): Promise<ActionResult<
       .from('stores')
       .select('id')
       .eq('id', storeId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {
@@ -122,15 +123,15 @@ export async function searchCustomersAction(
   query: string
 ): Promise<ActionResult<Customer[]>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -140,7 +141,7 @@ export async function searchCustomersAction(
       .from('stores')
       .select('id')
       .eq('id', storeId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {
@@ -174,15 +175,15 @@ export async function createCustomerAction(
   data: CustomerInsert
 ): Promise<ActionResult<Customer>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -199,7 +200,7 @@ export async function createCustomerAction(
       .from('stores')
       .select('id')
       .eq('id', data.store_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {
@@ -239,15 +240,15 @@ export async function updateCustomerAction(
   data: CustomerUpdate
 ): Promise<ActionResult<Customer>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -276,7 +277,7 @@ export async function updateCustomerAction(
       .from('stores')
       .select('id')
       .eq('id', customer.store_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {
@@ -312,15 +313,15 @@ export async function updateCustomerAction(
  */
 export async function deleteCustomerAction(id: string): Promise<ActionResult<void>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -341,7 +342,7 @@ export async function deleteCustomerAction(id: string): Promise<ActionResult<voi
       .from('stores')
       .select('id')
       .eq('id', customer.store_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {
@@ -377,15 +378,15 @@ export async function deleteCustomerAction(id: string): Promise<ActionResult<voi
  */
 export async function getCustomerAction(id: string): Promise<ActionResult<Customer | null>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const supabase = await createClient()
+
     // Check premium access
-    const premiumCheck = await validatePremiumAccess(user.id)
+    const premiumCheck = await validatePremiumAccess(userId)
     if (!premiumCheck.hasAccess) {
       return { success: false, error: premiumCheck.error }
     }
@@ -403,7 +404,7 @@ export async function getCustomerAction(id: string): Promise<ActionResult<Custom
         .from('stores')
         .select('id')
         .eq('id', result.data.store_id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single()
 
       if (storeError || !store) {
@@ -432,19 +433,19 @@ export async function getCustomerAction(id: string): Promise<ActionResult<Custom
  */
 export async function hasExistingCustomersAction(storeId: string): Promise<ActionResult<boolean>> {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getCurrentUserId()
+    if (!userId) {
       return { success: false, error: 'Unauthorized' }
     }
+
+    const supabase = await createClient()
 
     // Verify user owns the store
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .select('id')
       .eq('id', storeId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (storeError || !store) {

@@ -3,10 +3,12 @@
 import { Suspense, useState, useCallback, useEffect, lazy } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useQueryClient } from "@tanstack/react-query";
 import PaymentSuccessHandler from "@/components/features/payment/success-handler";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { PageHeader, RefetchIndicator } from "@/components/dashboard";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
+import { SettingsTabSkeleton } from "@/components/skeletons/settings-tab-skeleton";
 import {
   Dialog,
   DialogContent,
@@ -141,9 +143,20 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
     }
   }, [user, authLoading, router]);
 
+  const queryClient = useQueryClient();
   const handlePaymentSuccess = useCallback(() => {
+    // Bust every cached query that might gate access on tier so the upgrade
+    // takes effect immediately (no stale "Locked" screen on /customers or
+    // /report after returning from Mayar checkout).
+    queryClient.invalidateQueries({ queryKey: ["premium-status"] });
+    queryClient.invalidateQueries({ queryKey: ["subscription"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["customers"] });
+    queryClient.invalidateQueries({ queryKey: ["report"] });
+    queryClient.invalidateQueries({ queryKey: ["settings"] });
+    queryClient.invalidateQueries({ queryKey: ["store"] });
     router.refresh();
-  }, [router]);
+  }, [queryClient, router]);
 
   const handleBack = useCallback(() => {
     if (isDirty) {
@@ -245,43 +258,16 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
 
   return (
     <>
-      {/* Subtle background refetch indicator - Requirements: 2.5, 3.2 */}
-      {isBackgroundRefetching && (
-        <div className="fixed top-0 left-0 right-0 z-[60] h-1 bg-primary/20 overflow-hidden">
-          <div
-            className="h-full w-1/3 bg-primary animate-pulse"
-            style={{ animation: "pulse 1.5s ease-in-out infinite" }}
-          />
-        </div>
-      )}
+      {isBackgroundRefetching && <RefetchIndicator />}
 
       <div className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden">
         <PaymentSuccessHandler onPaymentSuccess={handlePaymentSuccess} />
 
-        {/* Header */}
-        <div className="bg-white border-b z-30 shadow-sm flex-shrink-0">
-          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleBack}
-                  className="text-primary font-medium hover:text-primary/80 transition-colors px-3 py-2.5 -ml-3 rounded-md hover:bg-primary/5 flex items-center gap-2"
-                  aria-label="Go back"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back</span>
-                </button>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                  Settings
-                </h1>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PageHeader title="Settings" onBack={handleBack} />
 
         {/* Tab Navigation */}
-        <div className="bg-white border-b z-20 shadow-sm flex-shrink-0">
-          <div className="max-w-2xl lg:max-w-4xl mx-auto px-4 lg:px-8 lg:pt-2">
+        <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+          <div className="max-w-4xl mx-auto px-4 lg:px-6">
             <div className="flex justify-start gap-1">
               {TABS.map((tab) => (
                 <button
@@ -302,7 +288,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
 
         {/* Tab Content */}
         <div className="flex-1 overflow-hidden bg-white">
-          <Suspense fallback={<SettingsSkeleton />}>
+          <Suspense fallback={<SettingsTabSkeleton />}>
             {mountedTabs.has("subscription") && (
               <div
                 className="h-full"
