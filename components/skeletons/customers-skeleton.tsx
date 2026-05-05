@@ -1,35 +1,62 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
+/**
+ * Skeleton mirrors the real /dashboard/customers layout so the swap to
+ * data is layout-shift free:
+ *  - PageHeader (h-16) with title + Add button
+ *  - Search bar row
+ *  - Status filter row (3 buttons grid)
+ *  - Customer list cards inside max-w-4xl container
+ */
 export function CustomersSkeleton() {
   return (
-    <div className="flex flex-col h-full">
-      {/* Header skeleton */}
-      <div className="flex-shrink-0 border-b bg-white px-4 py-4 lg:px-6">
-        <div className="flex items-center justify-between animate-pulse">
-          <div className="h-7 bg-gray-200 rounded w-32"></div>
-          <div className="h-10 bg-gray-200 rounded w-32"></div>
+    <div className="flex flex-col">
+      {/* PageHeader skeleton */}
+      <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+        <div className="max-w-4xl mx-auto px-4 lg:px-6">
+          <div className="flex items-center justify-between h-16 gap-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-7 w-32" />
+            </div>
+            <Skeleton className="h-9 w-28 rounded-md" />
+          </div>
         </div>
       </div>
 
-      {/* Search bar skeleton */}
-      <div className="flex-shrink-0 px-4 py-3 lg:px-6 border-b bg-gray-50">
-        <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+      {/* Search bar row */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-3">
+          <Skeleton className="h-10 w-full rounded-md" />
+        </div>
       </div>
 
-      {/* Customer list skeleton */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 space-y-3">
-        {[1, 2, 3, 4, 5].map((i) => (
+      {/* Status filter row */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-3">
+          <div className="grid grid-cols-3 gap-2">
+            <Skeleton className="h-9 w-full rounded-md" />
+            <Skeleton className="h-9 w-full rounded-md" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Customer list */}
+      <div className="max-w-4xl mx-auto w-full px-4 lg:px-6 py-4 space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-lg border bg-card p-4 shadow-sm animate-pulse"
+            className="rounded-lg border bg-card p-4 shadow-sm"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 space-y-2">
-                <div className="h-5 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
               <div className="flex gap-2">
-                <div className="h-8 w-8 bg-gray-200 rounded"></div>
-                <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                <Skeleton className="h-8 w-8 rounded" />
+                <Skeleton className="h-8 w-8 rounded" />
               </div>
             </div>
           </div>
