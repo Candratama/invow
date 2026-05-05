@@ -4,13 +4,20 @@ import { getSettingsDataAction } from "@/app/actions/settings";
 import { SettingsClient } from "./settings-client";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
 
-async function SettingsPageData() {
-  // Skip the server-side fetch entirely on internal client navigation —
-  // React Query already has the settings payload cached in the browser, so
-  // re-fetching on the server only adds a round-trip and forces the
-  // SettingsSkeleton fallback to flash on every visit.
-  // For deep links / hard refreshes, fetch on the server so the page
-  // hydrates with real data instead of an empty client shell.
+/**
+ * Resolves the right SettingsClient render path:
+ * - Internal client navigation (referer matches our host): skip the
+ *   server-side fetch entirely and render the client immediately. React
+ *   Query already has the settings payload cached in the browser, so a
+ *   second round-trip just makes the SettingsSkeleton flash on every visit.
+ * - Deep link / hard refresh: fetch on the server so the page hydrates
+ *   with real data instead of an empty client shell.
+ *
+ * Both `headers()` and the optional `getSettingsDataAction()` call live
+ * here (inside the Suspense boundary) to satisfy cacheComponents' "no
+ * uncached data outside Suspense" rule.
+ */
+async function SettingsPageBody() {
   const h = await headers();
   const referer = h.get("referer") || "";
   const host = h.get("host") || "";
@@ -29,7 +36,7 @@ async function SettingsPageData() {
 export default async function SettingsPage() {
   return (
     <Suspense fallback={<SettingsSkeleton />}>
-      <SettingsPageData />
+      <SettingsPageBody />
     </Suspense>
   );
 }

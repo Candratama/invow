@@ -131,7 +131,12 @@ export function BusinessInfoTab({
       storeDescription: initialStore?.store_description || "",
       tagline: initialStore?.tagline || "",
       storeNumber: initialStore?.store_number || "",
-      brandColor: initialStore?.brand_color || "#FFB300",
+      // Native <input type="color"> always emits lowercase hex. Storing the
+      // default in lowercase keeps the form's initial-vs-current comparison
+      // stable on mount, otherwise an automatic browser normalization (e.g.
+      // "#FFB300" -> "#ffb300") fires onChange and falsely marks the form
+      // dirty before the user has touched anything.
+      brandColor: (initialStore?.brand_color || "#FFB300").toLowerCase(),
     },
   });
 
@@ -164,7 +169,7 @@ export function BusinessInfoTab({
               storeDescription: result.data.store.store_description || "",
               tagline: result.data.store.tagline || "",
               storeNumber: result.data.store.store_number || "",
-              brandColor: result.data.store.brand_color || "#FFB300",
+              brandColor: (result.data.store.brand_color || "#FFB300").toLowerCase(),
             });
           }
         }
@@ -740,12 +745,21 @@ export function BusinessInfoTab({
                       <Input
                         id="brandColor"
                         type="color"
-                        value={form.watch("brandColor")}
-                        onChange={(e) =>
-                          form.setValue("brandColor", e.target.value, {
+                        value={(form.watch("brandColor") || "").toLowerCase()}
+                        onChange={(e) => {
+                          const next = e.target.value.toLowerCase();
+                          const current = (
+                            form.getValues("brandColor") || ""
+                          ).toLowerCase();
+                          // Skip the no-op normalization onChange that fires
+                          // when the browser converts the initial uppercase
+                          // hex to lowercase — only mark the form dirty when
+                          // the user actually picked a different color.
+                          if (next === current) return;
+                          form.setValue("brandColor", next, {
                             shouldDirty: true,
-                          })
-                        }
+                          });
+                        }}
                         className="w-16 sm:w-20 h-11 sm:h-12 p-1 cursor-pointer"
                       />
                       <Input
