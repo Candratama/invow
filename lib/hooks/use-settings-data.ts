@@ -34,12 +34,16 @@ export function useSettingsData(initialData?: SettingsPageData) {
       }
       return result.data as SettingsPageData;
     },
-    // Only use initialData if no cache exists
+    // Only use initialData if no cache exists.
+    // The settings payload is persisted to localStorage, so we keep
+    // serving cached data on mount (instant render) but always re-verify
+    // against the server. Otherwise a returning user can land on a stale
+    // tier / store snapshot from before they upgraded in another tab.
     initialData: initialDataRef.current,
-    staleTime: 5 * 60 * 1000, // Data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
   });
 }
 
