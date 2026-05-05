@@ -8,6 +8,7 @@ import PaymentSuccessHandler from "@/components/features/payment/success-handler
 import { Button } from "@/components/ui/button";
 import { PageHeader, RefetchIndicator } from "@/components/dashboard";
 import { SettingsSkeleton } from "@/components/skeletons/settings-skeleton";
+import { SettingsTabSkeleton } from "@/components/skeletons/settings-tab-skeleton";
 import {
   Dialog,
   DialogContent,
@@ -287,7 +288,7 @@ export function SettingsClient({ initialData }: SettingsClientProps) {
 
         {/* Tab Content */}
         <div className="flex-1 overflow-hidden bg-white">
-          <Suspense fallback={<SettingsSkeleton />}>
+          <Suspense fallback={<SettingsTabSkeleton />}>
             {mountedTabs.has("subscription") && (
               <div
                 className="h-full"
