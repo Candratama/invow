@@ -18,6 +18,7 @@ import { useInvalidateRelatedQueries } from "../use-invalidate-related";
 import { dashboardKeys } from "../use-dashboard-data";
 import { settingsKeys } from "../use-settings-data";
 import { customersKeys } from "../use-customers-data";
+import { reportKeys } from "../use-report-data";
 
 // Create a wrapper with QueryClientProvider
 function createWrapper() {
@@ -58,8 +59,10 @@ describe("Property 4: Mutation invalidates related caches", () => {
           // Trigger invoice mutation invalidation without storeId
           result.current.afterInvoiceMutation();
 
-          // Property: invalidateQueries should be called for revenue and invoices
-          expect(invalidateQueriesSpy).toHaveBeenCalledTimes(2);
+          // Property: invalidateQueries should be called for revenue, invoices,
+          // metrics (lazy allInvoices blob), and report.all so every page that
+          // aggregates over the invoice list refreshes together.
+          expect(invalidateQueriesSpy).toHaveBeenCalledTimes(4);
 
           // Verify revenue query key invalidation
           const revenueCall = invalidateQueriesSpy.mock.calls.find(
@@ -76,6 +79,22 @@ describe("Property 4: Mutation invalidates related caches", () => {
               JSON.stringify(dashboardKeys.invoices())
           );
           expect(invoicesCall).toBeDefined();
+
+          // Verify metrics query key invalidation (drives FinancialCards count)
+          const metricsCall = invalidateQueriesSpy.mock.calls.find(
+            (call) =>
+              JSON.stringify(call[0]?.queryKey) ===
+              JSON.stringify(dashboardKeys.metrics())
+          );
+          expect(metricsCall).toBeDefined();
+
+          // Verify report.all invalidation (overview / buyback / detail tabs)
+          const reportCall = invalidateQueriesSpy.mock.calls.find(
+            (call) =>
+              JSON.stringify(call[0]?.queryKey) ===
+              JSON.stringify(reportKeys.all)
+          );
+          expect(reportCall).toBeDefined();
         }
       ),
       { numRuns: 100 }
@@ -96,8 +115,11 @@ describe("Property 4: Mutation invalidates related caches", () => {
           // Trigger invoice mutation invalidation with storeId
           result.current.afterInvoiceMutation(storeId);
 
-          // Property: invalidateQueries should be called for revenue, invoices, AND customers
-          expect(invalidateQueriesSpy).toHaveBeenCalledTimes(3);
+          // Property: invalidateQueries should be called for revenue, invoices,
+          // metrics, report.all, and customers — every cache that aggregates
+          // over the invoice list (plus the customer list which might gain a
+          // newly inserted customer from the invoice form).
+          expect(invalidateQueriesSpy).toHaveBeenCalledTimes(5);
 
           // Verify revenue query key invalidation
           const revenueCall = invalidateQueriesSpy.mock.calls.find(
@@ -114,6 +136,22 @@ describe("Property 4: Mutation invalidates related caches", () => {
               JSON.stringify(dashboardKeys.invoices())
           );
           expect(invoicesCall).toBeDefined();
+
+          // Verify metrics query key invalidation
+          const metricsCall = invalidateQueriesSpy.mock.calls.find(
+            (call) =>
+              JSON.stringify(call[0]?.queryKey) ===
+              JSON.stringify(dashboardKeys.metrics())
+          );
+          expect(metricsCall).toBeDefined();
+
+          // Verify report.all invalidation
+          const reportCall = invalidateQueriesSpy.mock.calls.find(
+            (call) =>
+              JSON.stringify(call[0]?.queryKey) ===
+              JSON.stringify(reportKeys.all)
+          );
+          expect(reportCall).toBeDefined();
 
           // Verify customers query key invalidation
           const customersCall = invalidateQueriesSpy.mock.calls.find(
@@ -237,16 +275,16 @@ describe("Property 4: Mutation invalidates related caches", () => {
           });
 
           // Trigger multiple mutations in sequence
-          result.current.afterInvoiceMutation(invoiceStoreId); // 3 calls (revenue + invoices + customers)
+          result.current.afterInvoiceMutation(invoiceStoreId); // 5 calls (revenue + invoices + metrics + report + customers)
           result.current.afterSettingsMutation(); // 2 calls (settings.all + revenue)
           result.current.afterCustomerMutation(storeId1); // 1 call
           result.current.afterCustomerMutation(storeId2); // 1 call
 
-          // Property: all invalidations should be called correctly
-          // Invoice with storeId: 3 calls (revenue + invoices + customers)
-          // Settings: 2 calls (settings.all + revenue)
-          // Customer: 2 calls (one for each storeId)
-          expect(invalidateQueriesSpy).toHaveBeenCalledTimes(7);
+          // Property: all invalidations should be called correctly.
+          // Invoice with storeId: 5 (revenue + invoices + metrics + report.all + customers)
+          // Settings: 2 (settings.all + dashboard.revenue)
+          // Customer x2: 2 (one per storeId)
+          expect(invalidateQueriesSpy).toHaveBeenCalledTimes(9);
 
           // Verify customer invalidations for different storeIds
           const customerCalls = invalidateQueriesSpy.mock.calls.filter(
