@@ -46,6 +46,7 @@ export async function getReportOverviewData(
     return {
       summary: {
         totalRevenue: 0,
+        totalBuybackExpense: 0,
         totalInvoices: 0,
         activeCustomers: 0,
         averageInvoiceValue: 0,
@@ -88,6 +89,7 @@ export async function getReportOverviewData(
     return {
       summary: {
         totalRevenue: 0,
+        totalBuybackExpense: 0,
         totalInvoices: 0,
         activeCustomers: 0,
         averageInvoiceValue: 0,
@@ -117,9 +119,19 @@ export async function getReportOverviewData(
     (customerData || []).map(c => [c.id, c.status])
   )
 
-  // Calculate summary stats
+  // Calculate summary stats.
+  // Sales Revenue and Buyback Expense are now reported as pure per-item
+  // aggregates, mirroring the dashboard cards exactly:
+  //   - Sales Revenue (totalRevenue) = invoice.total minus the buyback
+  //     items' total on each invoice. Mixed invoices still contribute
+  //     their regular items + shipping; pure-buyback invoices contribute 0.
+  //   - Buyback Expense (totalBuybackExpense) = sum of buyback items'
+  //     `total` across every invoice.
+  // Invoice counts use the some(is_buyback) classification so they match
+  // the count shown on the dashboard.
   const uniqueCustomers = new Set<string>()
   let totalRevenue = 0
+  let totalBuybackExpense = 0
   let regularInvoicesCount = 0
   let buybackInvoicesCount = 0
   const customerTotals: Map<string, {
@@ -134,19 +146,19 @@ export async function getReportOverviewData(
   invoices.forEach((invoice) => {
     const items = invoice.invoice_items || []
     const hasBuybackItems = items.some((item: any) => item.is_buyback)
+    const buybackItemsSum = items
+      .filter((item: any) => item.is_buyback)
+      .reduce((sum: number, item: any) => sum + (item.total || 0), 0)
+    const salesContribution = invoice.total - buybackItemsSum
 
     if (hasBuybackItems) {
       buybackInvoicesCount++
-      // For buyback invoices, subtract the buyback expense
-      const buybackTotal = items
-        .filter((item: any) => item.is_buyback)
-        .reduce((sum: number, item: any) => sum + (item.total || 0), 0)
-      totalRevenue -= buybackTotal
     } else {
       regularInvoicesCount++
-      // For regular invoices, add the revenue
-      totalRevenue += invoice.total
     }
+
+    totalRevenue += salesContribution
+    totalBuybackExpense += buybackItemsSum
 
     // Track unique customers
     uniqueCustomers.add(invoice.customer_name)
@@ -172,21 +184,17 @@ export async function getReportOverviewData(
       })
     }
 
-    // Track revenue by date
+    // Revenue-by-date series tracks pure sales contribution per day so the
+    // chart shows gross sales movement, not a net curve mixing in buyback
+    // expense (which is now exposed via totalBuybackExpense instead).
     const dateKey = invoice.invoice_date
     const currentRevenue = revenueByDate.get(dateKey) || 0
-    if (hasBuybackItems) {
-      const buybackTotal = items
-        .filter((item: any) => item.is_buyback)
-        .reduce((sum: number, item: any) => sum + (item.total || 0), 0)
-      revenueByDate.set(dateKey, currentRevenue - buybackTotal)
-    } else {
-      revenueByDate.set(dateKey, currentRevenue + invoice.total)
-    }
+    revenueByDate.set(dateKey, currentRevenue + salesContribution)
   })
 
   const summary: ReportSummary = {
     totalRevenue,
+    totalBuybackExpense,
     totalInvoices: invoices.length,
     activeCustomers: uniqueCustomers.size,
     averageInvoiceValue: invoices.length > 0 ? totalRevenue / invoices.length : 0,

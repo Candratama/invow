@@ -128,11 +128,16 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards - 2x3 Grid */}
+      {/* Summary Cards — separated like the dashboard so Sales Revenue stays
+          pure (no buyback subtraction). Buyback Expense is its own metric. */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <SummaryCard
-          title="Total Pendapatan"
+          title="Sales Revenue"
           value={formatCurrency(summary.totalRevenue)}
+        />
+        <SummaryCard
+          title="Buyback Expense"
+          value={formatCurrency(summary.totalBuybackExpense)}
         />
         <SummaryCard
           title="Jumlah Invoice"
@@ -163,7 +168,7 @@ export function OverviewTab({ dateRange }: OverviewTabProps) {
             <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
               <LineChart
                 data={revenueChart}
-                title="Trend Pendapatan"
+                title="Trend Sales Revenue"
                 color="#D4AF37"
                 formatValue={formatCompactCurrency}
                 formatTooltipValue={formatCurrency}

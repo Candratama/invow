@@ -70,28 +70,73 @@ export function calculateRevenueMetrics(invoices: Invoice[]): RevenueMetrics {
 }
 
 /**
- * Determines if an invoice is a buyback invoice
- * An invoice is buyback if ALL items have is_buyback = true
+ * Determines if an invoice has any buyback item.
+ * An invoice is classified as buyback if at least one of its items is a
+ * buyback item. This matches the report-page classification so the count
+ * shown on both pages is consistent.
+ *
+ * For mixed invoices (regular + buyback items), the invoice itself is
+ * counted under "buyback" but the *revenue* contributed to each card is
+ * split per item (see sumBuybackItems / invoice.total - buyback portion).
  */
-function isBuybackInvoice(invoice: Invoice): boolean {
+function hasBuybackItems(invoice: Invoice): boolean {
   if (!invoice.items || invoice.items.length === 0) {
     return false;
   }
-  return invoice.items.every(item => item.is_buyback === true);
+  return invoice.items.some(item => item.is_buyback === true);
+}
+
+/**
+ * Sum the per-item `total` of every buyback line on an invoice.
+ * Buyback items use the schema column `total` (gram × buyback_rate);
+ * regular items use `subtotal` (price × quantity).
+ */
+function sumBuybackItems(invoice: Invoice): number {
+  if (!invoice.items) return 0;
+  return invoice.items.reduce((sum, item) => {
+    if (item.is_buyback === true) {
+      return sum + (item.total ?? 0);
+    }
+    return sum;
+  }, 0);
+}
+
+/**
+ * Sales contribution for an invoice = invoice.total minus the buyback
+ * items' portion. That way:
+ *  - pure-sales invoice → contributes its full invoice total (subtotals + shipping)
+ *  - pure-buyback invoice → contributes 0 to sales
+ *  - mixed invoice → contributes regular items + shipping (NOT the buyback portion)
+ */
+function salesContribution(invoice: Invoice): number {
+  return invoice.total - sumBuybackItems(invoice);
 }
 
 function calculateSalesMetrics(
-  salesInvoices: Invoice[],
+  allInvoices: Invoice[],
   currentMonth: number,
   currentYear: number
 ) {
+  // Sales revenue is the *pure* sales side of every invoice — regardless of
+  // whether the invoice also has buyback items. Counts the invoice in the
+  // sales bucket only when no buyback items are present (mutually exclusive
+  // with the buyback bucket so totals match the report-page convention).
+  const salesInvoices = allInvoices.filter(inv => !hasBuybackItems(inv));
   const monthlyInvoices = salesInvoices.filter(invoice => {
     const date = new Date(invoice.invoiceDate);
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
   });
 
-  const totalRevenue = salesInvoices.reduce((sum, inv) => sum + inv.total, 0);
-  const monthlyRevenue = monthlyInvoices.reduce((sum, inv) => sum + inv.total, 0);
+  const totalRevenue = allInvoices.reduce(
+    (sum, inv) => sum + salesContribution(inv),
+    0
+  );
+  const monthlyRevenue = allInvoices
+    .filter(invoice => {
+      const date = new Date(invoice.invoiceDate);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    })
+    .reduce((sum, inv) => sum + salesContribution(inv), 0);
 
   return {
     totalRevenue,
@@ -105,17 +150,29 @@ function calculateSalesMetrics(
 }
 
 function calculateBuybackMetrics(
-  buybackInvoices: Invoice[],
+  allInvoices: Invoice[],
   currentMonth: number,
   currentYear: number
 ) {
+  // Buyback expense is the *pure* buyback side of every invoice — sum of
+  // buyback items' totals. Invoice count uses some(is_buyback) so mixed
+  // invoices are counted as buyback (matching the report page).
+  const buybackInvoices = allInvoices.filter(hasBuybackItems);
   const monthlyInvoices = buybackInvoices.filter(invoice => {
     const date = new Date(invoice.invoiceDate);
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
   });
 
-  const totalExpenses = buybackInvoices.reduce((sum, inv) => sum + inv.total, 0);
-  const monthlyExpenses = monthlyInvoices.reduce((sum, inv) => sum + inv.total, 0);
+  const totalExpenses = allInvoices.reduce(
+    (sum, inv) => sum + sumBuybackItems(inv),
+    0
+  );
+  const monthlyExpenses = allInvoices
+    .filter(invoice => {
+      const date = new Date(invoice.invoiceDate);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    })
+    .reduce((sum, inv) => sum + sumBuybackItems(inv), 0);
 
   return {
     totalExpenses,
@@ -189,13 +246,12 @@ export function calculateFinancialMetrics(invoices: Invoice[]): FinancialMetrics
   // Filter completed invoices only (including synced status)
   const completedInvoices = invoices.filter(i => i.status === 'completed' || i.status === 'synced');
 
-  // Separate by type based on items
-  const salesInvoices = completedInvoices.filter(invoice => !isBuybackInvoice(invoice));
-  const buybackInvoices = completedInvoices.filter(invoice => isBuybackInvoice(invoice));
-
-  // Calculate metrics for each category
-  const sales = calculateSalesMetrics(salesInvoices, currentMonth, currentYear);
-  const buyback = calculateBuybackMetrics(buybackInvoices, currentMonth, currentYear);
+  // Each card now aggregates over EVERY completed invoice and splits the
+  // contribution per item type. That way mixed invoices are no longer
+  // silently lost from the dashboard — their regular items count toward
+  // Sales Revenue and their buyback items count toward Buyback Expense.
+  const sales = calculateSalesMetrics(completedInvoices, currentMonth, currentYear);
+  const buyback = calculateBuybackMetrics(completedInvoices, currentMonth, currentYear);
   const costs = calculateCosts(completedInvoices, currentMonth, currentYear);
   const profit = calculateNetProfit(sales, buyback, costs);
 

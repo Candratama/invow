@@ -7,6 +7,7 @@ export interface DateRange {
 
 export interface ReportSummary {
   totalRevenue: number;
+  totalBuybackExpense: number;
   totalInvoices: number;
   activeCustomers: number;
   averageInvoiceValue: number;
